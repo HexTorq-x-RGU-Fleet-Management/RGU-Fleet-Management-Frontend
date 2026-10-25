@@ -1,0 +1,33 @@
+# Private environment and credentials
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.pfx
+*.p12
+*.dpapi
+*.vault
+.private/
+.private-history/
+# Dependencies and generated/runtime state
+node_modules/
+.local/
+data/
+recordings/
+captures/
+log/
+logs/
+*.log
+*.har
+*.dmp
+*.tmp
+coverage/
+.DS_Store
+Thumbs.db
+
+# Web build output
+.next/
+out/
+dist/
+*.tsbuildinfo

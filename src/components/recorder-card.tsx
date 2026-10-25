@@ -1,25 +1,33 @@
 'use client';
 import Link from 'next/link';
-import { Star, ArrowUpRight, MapPin, Cctv, BusFront } from 'lucide-react';
+import { Star, ArrowUpRight, Cctv, BusFront } from 'lucide-react';
 import { toast } from 'sonner';
-import { type Recorder } from '@/lib/model';
+import type { Recorder } from '@/lib/model';
 import { Badge, IconButton } from './ui';
 import { useWorkspace } from './workspace-provider';
+import { CameraPreview } from './camera-preview';
 export function RecorderCard({ recorder: r }: { recorder: Recorder }) {
-  const { state, patch } = useWorkspace();
-  const favorite = state.favorites.includes(r.id);
+  const { state, provider, patch } = useWorkspace(),
+    favorite = state.favorites.includes(r.id),
+    channel = r.channelList.find((c) => c.health === 'working');
   return (
     <article className="recorder-card">
-      <Link href={'/cameras?recorder=' + r.id} className="recorder-preview">
-        <div className="recorder-preview-symbol" aria-hidden="true">
-          <Cctv size={42} strokeWidth={1} />
-          <span>CAMERA WORKSPACE</span>
-        </div>
-        <span className="preview-shade" />
-        <span className="preview-stamp">ACTIVE 1080P</span>
+      <Link href={'/cameras?recorder=' + encodeURIComponent(r.id)} className="recorder-preview">
+        {channel ? (
+          <CameraPreview
+            deviceId={r.id}
+            channel={channel.number}
+            enabled={r.online && provider?.playbackReady}
+          />
+        ) : (
+          <div className="recorder-preview-symbol">
+            <Cctv size={42} strokeWidth={1} />
+            <span>{r.online ? 'AVAILABILITY UNCHECKED' : r.status.toUpperCase()}</span>
+          </div>
+        )}
         <span className="recorder-preview-meta">
           <Cctv size={15} />
-          {r.channels} channels
+          {r.channels} permitted channels
         </span>
         <span className="preview-arrow">
           <ArrowUpRight size={18} />
@@ -27,39 +35,32 @@ export function RecorderCard({ recorder: r }: { recorder: Recorder }) {
       </Link>
       <div className="recorder-card-body">
         <div className="recorder-title">
-          <Link href={'/cameras?recorder=' + r.id}>{r.name}</Link>
+          <Link href={'/cameras?recorder=' + encodeURIComponent(r.id)}>{r.name}</Link>
           <IconButton
-            label={favorite ? `Unfavourite ${r.name}` : `Favourite ${r.name}`}
+            label={(favorite ? 'Unfavourite ' : 'Favourite ') + r.name}
             aria-pressed={favorite}
-            onClick={() => {
-              patch({
+            onClick={() =>
+              void patch({
                 favorites: favorite
                   ? state.favorites.filter((id) => id !== r.id)
                   : [...state.favorites, r.id],
-              });
-              toast.success(favorite ? 'Removed from favourites' : 'Added to favourites');
-            }}
+              }).then(() => toast.success('Favourites saved.'))
+            }
           >
-            <Star
-              size={16}
-              fill={favorite ? 'currentColor' : 'none'}
-              className={favorite ? 'text-accent' : ''}
-            />
+            <Star size={16} fill={favorite ? 'currentColor' : 'none'} />
           </IconButton>
         </div>
-        <p className="recorder-location">
-          <MapPin size={12} />
-          {r.location}
-        </p>
+        <p className="recorder-location">{r.location}</p>
         <div className="recorder-card-bottom">
-          <Badge tone={r.online ? 'green' : 'neutral'}>
-            {r.online ? 'Active' : 'Offline'}
-          </Badge>
+          <Badge tone={r.online ? 'green' : 'neutral'}>{r.status}</Badge>
           <span>
             <BusFront size={13} />
             {r.vehicle}
           </span>
         </div>
+        <p className="small muted">
+          Checked {r.checkedAt ? new Date(r.checkedAt).toLocaleTimeString() : 'not yet'}
+        </p>
       </div>
     </article>
   );

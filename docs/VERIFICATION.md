@@ -1,30 +1,29 @@
-# Frontend verification — 25 October 2026
+# Frontend verification — authenticated API integration
 
-Node 24.21.0, locked dependencies. TypeScript and Next production build pass.
-16 unit tests and 16 actual Chrome browser tests pass.
+Node 24.x, Next 16.4.3. TypeScript and production build pass, along with 14 unit
+tests and all 9 authenticated browser tests. The Windows backend separately
+passes 84 API/PostgreSQL checks and 10 native audio/video tests.
+The old demo-only browser cases were replaced by actual API integration cases.
 
-Fleet coverage: bus create/edit mapping fields, browser persistence and confirmed
-deletion; synchronized GPS/fuel timeline and location cursor; star filtering in
-the bus camera grid; offline/unmapped states; exact provider-format data and
-device-ID correlation; stale samples and unavailable channel exclusion.
+Browser tests connect to the separate Windows acceptance API and real isolated
+PostgreSQL, with backend-only synthetic devices, H264/JPEG/PCM media and map tiles.
+There are no frontend API mocks or runtime sample datasets. Normal API port 8101
+never imports the acceptance fixture. Browser test API is 8109; Next test UI 3117
+uses its own .next-e2e directory and refuses to reuse a running unrelated server.
 
-Retained coverage: camera grid/focus/zoom/layouts, React team/approval dialogs,
-role navigation, login error feedback, theme/reduced motion, real labelled
-Canvas/MediaRecorder preview capture with IndexedDB/download/deletion, mobile
-390px viewport fit, and standard-motion rendering.
+Coverage: login/approval rejection, persisted bus creation/refresh, tenant switch
+isolation, member channel restrictions and denied direct API access, no role switch,
+H264 decoding, SSE reconnection, selection/focus/zoom, unmute and actual received
+frame capture, server clip upload/refresh/playback/delete, backend telemetry history,
+bus camera stars, signup/approval/temporary password change, member grants/suspension,
+server preferences, audit/health, sidebar persistence/scroll isolation and mobile fit.
 
-Browser tests own a production server on 3117 and refuse to reuse an unrelated
-server. The developer preview remains on 3107. No image generation was used.
-No JavaScript-native dialogs or stock photo dependencies are introduced.
+Unit policies prevent seeded sample recorder/member/bus/telemetry functions in src,
+browser-native dialogs and stock/generated photo assets. Public API configuration
+is required; transport retains credentials, identity and backend error codes.
 
-Navigation/map coverage: circular sidebar toggle geometry/persistence, compact
-bus directory, camera tools consolidation, smooth-scroll isolation on a short
-viewport, Leaflet initialization, history marker updates and tile failure.
-Preview recording is decoded in the browser after IndexedDB persistence.
-Routine tests use stub tiles; a separate Chrome smoke check loaded real OSM tiles.
-
-This verifies the frontend mock preview and real road-map loading. It does not verify actual GPS/fuel,
-real camera video/audio, backend-authenticated bus operations,
-production monitoring, Linux or deployment. Windows API behavior is tested in
-its own repository; typed adapter methods are ready but not wired into the
-preview screens. See FLEET-PRODUCT.md for boundaries and future integration.
+The normal local API was started and its auth status checked separately. No real
+operator, Hik-Connect grant or sample camera was seeded in its application DB.
+Real cameras were not exercised because the user confirmed all are offline.
+See REAL-CAMERA-ACCEPTANCE.md for the remaining hardware/reliability checks.
+No Linux changes, VPS deployment or provider GPS/fuel vendor integration occurred.

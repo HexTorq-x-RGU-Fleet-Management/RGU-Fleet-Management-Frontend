@@ -1,5 +1,10 @@
 # Frontend development rules
 
+- All fleet/recorder/member/audit/health data must come from authenticated backend
+  APIs. Never restore browser-local demo business data, sample recorders, telemetry
+  generators or a role-switching preview. Only the backend may supply mock GPS/fuel;
+  real camera APIs must never fall back to sample devices or generated frames.
+
 - This is a bus-first fleet product: read docs/FLEET-PRODUCT.md for its core model.
   Each recorder belongs to one bus; one vendor device supplies GPS and fuel.
   Preserve source/freshness labels and distinguish mock data from live integration.
@@ -26,3 +31,13 @@
   frontend work. Leave the reference Camera archives and backend repos untouched.
 
 - Do not generate/search/download stock or AI imagery unless the user explicitly asks. Use CSS and Lucide icons; avoid spending image credits.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+## This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

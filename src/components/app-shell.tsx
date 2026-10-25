@@ -24,17 +24,13 @@ import {
   LogOut,
   Sun,
   Moon,
-  Check,
-  Link2,
-  Info,
-  ArrowRight,
   PanelLeftClose,
   PanelLeftOpen,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useWorkspace } from './workspace-provider';
-import { Button, Modal, IconButton, Badge, SearchInput } from './ui';
-import { canAccess, recorders, type Role } from '@/lib/model';
+import { Button, Modal, IconButton, SearchInput, Badge } from './ui';
+import { canAccess } from '@/lib/model';
 const links = [
   { href: '/', label: 'Fleet overview', icon: LayoutDashboard },
   { href: '/buses', label: 'Buses', icon: BusFront },
@@ -44,45 +40,34 @@ const links = [
   { href: '/activity', label: 'Activity log', icon: History, area: 'activity' },
 ];
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const path = usePathname();
-  const router = useRouter();
-  const { state, patch } = useWorkspace();
-  const [mobile, setMobile] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
+  const { state, user, provider, signOut, patch } = useWorkspace(),
+    path = usePathname(),
+    router = useRouter();
+  const [mobile, setMobile] = useState(false),
+    [collapsed, setCollapsed] = useState(false),
+    [search, setSearch] = useState(false),
+    [query, setQuery] = useState(''),
+    [notifications, setNotifications] = useState(false);
   useEffect(() => {
     try {
       setCollapsed(localStorage.getItem('rgu-sidebar-collapsed') === 'true');
     } catch {}
   }, []);
-  function toggleSidebar() {
-    const next = !collapsed;
-    setCollapsed(next);
-    try {
-      localStorage.setItem('rgu-sidebar-collapsed', String(next));
-    } catch {}
-  }
-  const [search, setSearch] = useState(false);
-  const [query, setQuery] = useState('');
-  const [notifications, setNotifications] = useState(false);
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setMobile(false);
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault();
-        setSearch((s) => !s);
+        setSearch((v) => !v);
       }
     };
     addEventListener('keydown', key);
     return () => removeEventListener('keydown', key);
   }, []);
-  const roleLabel =
-    state.role === 'superadmin'
-      ? 'Platform owner'
-      : state.role === 'admin'
-        ? 'Workspace admin'
-        : 'Team member';
+  if (!user) return null;
+  const list = links.filter((l) => canAccess(user.role, l.area || l.href.slice(1)));
   const title =
-    links.find((l) => l.href === path)?.label ||
+    list.find((l) => l.href === path)?.label ||
     (
       {
         '/settings': 'Workspace settings',
@@ -91,6 +76,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       } as Record<string, string>
     )[path] ||
     'Workspace';
+  function toggle() {
+    setCollapsed(!collapsed);
+    try {
+      localStorage.setItem('rgu-sidebar-collapsed', String(!collapsed));
+    } catch {}
+  }
   function nav(href: string) {
     setMobile(false);
     router.push(href);
@@ -103,15 +94,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {mobile && (
         <button
           className="sidebar-scrim"
-          aria-label="Close navigation"
+          aria-label="Close navigation backdrop"
           onClick={() => setMobile(false)}
         />
       )}
       <aside
         id="workspace-sidebar"
+        className={`sidebar ${mobile ? 'sidebar-open' : ''}`}
         aria-label="Workspace sidebar"
         data-lenis-prevent
-        className={`sidebar ${mobile ? 'sidebar-open' : ''}`}
       >
         <IconButton
           label="Close navigation"
@@ -122,7 +113,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </IconButton>
         <Link href="/" className="brand" onClick={() => setMobile(false)}>
           <span className="brand-symbol">
-            <Route size={22} strokeWidth={2.5} />
+            <Route size={22} />
           </span>
           <span>
             <span className="brand-logo-rgu">
@@ -136,46 +127,41 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </Link>
         <p className="nav-caption">WORKSPACE</p>
         <nav aria-label="Main navigation">
-          {links
-            .filter((l) => !l.area || canAccess(state.role, l.area))
-            .map((l) => (
-              <Link
-                key={l.href}
-                href={l.href}
-                onClick={() => setMobile(false)}
-                className={`nav-link ${path === l.href ? 'active' : ''}`}
-                aria-current={path === l.href ? 'page' : undefined}
-                aria-label={l.label}
-                title={l.label}
-              >
-                <l.icon size={18} />
-                <span>{l.label}</span>
-                {l.href === '/recordings' && state.clips.length > 0 && (
-                  <span className="nav-count">{state.clips.length}</span>
-                )}
-                {path === l.href && <span className="nav-active-dot" />}
-              </Link>
-            ))}
+          {list.map((l) => (
+            <Link
+              key={l.href}
+              href={l.href}
+              className={`nav-link ${path === l.href ? 'active' : ''}`}
+              aria-current={path === l.href ? 'page' : undefined}
+              aria-label={l.label}
+              title={l.label}
+              onClick={() => setMobile(false)}
+            >
+              <l.icon size={18} />
+              <span>{l.label}</span>
+              {path === l.href && <span className="nav-active-dot" />}
+            </Link>
+          ))}
         </nav>
         <div className="sidebar-lower">
-          {state.role === 'superadmin' && (
+          {user.role === 'superadmin' && (
             <>
               <p className="nav-caption">PLATFORM</p>
               <Link
-                className={`nav-link ${path === '/platform' ? 'active' : ''}`}
                 href="/platform"
                 aria-label="Approvals"
                 title="Approvals"
+                className={`nav-link ${path === '/platform' ? 'active' : ''}`}
                 onClick={() => setMobile(false)}
               >
                 <ShieldCheck size={18} />
                 <span>Approvals</span>
               </Link>
               <Link
-                className={`nav-link ${path === '/health' ? 'active' : ''}`}
                 href="/health"
                 aria-label="System health"
                 title="System health"
+                className={`nav-link ${path === '/health' ? 'active' : ''}`}
                 onClick={() => setMobile(false)}
               >
                 <Activity size={18} />
@@ -184,8 +170,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </>
           )}
           <Link
-            className={`nav-link ${path === '/settings' ? 'active' : ''}`}
             href="/settings"
+            className={`nav-link ${path === '/settings' ? 'active' : ''}`}
             aria-label="Settings"
             title="Settings"
             onClick={() => setMobile(false)}
@@ -199,10 +185,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               aria-label="Account menu"
               title="Account menu"
             >
-              <span className="avatar">AM</span>
+              <span className="avatar">
+                {user.fullName
+                  .split(' ')
+                  .map((n) => n[0])
+                  .slice(0, 2)
+                  .join('')}
+              </span>
               <span>
-                <strong>Alex Morgan</strong>
-                <small>{roleLabel}</small>
+                <strong>{user.fullName}</strong>
+                <small>
+                  {user.role === 'superadmin'
+                    ? 'Platform owner'
+                    : user.role === 'admin'
+                      ? 'Workspace admin'
+                      : 'Team member'}
+                </small>
               </span>
               <ChevronDown size={14} />
             </Dropdown.Trigger>
@@ -213,30 +211,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 align="start"
                 sideOffset={12}
               >
-                <Dropdown.Label className="dropdown-label">OPERATIONS ROLE</Dropdown.Label>
-                {(['admin', 'member', 'superadmin'] as Role[]).map((role) => (
-                  <Dropdown.Item
-                    key={role}
-                    className="dropdown-item"
-                    onSelect={() => {
-                      patch({ role });
-                      if (!canAccess(role, path.slice(1))) router.push('/');
-                      toast.info(`Active role: ${role === 'superadmin' ? 'platform owner' : role}`);
-                    }}
-                  >
-                    {state.role === role ? <Check size={15} /> : <Users size={15} />}{' '}
-                    {role === 'superadmin'
-                      ? 'Platform owner'
-                      : role === 'admin'
-                        ? 'Workspace admin'
-                        : 'Team member'}
-                  </Dropdown.Item>
-                ))}
-                <Dropdown.Separator className="dropdown-separator" />
+                <Dropdown.Label className="dropdown-label">{user.email}</Dropdown.Label>
+                <Dropdown.Item className="dropdown-item" onSelect={() => nav('/settings')}>
+                  <Settings size={15} />
+                  Account settings
+                </Dropdown.Item>
                 <Dropdown.Item
                   className="dropdown-item"
                   onSelect={() =>
-                    patch({
+                    void patch({
                       settings: {
                         ...state.settings,
                         theme: state.settings.theme === 'dark' ? 'light' : 'dark',
@@ -247,9 +230,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   {state.settings.theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}Switch
                   appearance
                 </Dropdown.Item>
-                <Dropdown.Item className="dropdown-item" onSelect={() => nav('/login')}>
+                <Dropdown.Separator className="dropdown-separator" />
+                <Dropdown.Item
+                  className="dropdown-item"
+                  onSelect={() => {
+                    void signOut()
+                      .then(() => router.replace('/login'))
+                      .catch((e) => toast.error(e.message));
+                  }}
+                >
                   <LogOut size={15} />
-                  Account sign in
+                  Sign out
                 </Dropdown.Item>
               </Dropdown.Content>
             </Dropdown.Portal>
@@ -261,7 +252,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         className="sidebar-toggle sidebar-edge-toggle"
         aria-expanded={!collapsed}
         aria-controls="workspace-sidebar"
-        onClick={toggleSidebar}
+        onClick={toggle}
       >
         {collapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
       </IconButton>
@@ -277,7 +268,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             >
               <Menu size={20} />
             </IconButton>
-            <span className="breadcrumb-root">Workspace</span>
+            <span className="breadcrumb-root">{user.tenantName || 'Platform'}</span>
             <span className="breadcrumb-slash">/</span>
             <strong>{title}</strong>
           </div>
@@ -286,17 +277,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <Search size={15} />
               <span>Search anything...</span>
               <kbd>
-                <Command size={10} /> K
+                <Command size={10} />K
               </kbd>
             </button>
-            <span className="naac-badge">NAAC A++</span>
-            <span className="live-status-pill">
-              <span className="live-dot" />
-              <span>Fleet preview</span>
-            </span>
+            {user.role !== 'superadmin' && (
+              <Badge tone={provider?.connected ? 'green' : 'amber'}>
+                {provider?.connected ? 'Hik-Connect' : 'Connect cameras'}
+              </Badge>
+            )}
             <IconButton label="Notifications" onClick={() => setNotifications(true)}>
               <Bell size={18} />
-              <span className="notification-dot" />
             </IconButton>
           </div>
         </header>
@@ -305,18 +295,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </main>
         <footer className="app-footer">
           <span>
-            RGU Fleet Management <i /> By HexTorq for Rathinam Global University
+            RGU Fleet Management <i />
+            By HexTorq for Rathinam Global University
           </span>
-          <span>
-            Mock data / Preview <span className="footer-dot" />
-          </span>
+          <span>Authenticated workspace</span>
         </footer>
       </div>
       <Modal
         open={search}
         onOpenChange={setSearch}
         title="Find your next view"
-        description="Search sample recorders or jump to a workspace page."
+        description="Search your permitted buses and recorders."
       >
         <SearchInput
           value={query}
@@ -325,16 +314,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         />
         <div className="command-results">
           {[
-            ...links.map((l) => ({ title: l.label, subtitle: 'Workspace page', href: l.href })),
+            ...list.map((l) => ({ title: l.label, subtitle: 'Workspace page', href: l.href })),
             ...state.buses.map((b) => ({
               title: b.busNumber,
-              subtitle: b.registration + ' · ' + b.driverName,
+              subtitle: b.registration,
               href: '/buses?bus=' + b.id,
             })),
-            ...recorders.map((r) => ({
+            ...state.recorders.map((r) => ({
               title: r.name,
               subtitle: r.location,
-              href: '/cameras?recorder=' + r.id,
+              href: '/cameras?recorder=' + encodeURIComponent(r.id),
             })),
           ]
             .filter((l) => (l.title + l.subtitle).toLowerCase().includes(query.toLowerCase()))
@@ -360,22 +349,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <Modal
         open={notifications}
         onOpenChange={setNotifications}
-        title="Your notifications"
-        description="A quiet place for updates that matter."
+        title="Connection notifications"
+        description="Current workspace connection state."
       >
-        <div className="notification-card">
-          <Info size={18} />
-          <div>
-            <strong>Welcome to your new workspace</strong>
-            <p>
-              This is the React frontend preview. Backend connection and live camera streaming will
-              follow the backend extraction.
-            </p>
-            <small>Workspace update</small>
-          </div>
-        </div>
-        <Button className="w-full mt-4" onClick={() => setNotifications(false)}>
-          All caught up
+        <p>
+          {provider?.needsReconnect
+            ? 'Your Hik-Connect authorization needs attention. Open account settings to reconnect.'
+            : provider?.connected
+              ? 'Hik-Connect account connected. Recorder status comes from the provider.'
+              : 'No Hik-Connect connection is configured for this workspace.'}
+        </p>
+        <Button
+          className="mt-4"
+          onClick={() => {
+            setNotifications(false);
+            nav('/settings');
+          }}
+        >
+          Account settings
         </Button>
       </Modal>
     </div>

@@ -1,103 +1,93 @@
 'use client';
-import { useState } from 'react';
-import { History, ShieldCheck, Download, LockKeyhole, Search, ArrowUpRight } from 'lucide-react';
-import { toast } from 'sonner';
+import { useState, useEffect } from 'react';
+import { History, RefreshCw } from 'lucide-react';
+import { PageHeading, Button, SearchInput } from './ui';
+import { request } from '@/lib/api';
 import { useWorkspace } from './workspace-provider';
-import { PageHeading, Button, Empty, SearchInput, Badge } from './ui';
-import { downloadBlob } from '@/lib/clips';
 export function ActivityLog() {
-  const { state } = useWorkspace();
-  const [query, setQuery] = useState('');
-  const [category, setCategory] = useState('all');
-  if (state.role === 'member')
+  const { user } = useWorkspace(),
+    [events, setEvents] = useState<any[]>([]),
+    [query, setQuery] = useState(''),
+    [error, setError] = useState(''),
+    [loading, setLoading] = useState(true),
+    [next, setNext] = useState<string | null>(null);
+  async function load(before?: string) {
+    setLoading(true);
+    try {
+      const d = await request(
+        '/api/audit?' + new URLSearchParams({ q: query, ...(before ? { before } : {}) }),
+      );
+      setEvents((e) => (before ? [...e, ...d.events] : d.events));
+      setNext(d.nextCursor);
+      setError('');
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  }
+  useEffect(() => {
+    void load();
+  }, [user?.id]);
+  if (user?.role === 'member')
     return (
-      <Empty
-        icon={<LockKeyhole size={30} />}
-        title="Administrator access required."
-        description="Audit history is available to workspace administrators and the platform owner."
-      />
+      <div className="fleet-no-data">
+        <h2>Administrator access required.</h2>
+      </div>
     );
-  const list = state.audit.filter(
-    (a) =>
-      (category === 'all' || a.category === category) &&
-      (a.action + a.target + a.actor).toLowerCase().includes(query.toLowerCase()),
-  );
   return (
     <div>
       <PageHeading
-        eyebrow="SECURITY AUDIT TRAIL"
+        eyebrow="AUDIT HISTORY"
         title="Every action, in context."
-        description="Real-time operational audit log of account, camera and workspace activity."
+        description="Approvals, permissions, provider connections and recording changes recorded by the server."
+      />
+      <form
+        className="panel-toolbar"
+        onSubmit={(e) => {
+          e.preventDefault();
+          void load();
+        }}
       >
-        <Button
-          onClick={() => {
-            downloadBlob(
-              new Blob([JSON.stringify(list, null, 2)], { type: 'application/json' }),
-              'rgu-fleet-activity.json',
-            );
-            toast.success('Activity log exported.');
-          }}
-        >
-          <Download size={15} />
-          Export activity
+        <SearchInput value={query} onChange={setQuery} placeholder="Search activity" />
+        <Button type="submit" loading={loading}>
+          <RefreshCw size={15} />
+          Search events
         </Button>
-      </PageHeading>
-      <div className="panel">
-        <div className="panel-toolbar">
-          <SearchInput value={query} onChange={setQuery} placeholder="Search activity" />
-          <select
-            aria-label="Activity category"
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-          >
-            <option value="all">All events</option>
-            {['access', 'camera', 'recording', 'settings'].map((c) => (
-              <option value={c} key={c}>
-                {c[0].toUpperCase() + c.slice(1)}
-              </option>
+      </form>
+      {error && <p role="alert">{error}</p>}
+      <div className="panel table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Action</th>
+              <th>Workspace</th>
+              <th>Actor</th>
+              <th>Target</th>
+              <th>Time</th>
+            </tr>
+          </thead>
+          <tbody>
+            {events.map((e) => (
+              <tr key={e.id}>
+                <td>{e.action}</td>
+                <td>{e.workspace}</td>
+                <td>{e.actor.name}</td>
+                <td>{e.target.name || e.target.id || '—'}</td>
+                <td>{new Date(e.createdAt).toLocaleString()}</td>
+              </tr>
             ))}
-          </select>
-        </div>
-        {list.length ? (
-          <div className="table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>Event</th>
-                  <th>Target</th>
-                  <th>Actor</th>
-                  <th>Time</th>
-                </tr>
-              </thead>
-              <tbody>
-                {list.map((a) => (
-                  <tr key={a.id}>
-                    <td>
-                      <span className="event-title">
-                        <ShieldCheck size={16} />
-                        {a.action}
-                      </span>
-                      <small className="table-subtext">{a.category}</small>
-                    </td>
-                    <td>{a.target}</td>
-                    <td>{a.actor}</td>
-                    <td className="muted">{new Date(a.time).toLocaleString()}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          </tbody>
+        </table>
+        {!events.length && !loading && (
+          <div className="fleet-no-data">
+            <History size={28} />
+            <h3>No audit events found</h3>
           </div>
-        ) : (
-          <Empty
-            icon={<History size={30} />}
-            title="Activity log empty"
-            description="Operational security actions, camera changes and access updates will appear here."
-          />
         )}
+        {loading && <p role="status">Loading audit history…</p>}
       </div>
-      <p className="workspace-footnote">
-        All surveillance activities and access events are logged with timestamp verification.
-      </p>
+      {next && <Button onClick={() => void load(next)}>Load older events</Button>}
     </div>
   );
 }

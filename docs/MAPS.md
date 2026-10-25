@@ -32,7 +32,8 @@ NEXT_PUBLIC_MAP_TILE_URL can change the compatible endpoint at build time;
 update the attribution in journey-map.tsx for any additional provider requirements.
 No map secret belongs in public frontend config.
 
-Browser suites stub tile responses (and separately simulate tile failure) to
-avoid network-dependent tests or repeated requests to public servers. A separate
-local Chrome smoke check loaded real OSM tiles and verified attribution.
+Browser acceptance tests use tiles served by the isolated backend fixture to
+avoid network-dependent tests or repeated requests to public servers. No frontend
+tile interception is installed. An earlier local Chrome smoke check loaded real
+OSM tiles and verified attribution.
 Leaflet reference: https://leafletjs.com/reference.html.

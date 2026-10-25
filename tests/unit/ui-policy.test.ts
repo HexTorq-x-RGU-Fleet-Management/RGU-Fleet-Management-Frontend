@@ -15,5 +15,9 @@ it('keeps photo assets, emoji icons and native JS dialogs out of the frontend', 
     .join('\n');
   expect(source).not.toMatch(/(?:window\.)?(?:alert|confirm|prompt)\s*\(/);
   expect(source).not.toMatch(/images\.unsplash|imagegen|\p{Extended_Pictographic}/u);
+  expect(source).not.toMatch(
+    /\b(?:mockVehicle|mockEnvelope|mockHistory|sampleMembers|sampleBuses)\b/,
+  );
+  expect(source).not.toContain('export const recorders');
   expect(files('public').some((path) => /\.(jpg|jpeg|png|webp|avif)$/i.test(path))).toBe(false);
 });

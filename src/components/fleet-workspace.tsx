@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useState, useEffect, useMemo, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
@@ -25,34 +25,29 @@ import {
   Pause,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { JourneyMap } from './journey-map';
 import { useWorkspace } from './workspace-provider';
 import { Badge, Button, Confirm, Field, Modal, PageHeading, SearchInput, Reveal } from './ui';
-import { recorders, channelName } from '@/lib/model';
+import { JourneyMap } from './journey-map';
+import { CameraPreview } from './camera-preview';
+import { channelName } from '@/lib/model';
 import {
   type Bus,
   type Vehicle,
-  sampleBuses,
-  telemetryDevices,
-  mockEnvelope,
-  mockHistory,
   workingChannels,
   cameraChannels,
   validateBus,
   timeLabel,
   telemetryAge,
 } from '@/lib/fleet';
-
-function useTelemetry(buses: Bus[]) {
+import { request, fleetApi } from '@/lib/api';
+function useClock() {
   const [now, setNow] = useState<number | null>(null);
   useEffect(() => {
-    const update = () => setNow(Math.floor(Date.now() / 1000));
-    update();
-    const id = setInterval(update, 10000);
-    return () => clearInterval(id);
+    setNow(Math.floor(Date.now() / 1000));
+    const t = setInterval(() => setNow(Math.floor(Date.now() / 1000)), 10000);
+    return () => clearInterval(t);
   }, []);
-  const envelope = useMemo(() => mockEnvelope(buses, now ?? 0), [buses, now]);
-  return { now, envelope, refresh: () => setNow(Math.floor(Date.now() / 1000)) };
+  return now;
 }
 function Metric({
   icon: Icon,
@@ -83,102 +78,96 @@ function FuelMeter({ value }: { value: number }) {
     </div>
   );
 }
-function RouteMap({ samples, index }: { samples: Vehicle[]; index: number }) {
-  if (!samples[index])
-    return (
-      <div className="fleet-no-data">
-        <Unplug size={30} />
-        <h3>No telemetry device mapped</h3>
-        <p>Map a GPS/fuel device in bus settings to explore this route.</p>
-      </div>
-    );
-  return <JourneyMap samples={samples} index={index} />;
-}
-function FleetHeading({
+function Heading({
   compact,
   count,
-  eyebrow,
-  title,
-  description,
   children,
 }: {
   compact: boolean;
   count: number;
-  eyebrow: string;
-  title: string;
-  description: string;
   children: ReactNode;
 }) {
-  if (compact)
-    return (
-      <div className="bus-directory-heading">
-        <div>
-          <h1>Buses</h1>
-          <span className="count-chip">{count}</span>
-        </div>
-        <div className="bus-directory-actions">{children}</div>
+  return compact ? (
+    <div className="bus-directory-heading">
+      <div>
+        <h1>Buses</h1>
+        <span className="count-chip">{count}</span>
       </div>
-    );
-  return (
-    <PageHeading eyebrow={eyebrow} title={title} description={description}>
+      <div className="bus-directory-actions">{children}</div>
+    </div>
+  ) : (
+    <PageHeading
+      eyebrow="RGU FLEET MANAGEMENT"
+      title="One fleet. Every perspective."
+      description="Your bus cameras, fleet and stored GPS/fuel observations."
+    >
       {children}
     </PageHeading>
   );
 }
 export function FleetWorkspace({ busesOnly = false }: { busesOnly?: boolean }) {
-  const { state, ready } = useWorkspace(),
-    query = useSearchParams();
+  const { state, ready, user, provider, telemetry, refresh, refreshDevices } = useWorkspace(),
+    query = useSearchParams(),
+    now = useClock();
   const [search, setSearch] = useState(''),
     [filter, setFilter] = useState('all'),
-    [editor, setEditor] = useState<Bus | null>(null);
-  const { now, envelope, refresh } = useTelemetry(state.buses);
-  const detail = state.buses.find((b) => b.id === query.get('bus'));
+    [editor, setEditor] = useState<Bus | null>(null),
+    [busy, setBusy] = useState(false);
+  const recorders = state.recorders,
+    vehicles = telemetry?.data.vehicles ?? [],
+    detail = state.buses.find((b) => b.id === query.get('bus'));
   if (!ready || now === null)
     return <div className="skeleton h-96" role="status" aria-label="Loading fleet" />;
   if (query.get('bus') && !detail)
     return (
       <div className="fleet-no-data">
-        <BusFront size={32} />
+        <BusFront size={30} />
         <h1>Bus not found</h1>
-        <Link href="/">Return to fleet</Link>
+        <Link href="/buses">Return to buses</Link>
       </div>
     );
+  const reading = (b: Bus) => vehicles.find((v) => v.deviceId === b.telemetryDeviceId);
   const list = state.buses
     .filter((b) =>
       (b.busNumber + ' ' + b.registration + ' ' + b.driverName + ' ' + b.routeName)
         .toLowerCase()
         .includes(search.toLowerCase()),
     )
-    .filter((b) => {
-      const v = envelope.data.vehicles.find((v) => v.deviceId === b.telemetryDeviceId);
-      return (
+    .filter(
+      (b) =>
         filter === 'all' ||
-        (filter === 'moving' && v?.status === 'MOVING') ||
-        (filter === 'unmapped' && (!b.recorderId || !b.telemetryDeviceId))
-      );
-    });
+        (filter === 'moving' &&
+          reading(b)?.status === 'MOVING' &&
+          telemetryAge(reading(b), now) === 'fresh') ||
+        (filter === 'unmapped' && (!b.recorderId || !b.telemetryDeviceId)),
+    );
   return (
     <div className={`fleet-workspace ${busesOnly && !detail ? 'bus-directory' : ''}`}>
       {detail ? (
         <BusDetail bus={detail} now={now} onEdit={() => setEditor(detail)} />
       ) : (
         <>
-          <FleetHeading
-            compact={busesOnly}
-            count={state.buses.length}
-            eyebrow={busesOnly ? 'VEHICLE DIRECTORY' : 'RGU FLEET MANAGEMENT'}
-            title={busesOnly ? 'Buses' : 'One fleet. Every perspective.'}
-            description={
-              busesOnly
-                ? 'Manage vehicles, drivers and connected devices.'
-                : 'Bus cameras, GPS and fuel intelligence — connected around the vehicle.'
-            }
-          >
-            <Button onClick={refresh}>
+          <Heading compact={busesOnly} count={state.buses.length}>
+            <Button
+              loading={busy}
+              onClick={() => {
+                setBusy(true);
+                void (async () => {
+                  try {
+                    if (provider?.connected) await refreshDevices();
+                    await refresh();
+                  } catch (e) {
+                    toast.error((e as Error).message);
+                  } finally {
+                    setBusy(false);
+                  }
+                })();
+              }}
+            >
               <RefreshCw size={15} />
-              Refresh telemetry
+              Refresh
             </Button>
-            {state.role === 'admin' && (
+            {user?.role === 'admin' && (
               <Button
                 variant="primary"
                 onClick={() =>
@@ -199,46 +188,54 @@ export function FleetWorkspace({ busesOnly = false }: { busesOnly?: boolean }) {
                 Add bus
               </Button>
             )}
-          </FleetHeading>
+          </Heading>
           {!busesOnly && (
             <>
               <div className="fleet-source">
                 <Radio size={15} />
-                <strong>Mock provider</strong>
+                <strong>
+                  {provider?.connected
+                    ? 'Hik-Connect connected'
+                    : 'Connect Hik-Connect in Settings'}
+                </strong>
                 <span>
-                  Vendor-format GPS + fuel · polled every 10 seconds · simulated samples at 1-minute
-                  intervals
+                  {vehicles.length
+                    ? telemetry?.source === 'mock'
+                      ? 'GPS/fuel: backend-stored simulator samples'
+                      : 'GPS/fuel: stored provider observations'
+                    : 'GPS/fuel: no observations stored · vendor API is phase 2'}
                 </span>
-                <time>Checked {timeLabel(now)} IST</time>
               </div>
               <div className="stats-grid">
                 <Metric
                   icon={BusFront}
                   label="Fleet size"
-                  value={String(state.buses.length).padStart(2, '0')}
-                  note="Individually mapped buses"
+                  value={String(state.buses.length)}
+                  note="Saved in your workspace"
                 />
                 <Metric
                   icon={Navigation}
                   label="Moving"
                   value={String(
-                    envelope.data.vehicles.filter((v) => v.status === 'MOVING').length,
-                  ).padStart(2, '0')}
-                  note="Simulated ignition and speed"
+                    vehicles.filter(
+                      (v) => v.status === 'MOVING' && telemetryAge(v, now) === 'fresh',
+                    ).length,
+                  )}
+                  note="Fresh telemetry observations"
                 />
                 <Metric
                   icon={Fuel}
                   label="Fuel monitored"
-                  value={String(envelope.data.vehicles.length).padStart(2, '0')}
-                  note="GPS and fuel from one device"
+                  value={String(vehicles.length)}
+                  note="Stored telemetry device readings"
                 />
                 <Metric
                   icon={Cctv}
-                  label="Available camera channels"
+                  label="Verified camera channels"
                   value={String(
-                    state.buses.reduce((n, b) => n + workingChannels(b.recorderId).length, 0),
-                  ).padStart(2, '0')}
-                  note="Sample per-channel availability"
+                    recorders.reduce((n, r) => n + workingChannels(recorders, r.id).length, 0),
+                  )}
+                  note="Recently observed SDK frames"
                 />
               </div>
             </>
@@ -247,8 +244,8 @@ export function FleetWorkspace({ busesOnly = false }: { busesOnly?: boolean }) {
             <div className="fleet-toolbar">
               {!busesOnly && (
                 <div>
-                  <h2>{busesOnly ? state.buses.length + ' vehicles' : 'Your buses'}</h2>
-                  <p className="muted">Choose a vehicle to explore its complete journey.</p>
+                  <h2>Your buses</h2>
+                  <p className="muted">Select a vehicle for its cameras and journey data.</p>
                 </div>
               )}
               <SearchInput
@@ -265,8 +262,8 @@ export function FleetWorkspace({ busesOnly = false }: { busesOnly?: boolean }) {
               ].map(([id, label]) => (
                 <button
                   key={id}
-                  aria-pressed={filter === id}
                   className={filter === id ? 'selected' : ''}
+                  aria-pressed={filter === id}
                   onClick={() => setFilter(id)}
                 >
                   {label}
@@ -274,32 +271,37 @@ export function FleetWorkspace({ busesOnly = false }: { busesOnly?: boolean }) {
               ))}
             </div>
           </div>
-          {list.length === 0 ? (
+          {!list.length ? (
             <div className="fleet-no-data">
               <BusFront size={30} />
-              <h3>No matching buses</h3>
-              <p>Adjust your filters or add a bus.</p>
+              <h3>{state.buses.length ? 'No matching buses' : 'No buses configured'}</h3>
+              <p>
+                {user?.role === 'admin'
+                  ? 'Import your Hik-Connect recorders, then add and map a bus.'
+                  : 'Your administrator manages bus configuration and recorder access.'}
+              </p>
             </div>
           ) : (
             <div className="fleet-bus-grid">
               {list.map((bus, i) => {
-                const vehicle = envelope.data.vehicles.find(
-                    (v) => v.deviceId === bus.telemetryDeviceId,
-                  ),
-                  recorder = recorders.find((r) => r.id === bus.recorderId);
+                const v = reading(bus),
+                  r = recorders.find((r) => r.id === bus.recorderId),
+                  stale = telemetryAge(v, now) === 'stale';
                 return (
-                  <Reveal key={bus.id} delay={Math.min(i * 0.035, 0.2)} className="bus-card">
+                  <Reveal className="bus-card" key={bus.id} delay={Math.min(i * 0.035, 0.2)}>
                     <Link
-                      href={'/buses?bus=' + bus.id}
                       className="bus-card-main"
+                      href={'/buses?bus=' + bus.id}
                       aria-label={'Open ' + bus.busNumber}
                     >
                       <div className="bus-card-head">
                         <span className="bus-glyph">
                           <BusFront size={26} />
                         </span>
-                        <Badge tone={vehicle?.status === 'MOVING' ? 'green' : 'neutral'}>
-                          {vehicle?.status.toLowerCase() ?? 'No GPS'}
+                        <Badge
+                          tone={stale ? 'amber' : v?.status === 'MOVING' ? 'green' : 'neutral'}
+                        >
+                          {stale ? 'Stale GPS' : (v?.status.toLowerCase() ?? 'No GPS')}
                         </Badge>
                         <ArrowUpRight size={18} />
                       </div>
@@ -312,16 +314,16 @@ export function FleetWorkspace({ busesOnly = false }: { busesOnly?: boolean }) {
                       <div className="bus-reading">
                         <div>
                           <Gauge size={16} />
-                          <strong>{vehicle?.speed.toFixed(0) ?? '—'}</strong>
+                          <strong>{v?.speed.toFixed(0) ?? '—'}</strong>
                           <span>km/h</span>
                         </div>
                         <div>
                           <Fuel size={16} />
-                          <strong>{vehicle?.fuelData.currentLiters.toFixed(1) ?? '—'}</strong>
+                          <strong>{v?.fuelData.currentLiters.toFixed(1) ?? '—'}</strong>
                           <span>litres</span>
                         </div>
                       </div>
-                      {vehicle && <FuelMeter value={vehicle.fuelData.fuelPercentage} />}
+                      {v && <FuelMeter value={v.fuelData.fuelPercentage} />}
                       <div className="bus-card-footer">
                         <span>
                           <UserRound size={14} />
@@ -329,16 +331,16 @@ export function FleetWorkspace({ busesOnly = false }: { busesOnly?: boolean }) {
                         </span>
                         <span>
                           <Cctv size={14} />
-                          {workingChannels(bus.recorderId).length}/{recorder?.channels ?? 0}
+                          {workingChannels(recorders, bus.recorderId).length}/{r?.channels ?? 0}
                         </span>
                       </div>
                     </Link>
                     <div className="bus-mapping">
                       <span>
-                        <i className={'status-dot ' + (recorder?.online ? '' : 'offline')} />
-                        {recorder?.name ?? 'No recorder'}
+                        <i className={'status-dot ' + (r?.online ? '' : 'offline')} />
+                        {r?.name ?? 'No recorder mapped'}
                       </span>
-                      <span>{bus.telemetryDeviceId ?? 'No telemetry'}</span>
+                      <span>{bus.telemetryDeviceId ?? 'No telemetry device'}</span>
                     </div>
                   </Reveal>
                 );
@@ -352,40 +354,42 @@ export function FleetWorkspace({ busesOnly = false }: { busesOnly?: boolean }) {
   );
 }
 function BusEditor({ bus, onClose }: { bus: Bus | null; onClose: () => void }) {
-  const { state, patch, log } = useWorkspace();
-  const [draft, setDraft] = useState<Bus | null>(null);
+  const { state, user, saveBus } = useWorkspace(),
+    [draft, setDraft] = useState<Bus | null>(null),
+    [busy, setBusy] = useState(false);
   useEffect(() => setDraft(bus), [bus]);
   if (!draft) return null;
   const set = (change: Partial<Bus>) => setDraft({ ...draft, ...change });
   return (
     <Modal
       open={!!bus}
-      onOpenChange={(open) => !open && onClose()}
+      onOpenChange={(v) => !v && onClose()}
       title={draft.id ? 'Edit bus' : 'Add a bus'}
-      description="Map one recorder and one GPS/fuel device to this bus. Sample details stay in this browser."
+      description="Save bus details and device mappings to your workspace’s PostgreSQL database."
       wide
     >
       <form
-        onSubmit={(e) => {
+        onSubmit={async (e) => {
           e.preventDefault();
-          if (state.role !== 'admin') return;
+          if (user?.role !== 'admin') return;
           const clean = {
-            ...draft,
-            busNumber: draft.busNumber.trim(),
-            registration: draft.registration.trim().toUpperCase(),
-            driverName: draft.driverName.trim(),
-          };
-          const error = validateBus(clean, state.buses);
+              ...draft,
+              busNumber: draft.busNumber.trim(),
+              registration: draft.registration.trim().toUpperCase(),
+              driverName: draft.driverName.trim(),
+            },
+            error = validateBus(clean, state.buses);
           if (error) return toast.error(error);
-          const value = { ...clean, id: clean.id || crypto.randomUUID() };
-          patch({
-            buses: clean.id
-              ? state.buses.map((b) => (b.id === value.id ? value : b))
-              : [...state.buses, value],
-          });
-          log(clean.id ? 'Bus updated' : 'Bus created', value.busNumber, 'settings');
-          toast.success('Bus saved in preview workspace.');
-          onClose();
+          setBusy(true);
+          try {
+            await saveBus(clean);
+            onClose();
+            toast.success('Bus saved.');
+          } catch (e) {
+            toast.error((e as Error).message);
+          } finally {
+            setBusy(false);
+          }
         }}
       >
         <div className="fleet-form-grid">
@@ -395,7 +399,6 @@ function BusEditor({ bus, onClose }: { bus: Bus | null; onClose: () => void }) {
               maxLength={40}
               value={draft.busNumber}
               onChange={(e) => set({ busNumber: e.target.value })}
-              placeholder="RGU 06"
             />
           </Field>
           <Field label="Registration">
@@ -404,7 +407,6 @@ function BusEditor({ bus, onClose }: { bus: Bus | null; onClose: () => void }) {
               maxLength={40}
               value={draft.registration}
               onChange={(e) => set({ registration: e.target.value })}
-              placeholder="TN 37 AB 1234"
             />
           </Field>
           <Field label="Driver name">
@@ -430,18 +432,13 @@ function BusEditor({ bus, onClose }: { bus: Bus | null; onClose: () => void }) {
               onChange={(e) => set({ routeName: e.target.value })}
             />
           </Field>
-          <Field label="Recorder" hint="Recorders are imported separately from Hik-Connect.">
+          <Field label="Recorder">
             <select
               value={draft.recorderId ?? ''}
-              onChange={(e) =>
-                set({
-                  recorderId: e.target.value || null,
-                  favoriteChannels: workingChannels(e.target.value),
-                })
-              }
+              onChange={(e) => set({ recorderId: e.target.value || null, favoriteChannels: [] })}
             >
               <option value="">Not mapped</option>
-              {recorders.map((r) => (
+              {state.recorders.map((r) => (
                 <option
                   key={r.id}
                   value={r.id}
@@ -455,30 +452,25 @@ function BusEditor({ bus, onClose }: { bus: Bus | null; onClose: () => void }) {
               ))}
             </select>
           </Field>
-          <Field label="GPS + fuel device" hint="Both measurements use this same vendor device ID.">
+          <Field label="GPS + fuel device">
             <input
               aria-label="GPS + fuel device"
               maxLength={256}
-              list="telemetry-devices"
               value={draft.telemetryDeviceId ?? ''}
               onChange={(e) => set({ telemetryDeviceId: e.target.value.trim() || null })}
-              placeholder="Vendor device ID"
+              placeholder="Optional · vendor integration in phase 2"
             />
-            <datalist id="telemetry-devices">
-              {telemetryDevices.map((id) => (
-                <option key={id} value={id} />
-              ))}
-            </datalist>
           </Field>
         </div>
-        <p className="muted small">
-          Camera stars choose the default bus view. Unavailable channels are excluded from playback.
+        <p className="small muted">
+          Only real imported recorders are listed. Camera availability is checked through the SDK,
+          separately from recorder status.
         </p>
         <div className="modal-footer">
           <Button type="button" onClick={onClose}>
             Cancel
           </Button>
-          <Button variant="primary" type="submit">
+          <Button type="submit" variant="primary" loading={busy}>
             Save bus
           </Button>
         </div>
@@ -487,41 +479,55 @@ function BusEditor({ bus, onClose }: { bus: Bus | null; onClose: () => void }) {
   );
 }
 function BusDetail({ bus, now, onEdit }: { bus: Bus; now: number; onEdit: () => void }) {
-  const router = useRouter();
-  const { state, patch, log } = useWorkspace(),
-    [tab, setTab] = useState('journey'),
-    [remove, setRemove] = useState(false);
-  const current = mockEnvelope([bus], now).data.vehicles[0],
-    r = recorders.find((r) => r.id === bus.recorderId),
-    working = workingChannels(bus.recorderId);
-  function star(channel: number) {
-    if (state.role !== 'admin') return;
-    patch({
-      buses: state.buses.map((b) =>
-        b.id === bus.id
-          ? {
-              ...b,
-              favoriteChannels: b.favoriteChannels.includes(channel)
-                ? b.favoriteChannels.filter((n) => n !== channel)
-                : [...b.favoriteChannels, channel],
-            }
-          : b,
-      ),
-    });
+  const { state, user, provider, telemetry, saveBus, removeBus, refresh } = useWorkspace(),
+    router = useRouter();
+  const [tab, setTab] = useState('journey'),
+    [remove, setRemove] = useState(false),
+    [probing, setProbing] = useState(false);
+  const r = state.recorders.find((r) => r.id === bus.recorderId),
+    working = workingChannels(state.recorders, bus.recorderId),
+    v = telemetry?.data.vehicles.find((v) => v.deviceId === bus.telemetryDeviceId);
+  async function probe() {
+    if (!r) return;
+    setProbing(true);
+    let count = 0;
+    try {
+      for (const channel of r.channelList) {
+        try {
+          await request(
+            '/api/previews/frame?' +
+              new URLSearchParams({ deviceId: r.id, channel: String(channel.number) }),
+          );
+          count++;
+        } catch (e) {
+          if (
+            ['provider-auth-required', 'playback-auth-required', 'viewer-auth-required'].includes(
+              (e as any).code,
+            )
+          )
+            throw e;
+        }
+      }
+      await refresh();
+      toast.info(count + ' camera channels returned frames.');
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setProbing(false);
+    }
   }
   return (
     <>
-      <Link className="btn btn-ghost fleet-back" href="/">
+      <Link className="btn btn-ghost fleet-back" href="/buses">
         <ArrowLeft size={16} />
-        Back to fleet
+        Back to buses
       </Link>
       <PageHeading
         eyebrow="VEHICLE OPERATIONS"
         title={bus.busNumber}
         description={bus.registration + ' · ' + (bus.routeName || 'Route not set')}
       >
-        <Badge tone="amber">Mock vehicle</Badge>
-        {state.role === 'admin' && (
+        {user?.role === 'admin' && (
           <>
             <Button onClick={onEdit}>
               <Pencil size={15} />
@@ -542,41 +548,47 @@ function BusDetail({ bus, now, onEdit }: { bus: Bus; now: number; onEdit: () => 
         </span>
         <span>
           <Cctv size={16} />
-          {r?.name ?? 'Recorder not mapped'}
+          {r?.name ?? 'No recorder mapped'}
         </span>
         <span>
           <Radio size={16} />
-          {bus.telemetryDeviceId ?? 'Telemetry not mapped'}
+          {bus.telemetryDeviceId ?? 'No telemetry mapped'}
         </span>
       </div>
       <div className="stats-grid">
         <Metric
           icon={Gauge}
           label="Speed"
-          value={current ? current.speed.toFixed(1) + ' km/h' : '—'}
-          note={current?.status ?? 'No telemetry'}
+          value={v ? v.speed.toFixed(1) + ' km/h' : '—'}
+          note={
+            v
+              ? telemetryAge(v, now) === 'stale'
+                ? 'Stale observation'
+                : v.status
+              : 'No stored reading'
+          }
         />
         <Metric
           icon={Fuel}
           label="Fuel remaining"
-          value={current ? current.fuelData.currentLiters.toFixed(1) + ' L' : '—'}
+          value={v ? v.fuelData.currentLiters.toFixed(1) + ' L' : '—'}
           note={
-            current
-              ? current.fuelData.fuelPercentage.toFixed(1) + '% · simulated'
-              : 'Map a telemetry device'
+            v
+              ? v.fuelData.fuelPercentage.toFixed(1) + '% · ' + telemetry?.source
+              : 'No stored reading'
           }
         />
         <Metric
           icon={Route}
           label="Odometer"
-          value={current ? current.odometer.toLocaleString('en-IN') : '—'}
-          note="km · simulated"
+          value={v ? v.odometer.toLocaleString('en-IN') : '—'}
+          note={v ? 'km · stored observation' : 'No stored reading'}
         />
         <Metric
           icon={Cctv}
-          label="Working cameras"
+          label="Verified cameras"
           value={working.length + ' / ' + (r?.channels ?? 0)}
-          note={cameraChannels(bus).length + ' starred for bus view'}
+          note={cameraChannels(bus, state.recorders).length + ' starred for bus view'}
         />
       </div>
       <div className="segmented fleet-tabs" role="tablist" aria-label="Bus sections">
@@ -588,8 +600,6 @@ function BusDetail({ bus, now, onEdit }: { bus: Bus; now: number; onEdit: () => 
           <button
             role="tab"
             aria-selected={tab === id}
-            aria-controls={'panel-' + id}
-            id={'tab-' + id}
             key={id}
             className={tab === id ? 'selected' : ''}
             onClick={() => setTab(id)}
@@ -598,122 +608,171 @@ function BusDetail({ bus, now, onEdit }: { bus: Bus; now: number; onEdit: () => 
           </button>
         ))}
       </div>
-      <section role="tabpanel" id={'panel-' + tab} aria-labelledby={'tab-' + tab}>
-        {tab === 'journey' && <Journey bus={bus} now={now} />}
-        {tab === 'details' && (
-          <div className="fleet-section">
-            <h2>Connected sources</h2>
-            <dl className="fleet-details">
-              {[
-                ['Bus number', bus.busNumber],
-                ['Registration', bus.registration],
-                ['Driver', bus.driverName],
-                ['Driver phone', bus.driverPhone || 'Not supplied'],
-                ['Route', bus.routeName || 'Not set'],
-                ['Recorder', r?.name || 'Not mapped'],
-                ['GPS + fuel device', bus.telemetryDeviceId || 'Not mapped'],
-                ['Telemetry source', 'Mock · vendor API pending'],
-              ].map(([k, v]) => (
-                <div key={k}>
-                  <dt>{k}</dt>
-                  <dd>{v}</dd>
-                </div>
-              ))}
-            </dl>
-          </div>
-        )}
-        {tab === 'cameras' && (
-          <div className="fleet-section">
-            <div className="fleet-toolbar">
-              <div>
-                <h2>Onboard cameras</h2>
-                <p className="muted">
-                  Only working sample channels appear. Star cameras for this bus’s default view.
-                </p>
+      {tab === 'journey' && <Journey bus={bus} now={now} />}
+      {tab === 'details' && (
+        <section className="fleet-section">
+          <h2>Connected sources</h2>
+          <dl className="fleet-details">
+            {[
+              ['Bus number', bus.busNumber],
+              ['Registration', bus.registration],
+              ['Driver', bus.driverName],
+              ['Driver phone', bus.driverPhone || 'Not supplied'],
+              ['Route', bus.routeName || 'Not set'],
+              ['Recorder', r?.name || 'Not mapped'],
+              ['GPS + fuel device', bus.telemetryDeviceId || 'Not mapped'],
+            ].map(([k, v]) => (
+              <div key={k}>
+                <dt>{k}</dt>
+                <dd>{v}</dd>
               </div>
-              {cameraChannels(bus).length > 0 && (
+            ))}
+          </dl>
+        </section>
+      )}
+      {tab === 'cameras' && (
+        <section className="fleet-section">
+          <div className="fleet-toolbar">
+            <div>
+              <h2>Onboard cameras</h2>
+              <p className="muted">
+                A successful SDK frame verifies availability. Unchecked channels stay unknown.
+              </p>
+            </div>
+            <div className="control-actions">
+              <Button
+                loading={probing}
+                disabled={!r?.online || !provider?.playbackReady}
+                onClick={() => void probe()}
+              >
+                Check camera availability
+              </Button>
+              {cameraChannels(bus, state.recorders).length > 0 && (
                 <Link
                   className="btn btn-primary"
-                  href={'/cameras?bus=' + bus.id + '&recorder=' + bus.recorderId}
+                  href={
+                    '/cameras?bus=' + bus.id + '&recorder=' + encodeURIComponent(bus.recorderId!)
+                  }
                 >
-                  <Cctv size={16} />
                   Open bus camera view
                 </Link>
               )}
             </div>
-            {working.length === 0 ? (
-              <div className="fleet-no-data">
-                <Unplug size={28} />
-                <h3>No available cameras</h3>
-                <p>
-                  {r
-                    ? 'Recorder offline or channels unavailable in sample data.'
-                    : 'Map a recorder to this bus first.'}
-                </p>
-              </div>
-            ) : (
-              <div className="bus-camera-grid">
-                {working.map((channel) => (
-                  <div key={channel} className="bus-camera-card">
-                    <div className="bus-camera-placeholder">
-                      <Cctv size={27} />
-                      <span>CAM {String(channel).padStart(2, '0')}</span>
-                      <small>Preview · no live feed connected</small>
-                    </div>
-                    <div className="bus-camera-label">
-                      <div>
-                        <strong>{channelName(channel)}</strong>
-                        <small>Channel {channel} · sample available</small>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        disabled={state.role !== 'admin'}
-                        aria-label={
-                          (bus.favoriteChannels.includes(channel) ? 'Unstar' : 'Star') +
-                          ' Camera ' +
-                          channel
-                        }
-                        aria-pressed={bus.favoriteChannels.includes(channel)}
-                        onClick={() => star(channel)}
-                      >
-                        <Star
-                          size={17}
-                          fill={bus.favoriteChannels.includes(channel) ? 'currentColor' : 'none'}
-                        />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-            <p className="small muted mt-4">
-              SDK channel probes and real live-feed wiring remain separate integration work. Stars
-              never grant access permissions.
-            </p>
           </div>
-        )}
-      </section>
+          {!working.length ? (
+            <div className="fleet-no-data">
+              <Cctv size={28} />
+              <h3>No verified cameras yet</h3>
+              <p>
+                {!r
+                  ? 'Map a recorder first.'
+                  : !r.online
+                    ? 'Hik-Connect reports this recorder offline.'
+                    : !provider?.playbackReady
+                      ? 'Connect playback authorization in Settings.'
+                      : 'Check camera availability to find working channels.'}
+              </p>
+            </div>
+          ) : (
+            <div className="bus-camera-grid">
+              {working.map((channel) => (
+                <div className="bus-camera-card" key={channel}>
+                  <CameraPreview
+                    deviceId={r!.id}
+                    channel={channel}
+                    enabled={r?.online && provider?.playbackReady}
+                  />
+                  <div className="bus-camera-label">
+                    <div>
+                      <strong>{channelName(channel, r)}</strong>
+                      <small>Channel {channel} · SDK verified</small>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      disabled={user?.role !== 'admin'}
+                      aria-label={
+                        (bus.favoriteChannels.includes(channel) ? 'Unstar' : 'Star') +
+                        ' Camera ' +
+                        channel
+                      }
+                      aria-pressed={bus.favoriteChannels.includes(channel)}
+                      onClick={() =>
+                        void saveBus({
+                          ...bus,
+                          favoriteChannels: bus.favoriteChannels.includes(channel)
+                            ? bus.favoriteChannels.filter((n) => n !== channel)
+                            : [...bus.favoriteChannels, channel],
+                        }).catch((e) => toast.error(e.message))
+                      }
+                    >
+                      <Star
+                        size={17}
+                        fill={bus.favoriteChannels.includes(channel) ? 'currentColor' : 'none'}
+                      />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          <p className="small muted mt-4">
+            {r?.channelList.filter((c) => c.health === 'unknown').length ?? 0} unchecked channels.
+            Stars are display preferences and never grant permissions.
+          </p>
+        </section>
+      )}
       <Confirm
         open={remove}
         onOpenChange={setRemove}
         title={'Remove ' + bus.busNumber + '?'}
-        description="This removes the preview bus and its mappings. It does not delete your Hik-Connect recorder."
+        description="Removes this bus and its stored telemetry, not the physical recorder."
         action="Remove bus"
-        onConfirm={() => {
-          patch({ buses: state.buses.filter((b) => b.id !== bus.id) });
-          log('Bus removed', bus.busNumber, 'settings');
-          toast.success('Preview bus removed.');
-          router.push('/');
+        onConfirm={async () => {
+          try {
+            await removeBus(bus.id);
+            router.push('/buses');
+            toast.success('Bus removed.');
+          } catch (e) {
+            toast.error((e as Error).message);
+          }
         }}
       />
     </>
   );
 }
 function Journey({ bus, now }: { bus: Bus; now: number }) {
+  const { user } = useWorkspace();
   const [range, setRange] = useState(120),
     [cursor, setCursor] = useState<number | null>(null),
-    [playing, setPlaying] = useState(false);
-  const samples = useMemo(() => mockHistory(bus, now, range), [bus, Math.floor(now / 60), range]);
+    [playing, setPlaying] = useState(false),
+    [samples, setSamples] = useState<Vehicle[]>([]),
+    [source, setSource] = useState<string | undefined>(),
+    [loading, setLoading] = useState(true),
+    [error, setError] = useState('');
+  useEffect(() => {
+    const abort = new AbortController();
+    setSamples([]);
+    setLoading(true);
+    setError('');
+    if (!bus.telemetryDeviceId) {
+      setLoading(false);
+      return;
+    }
+    const end = Math.floor(now / 60) * 60;
+    void fleetApi
+      .history(bus.id, end - range * 60, end, abort.signal)
+      .then((d) => {
+        setSamples(d.samples.map((s) => s.vehicle));
+        setSource(d.samples[0]?.source);
+      })
+      .catch((e) => {
+        if (e.name !== 'AbortError') setError(e.message);
+      })
+      .finally(() => {
+        if (!abort.signal.aborted) setLoading(false);
+      });
+    return () => abort.abort();
+  }, [bus.id, bus.telemetryDeviceId, range, Math.floor(now / 60), user?.id]);
   const index =
       cursor === null
         ? samples.length - 1
@@ -727,27 +786,46 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
     setPlaying(false);
   }, [bus.id, range, bus.telemetryDeviceId]);
   useEffect(() => {
-    if (!playing) return;
+    if (!playing || !samples.length) return;
     const id = setInterval(
       () =>
         setCursor((i) => {
-          const next = (i ?? samples[0].gpsTime) + 60;
-          if (next >= samples.at(-1)!.gpsTime) {
+          const n = (i ?? samples[0].gpsTime) + 60;
+          if (n >= samples.at(-1)!.gpsTime) {
             setPlaying(false);
             return samples.at(-1)!.gpsTime;
           }
-          return next;
+          return n;
         }),
       600,
     );
     return () => clearInterval(id);
-  }, [playing, samples.length, samples[0]?.gpsTime]);
+  }, [playing, samples]);
+  if (loading)
+    return (
+      <div className="fleet-no-data" role="status">
+        Loading stored GPS/fuel history…
+      </div>
+    );
+  if (!v)
+    return (
+      <div className="fleet-no-data">
+        <Unplug size={28} />
+        <h3>
+          {!bus.telemetryDeviceId ? 'No telemetry device mapped' : 'No observations stored yet'}
+        </h3>
+        <p>
+          {error ||
+            'GPS/fuel vendor integration is phase 2. Any simulator data must first be stored by the backend.'}
+        </p>
+      </div>
+    );
   return (
-    <div className="journey">
+    <section className="journey">
       <div className="fleet-toolbar">
         <div>
           <h2>Journey explorer</h2>
-          <p className="muted">One timestamp. The bus location, speed and fuel together.</p>
+          <p className="muted">One timestamp for stored GPS, speed, ignition and fuel.</p>
         </div>
         <label className="compact-select">
           Window
@@ -763,135 +841,135 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
         </label>
       </div>
       <div className="journey-grid">
-        <RouteMap samples={samples} index={index} />
+        <JourneyMap samples={samples} index={index} source={source} />
         <aside className="journey-reading">
           <div>
-            <span className="eyebrow">{cursor === null ? 'LATEST SAMPLE' : 'HISTORY CURSOR'}</span>
+            <span className="eyebrow">
+              {cursor === null ? 'LATEST STORED SAMPLE' : 'HISTORY CURSOR'}
+            </span>
             <h2>
-              {v ? timeLabel(v.gpsTime) : '—'} <small>IST</small>
+              {timeLabel(v.gpsTime)} <small>IST</small>
             </h2>
           </div>
-          <Badge tone="amber">Simulated history</Badge>
-          {v && (
-            <>
-              <p>
-                <Navigation size={16} />
-                {v.status.toLowerCase()} · {v.speed.toFixed(1)} km/h
-              </p>
-              <div className="journey-fuel">
-                <Fuel size={22} />
-                <strong>
-                  {v.fuelData.currentLiters.toFixed(1)}
-                  <small> litres</small>
-                </strong>
-                <span>{v.fuelData.fuelPercentage.toFixed(1)}% remaining</span>
-                <FuelMeter value={v.fuelData.fuelPercentage} />
-              </div>
-              <p>
-                <Radio size={16} />
-                Ignition {v.ignition ? 'on' : 'off'}
-              </p>
-              <p className="small muted">{v.location.address}</p>
-              <p className="small muted">
-                GPS: {timeLabel(v.gpsTime)} ·{' '}
-                {telemetryAge(v, now) === 'stale' ? 'Historical sample' : 'Latest mock sample'}
-              </p>
-            </>
-          )}
+          <Badge tone={source === 'mock' ? 'amber' : 'neutral'}>
+            {source === 'mock' ? 'Backend mock samples' : 'Provider observations'}
+          </Badge>
+          <p>
+            <Navigation size={16} />
+            {v.status.toLowerCase()} · {v.speed.toFixed(1)} km/h
+          </p>
+          <div className="journey-fuel">
+            <Fuel size={22} />
+            <strong>
+              {v.fuelData.currentLiters.toFixed(1)}
+              <small> litres</small>
+            </strong>
+            <span>{v.fuelData.fuelPercentage.toFixed(1)}% remaining</span>
+            <FuelMeter value={v.fuelData.fuelPercentage} />
+          </div>
+          <p>
+            <Radio size={16} />
+            Ignition {v.ignition ? 'on' : 'off'}
+          </p>
+          <p className="small muted">{v.location.address}</p>
+          <p className="small muted">
+            GPS: {timeLabel(v.gpsTime)} ·{' '}
+            {telemetryAge(v, now) === 'stale'
+              ? 'Historical / stale observation'
+              : 'Recent observation'}
+          </p>
         </aside>
       </div>
-      {v && (
-        <div className="timeline-panel">
-          <div className="fleet-toolbar">
-            <div className="timeline-title">
-              <Clock3 size={16} />
-              <strong>GPS + fuel timeline</strong>
-              <Badge>{range} min</Badge>
-            </div>
-            <div className="timeline-buttons">
-              <Button
-                onClick={() => {
-                  if (!playing && (cursor === null || index === samples.length - 1))
-                    setCursor(samples[0].gpsTime);
-                  setPlaying(!playing);
-                }}
-              >
-                {playing ? <Pause size={14} /> : <Play size={14} />}{' '}
-                {playing ? 'Pause replay' : 'Replay'}
-              </Button>
-              <Button
-                onClick={() => {
-                  setCursor(null);
-                  setPlaying(false);
-                }}
-              >
-                Latest
-              </Button>
-            </div>
+      <div className="timeline-panel">
+        <div className="fleet-toolbar">
+          <div className="timeline-title">
+            <Clock3 size={16} />
+            <strong>GPS + fuel timeline</strong>
+            <Badge>{source || 'Stored'}</Badge>
           </div>
-          <svg
-            className="fuel-chart"
-            viewBox="0 0 720 110"
-            role="img"
-            aria-label="Mock fuel percentage over the selected history window"
-          >
-            {[25, 50, 75].map((n) => (
-              <g key={n}>
-                <line x1="35" y1={100 - n} x2="710" y2={100 - n} stroke="var(--line)" />
-                <text x="0" y={104 - n} fill="var(--muted)" fontSize="10">
-                  {n}%
-                </text>
-              </g>
-            ))}
-            <polyline
-              points={samples
-                .map(
-                  (v, i) =>
-                    35 +
-                    (i / Math.max(1, samples.length - 1)) * 675 +
-                    ',' +
-                    (100 - v.fuelData.fuelPercentage),
-                )
-                .join(' ')}
-              fill="none"
-              stroke="var(--rgu-green)"
-              strokeWidth="3"
-            />
-            <line
-              x1={35 + (index / Math.max(1, samples.length - 1)) * 675}
-              x2={35 + (index / Math.max(1, samples.length - 1)) * 675}
-              y1="0"
-              y2="105"
-              stroke="var(--accent)"
-              strokeWidth="2"
-            />
-          </svg>
-          <input
-            className="history-slider"
-            type="range"
-            aria-label="Journey timeline"
-            min={0}
-            max={samples.length - 1}
-            value={index}
-            onChange={(e) => {
-              setCursor(samples[Number(e.target.value)].gpsTime);
-              setPlaying(false);
-            }}
-          />
-          <div className="timeline-labels">
-            <span>{timeLabel(samples[0].gpsTime)}</span>
-            <strong data-testid="cursor-time">
-              {timeLabel(v.gpsTime)} IST · {v.fuelData.currentLiters.toFixed(1)} L ·{' '}
-              {v.speed.toFixed(1)} km/h
-            </strong>
-            <span>{timeLabel(samples.at(-1)!.gpsTime)}</span>
+          <div className="timeline-buttons">
+            <Button
+              onClick={() => {
+                if (!playing && (cursor === null || index === samples.length - 1))
+                  setCursor(samples[0].gpsTime);
+                setPlaying(!playing);
+              }}
+            >
+              {playing ? <Pause size={14} /> : <Play size={14} />}{' '}
+              {playing ? 'Pause replay' : 'Replay'}
+            </Button>
+            <Button
+              onClick={() => {
+                setCursor(null);
+                setPlaying(false);
+              }}
+            >
+              Latest
+            </Button>
           </div>
-          <p className="small muted">
-            This is telemetry history, not recorded camera footage. Mock fuel resets are simulated
-            cycles, not detected refuelling events.
-          </p>
         </div>
-      )}
-    </div>
+        <svg
+          className="fuel-chart"
+          viewBox="0 0 720 110"
+          role="img"
+          aria-label="Stored fuel percentage history"
+        >
+          {[25, 50, 75].map((n) => (
+            <g key={n}>
+              <line x1="35" y1={100 - n} x2="710" y2={100 - n} stroke="var(--line)" />
+              <text x="0" y={104 - n} fill="var(--muted)" fontSize="10">
+                {n}%
+              </text>
+            </g>
+          ))}
+          <polyline
+            points={samples
+              .map(
+                (v, i) =>
+                  35 +
+                  (i / Math.max(1, samples.length - 1)) * 675 +
+                  ',' +
+                  (100 - v.fuelData.fuelPercentage),
+              )
+              .join(' ')}
+            fill="none"
+            stroke="var(--rgu-green)"
+            strokeWidth="3"
+          />
+          <line
+            x1={35 + (index / Math.max(1, samples.length - 1)) * 675}
+            x2={35 + (index / Math.max(1, samples.length - 1)) * 675}
+            y1="0"
+            y2="105"
+            stroke="var(--accent)"
+            strokeWidth="2"
+          />
+        </svg>
+        <input
+          className="history-slider"
+          type="range"
+          aria-label="Journey timeline"
+          min={0}
+          max={samples.length - 1}
+          value={index}
+          onChange={(e) => {
+            setCursor(samples[Number(e.target.value)].gpsTime);
+            setPlaying(false);
+          }}
+        />
+        <div className="timeline-labels">
+          <span>{timeLabel(samples[0].gpsTime)}</span>
+          <strong data-testid="cursor-time">
+            {timeLabel(v.gpsTime)} IST · {v.fuelData.currentLiters.toFixed(1)} L ·{' '}
+            {v.speed.toFixed(1)} km/h
+          </strong>
+          <span>{timeLabel(samples.at(-1)!.gpsTime)}</span>
+        </div>
+        <p className="small muted">
+          Telemetry history is not recorded camera footage. Source and timestamp are retained by the
+          backend.
+        </p>
+      </div>
+    </section>
   );
 }

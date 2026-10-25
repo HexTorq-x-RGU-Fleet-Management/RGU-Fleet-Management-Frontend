@@ -13,7 +13,15 @@ type Layers = {
   past: Leaflet.Polyline;
   marker: Leaflet.CircleMarker;
 };
-export function JourneyMap({ samples, index }: { samples: Vehicle[]; index: number }) {
+export function JourneyMap({
+  samples,
+  index,
+  source,
+}: {
+  samples: Vehicle[];
+  index: number;
+  source?: string;
+}) {
   const element = useRef<HTMLDivElement>(null),
     layers = useRef<Layers | null>(null);
   const [ready, setReady] = useState(false),
@@ -115,7 +123,9 @@ export function JourneyMap({ samples, index }: { samples: Vehicle[]; index: numb
         <span>
           <MapPin size={14} /> TAMIL NADU / ROAD MAP
         </span>
-        <Badge tone="amber">Mock GPS</Badge>
+        <Badge tone={source === 'mock' ? 'amber' : 'neutral'}>
+          {source === 'mock' ? 'Backend mock GPS' : 'Stored GPS'}
+        </Badge>
       </div>
       <div className="map-view-actions">
         <Button
@@ -182,7 +192,7 @@ export function JourneyMap({ samples, index }: { samples: Vehicle[]; index: numb
         <span>{current ? timeLabel(current.gpsTime) : '—'} IST</span>
       </div>
       <p className="map-source-note">
-        Real OpenStreetMap roads · Simulated GPS trail, not road routing. Tamil Nadu viewing bounds
+        Real OpenStreetMap roads · Stored GPS trail, not road routing. Tamil Nadu viewing bounds
         include some neighbouring areas.
       </p>
     </div>

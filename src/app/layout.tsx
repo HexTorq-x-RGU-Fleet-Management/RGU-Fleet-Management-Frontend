@@ -13,6 +13,7 @@ import './navigation.css';
 import 'leaflet/dist/leaflet.css';
 import './map.css';
 import './bus-directory.css';
+import './live.css';
 export const metadata: Metadata = {
   title: { default: 'RGU Fleet Management | HexTorq', template: '%s | RGU Fleet' },
   description:

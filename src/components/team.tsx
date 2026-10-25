@@ -1,296 +1,292 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { Users, UserPlus, Pencil, UserX, UserCheck } from 'lucide-react';
 import { toast } from 'sonner';
-import {
-  Users,
-  UserPlus,
-  ShieldCheck,
-  Pencil,
-  UserX,
-  UserCheck,
-  LockKeyhole,
-  Cctv,
-} from 'lucide-react';
+import { PageHeading, Button, Modal, Field, Confirm, Badge } from './ui';
 import { useWorkspace } from './workspace-provider';
-import { PageHeading, Button, Modal, Confirm, Field, SearchInput, Badge, Empty } from './ui';
-import { recorders, type Member } from '@/lib/model';
-
+import { request } from '@/lib/api';
+type Grant = {
+  deviceId: string;
+  channels: number[] | null;
+  view: boolean;
+  record: boolean;
+  download: boolean;
+};
 export function Team() {
-  const { state, patch, log } = useWorkspace();
-  const [query, setQuery] = useState('');
-  const [editing, setEditing] = useState<Member | null>(null);
-  const [open, setOpen] = useState(false);
-  const [removing, setRemoving] = useState<Member | null>(null);
-  const [assigned, setAssigned] = useState<string[]>([]);
-  const [canRecord, setCanRecord] = useState(false);
-  const [canDownload, setCanDownload] = useState(false);
-  if (state.role === 'member')
-    return (
-      <Empty
-        icon={<LockKeyhole size={30} />}
-        title="This view belongs to administrators."
-        description="Team access is managed by your workspace administrator."
-      />
-    );
-  function edit(member: Member | null) {
-    setEditing(member);
-    setAssigned(member?.recorders || []);
-    setCanRecord(member?.canRecord || false);
-    setCanDownload(member?.canDownload || false);
-    setOpen(true);
+  const { user } = useWorkspace(),
+    [data, setData] = useState<any>({ users: [], devices: [] }),
+    [loading, setLoading] = useState(true),
+    [editing, setEditing] = useState<any>(undefined),
+    [grants, setGrants] = useState<Grant[]>([]),
+    [busy, setBusy] = useState(false),
+    [confirm, setConfirm] = useState<any>(null),
+    [error, setError] = useState('');
+  async function load() {
+    setLoading(true);
+    try {
+      setData(await request('/api/team'));
+      setError('');
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setLoading(false);
+    }
   }
-  const list = state.members.filter((m) =>
-    (m.name + m.email).toLowerCase().includes(query.toLowerCase()),
-  );
+  useEffect(() => {
+    if (user?.role === 'admin') void load();
+  }, [user?.id]);
+  if (user?.role !== 'admin')
+    return (
+      <div className="fleet-no-data">
+        <h2>Workspace administrator access required.</h2>
+      </div>
+    );
+  function edit(member: any) {
+    setEditing(member);
+    setGrants(member?.grants ?? []);
+  }
+  function grant(deviceId: string, change: Partial<Grant>) {
+    setGrants((values) => {
+      const old = values.find((g) => g.deviceId === deviceId) ?? {
+        deviceId,
+        channels: null,
+        view: false,
+        record: false,
+        download: false,
+      };
+      return [...values.filter((g) => g.deviceId !== deviceId), { ...old, ...change }];
+    });
+  }
   return (
     <div>
       <PageHeading
         eyebrow="FLEET TEAM ACCESS"
         title="Your team, connected."
-        description="Manage recorder access and camera permissions for fleet operators and administrators. Sample members stay in this browser."
+        description="Members can access only the recorders and channels you grant."
       >
         <Button variant="primary" onClick={() => edit(null)}>
-          <UserPlus size={16} />
+          <UserPlus size={15} />
           Add team member
         </Button>
       </PageHeading>
-      <div className="stats-grid three-stats">
-        <div className="mini-stat">
-          <Users size={20} />
-          <div>
-            <strong>{state.members.length}</strong>
-            <span>Team members</span>
-          </div>
-        </div>
-        <div className="mini-stat">
-          <UserCheck size={20} />
-          <div>
-            <strong>{state.members.filter((m) => m.active).length}</strong>
-            <span>Active personnel</span>
-          </div>
-        </div>
-        <div className="mini-stat">
-          <ShieldCheck size={20} />
-          <div>
-            <strong>{state.members.filter((m) => m.role === 'admin').length}</strong>
-            <span>Administrators</span>
-          </div>
-        </div>
-      </div>
-      <div className="panel">
-        <div className="panel-toolbar">
-          <SearchInput value={query} onChange={setQuery} placeholder="Find a team member" />
-          <Badge>Role-based access</Badge>
-        </div>
-        <div className="table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th>Team member</th>
-                <th>Role</th>
-                <th>Recorder access</th>
-                <th>Status</th>
-                <th className="text-right">Manage</th>
+      {error && <p role="alert">{error}</p>}
+      <div className="panel table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Member</th>
+              <th>Status</th>
+              <th>Recorders</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.users.map((m: any) => (
+              <tr key={m.id}>
+                <td>
+                  <strong>{m.fullName}</strong>
+                  <small className="table-subtext">{m.email}</small>
+                </td>
+                <td>
+                  <Badge tone={m.status === 'active' ? 'green' : 'neutral'}>{m.status}</Badge>
+                </td>
+                <td>{m.grants.filter((g: Grant) => g.view).length}</td>
+                <td>
+                  <div className="control-actions">
+                    <Button aria-label={'Edit ' + m.fullName} onClick={() => edit(m)}>
+                      <Pencil size={14} />
+                      Edit permissions
+                    </Button>
+                    <Button
+                      aria-label={(m.status === 'active' ? 'Suspend ' : 'Restore ') + m.fullName}
+                      onClick={() => setConfirm(m)}
+                    >
+                      {m.status === 'active' ? <UserX size={14} /> : <UserCheck size={14} />}
+                    </Button>
+                  </div>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {list.map((m) => (
-                <tr key={m.id}>
-                  <td>
-                    <div className="person-cell">
-                      <span className="avatar">
-                        {m.name
-                          .split(' ')
-                          .map((n) => n[0])
-                          .slice(0, 2)
-                          .join('')}
-                      </span>
-                      <div>
-                        <strong>{m.name}</strong>
-                        <small>{m.email}</small>
-                      </div>
-                    </div>
-                  </td>
-                  <td>
-                    <span className="role-tag">
-                      {m.role === 'admin' ? <ShieldCheck size={13} /> : <Users size={13} />}{' '}
-                      {m.role === 'admin' ? 'Admin' : 'Member'}
-                    </span>
-                  </td>
-                  <td>
-                    <span className="access-summary">
-                      <Cctv size={14} />
-                      {m.recorders.length} recorders
-                    </span>
-                    <small className="table-subtext">
-                      {m.canRecord ? 'Record enabled' : 'View only'}
-                      {m.canDownload ? ' / Download enabled' : ''}
-                    </small>
-                  </td>
-                  <td>
-                    <Badge tone={m.active ? 'green' : 'neutral'}>
-                      {m.active ? 'Active' : 'Suspended'}
-                    </Badge>
-                  </td>
-                  <td>
-                    <div className="table-actions">
-                      <Button variant="ghost" onClick={() => edit(m)} aria-label={`Edit ${m.name}`}>
-                        <Pencil size={14} />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        onClick={() => setRemoving(m)}
-                        aria-label={`${m.active ? 'Suspend' : 'Restore'} ${m.name}`}
-                      >
-                        {m.active ? <UserX size={15} /> : <UserCheck size={15} />}
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {!list.length && (
-            <Empty
-              icon={<Users size={25} />}
-              title="No matching team members."
-              description="Try another name or email address."
-            />
-          )}
-        </div>
+            ))}
+          </tbody>
+        </table>
+        {loading && <p role="status">Loading team…</p>}
+        {!loading && !data.users.length && (
+          <div className="fleet-no-data">
+            <Users size={28} />
+            <h3>No members yet</h3>
+          </div>
+        )}
       </div>
-      <p className="workspace-footnote">
-        Local preview entries only. No real login accounts or invitations are created.
-      </p>
       <Modal
-        open={open}
-        onOpenChange={setOpen}
-        title={editing ? 'Edit preview member' : 'Bring someone into the view'}
-        description="Changes apply only to this browser preview."
+        open={editing !== undefined}
+        onOpenChange={(v) => !v && setEditing(undefined)}
+        title={editing ? 'Edit member access' : 'Add team member'}
+        description="Temporary passwords require a change at first login. Permission changes revoke existing member sessions."
+        wide
       >
         <form
-          key={editing?.id || 'new'}
-          onSubmit={(e) => {
+          onSubmit={async (e) => {
             e.preventDefault();
-            const data = new FormData(e.currentTarget);
-            const email = String(data.get('email')).trim().toLowerCase();
-            if (state.members.some((m) => m.email === email && m.id !== editing?.id))
-              return toast.error('This email is already in the preview team.');
-            const member: Member = {
-              id: editing?.id || crypto.randomUUID(),
-              name: String(data.get('name')).trim(),
-              email,
-              role: editing?.role || 'member',
-              active: editing?.active ?? true,
-              recorders: assigned,
-              canRecord,
-              canDownload,
-            };
-            patch({
-              members: editing
-                ? state.members.map((m) => (m.id === editing.id ? member : m))
-                : [...state.members, member],
-            });
-            log(
-              editing ? 'Preview permissions updated' : 'Preview member added',
-              member.name,
-              'access',
-            );
-            toast.success('Preview member saved.');
-            setOpen(false);
+            const form = e.currentTarget,
+              d = new FormData(form);
+            setBusy(true);
+            try {
+              let id = editing?.id;
+              if (!id) {
+                id = (
+                  await request('/api/team', {
+                    fullName: String(d.get('name')),
+                    email: String(d.get('email')),
+                    password: String(d.get('password')),
+                  })
+                ).id;
+              }
+              await request('/api/team/' + id, {
+                grants: grants.filter((g) => g.view),
+                ...(editing && d.get('password') ? { password: String(d.get('password')) } : {}),
+              });
+              setEditing(undefined);
+              await load();
+              toast.success('Member access saved.');
+            } catch (e) {
+              toast.error((e as Error).message);
+              await load();
+            } finally {
+              const p = form.elements.namedItem('password') as HTMLInputElement | null;
+              if (p) p.value = '';
+              setBusy(false);
+            }
           }}
         >
-          <div className="form-row">
+          <div className="fleet-form-grid">
             <Field label="Full name">
               <input
                 name="name"
-                defaultValue={editing?.name}
+                defaultValue={editing?.fullName ?? ''}
+                disabled={!!editing}
                 required
-                maxLength={80}
-                placeholder="Taylor Smith"
               />
             </Field>
             <Field label="Email address">
               <input
                 name="email"
                 type="email"
-                defaultValue={editing?.email}
+                defaultValue={editing?.email ?? ''}
+                disabled={!!editing}
                 required
-                placeholder="taylor@example.test"
+              />
+            </Field>
+            <Field label={editing ? 'New temporary password (optional)' : 'Temporary password'}>
+              <input
+                name="password"
+                type="password"
+                autoComplete="new-password"
+                minLength={12}
+                required={!editing}
               />
             </Field>
           </div>
-          <p className="form-section-title">RECORDER ACCESS</p>
-          <div className="permission-recorders">
-            {recorders.map((r) => (
-              <label key={r.id}>
-                <input
-                  type="checkbox"
-                  checked={assigned.includes(r.id)}
-                  onChange={(e) =>
-                    setAssigned((a) =>
-                      e.target.checked ? [...a, r.id] : a.filter((id) => id !== r.id),
-                    )
-                  }
-                />
-                <span>
-                  {r.name}
-                  <small>{r.location}</small>
-                </span>
-                <Cctv size={15} />
-              </label>
-            ))}
-          </div>
-          <p className="form-section-title">ADDITIONAL PERMISSIONS</p>
-          <label className="check-row">
-            <input
-              type="checkbox"
-              checked={canRecord}
-              onChange={(e) => setCanRecord(e.target.checked)}
-            />
-            Create recordings
-          </label>
-          <label className="check-row">
-            <input
-              type="checkbox"
-              checked={canDownload}
-              onChange={(e) => setCanDownload(e.target.checked)}
-            />
-            Download recordings
-          </label>
+          {data.devices.map((device: any) => {
+            const g = grants.find((g) => g.deviceId === device.id);
+            return (
+              <fieldset className="panel p-6" key={device.id}>
+                <legend>{device.name}</legend>
+                <label className="setting-row">
+                  <span>View recorder</span>
+                  <input
+                    type="checkbox"
+                    checked={!!g?.view}
+                    onChange={(e) =>
+                      grant(device.id, {
+                        view: e.target.checked,
+                        ...(!e.target.checked ? { record: false, download: false } : {}),
+                      })
+                    }
+                  />
+                </label>
+                <label className="setting-row">
+                  <span>Record clips</span>
+                  <input
+                    type="checkbox"
+                    disabled={!g?.view}
+                    checked={!!g?.record}
+                    onChange={(e) => grant(device.id, { record: e.target.checked })}
+                  />
+                </label>
+                <label className="setting-row">
+                  <span>Download clips and snapshots</span>
+                  <input
+                    type="checkbox"
+                    disabled={!g?.view}
+                    checked={!!g?.download}
+                    onChange={(e) => grant(device.id, { download: e.target.checked })}
+                  />
+                </label>
+                <Field label={'Channels for ' + device.name}>
+                  <select
+                    disabled={!g?.view}
+                    value={g?.channels === null || !g ? 'all' : 'selected'}
+                    onChange={(e) =>
+                      grant(device.id, { channels: e.target.value === 'all' ? null : [] })
+                    }
+                  >
+                    <option value="all">All channels</option>
+                    <option value="selected">Selected channels</option>
+                  </select>
+                </Field>
+                {g?.view && g.channels !== null && (
+                  <div className="control-actions">
+                    {device.channels.map((c: any) => (
+                      <label key={c.number}>
+                        <input
+                          type="checkbox"
+                          checked={g.channels?.includes(c.number) ?? false}
+                          onChange={(e) =>
+                            grant(device.id, {
+                              channels: e.target.checked
+                                ? [...(g.channels ?? []), c.number]
+                                : (g.channels ?? []).filter((n) => n !== c.number),
+                            })
+                          }
+                        />
+                        {c.name || 'Camera ' + c.number}
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </fieldset>
+            );
+          })}
           <div className="modal-footer">
-            <Button type="button" onClick={() => setOpen(false)}>
+            <Button type="button" onClick={() => setEditing(undefined)}>
               Cancel
             </Button>
-            <Button type="submit" variant="primary">
-              Save preview member
+            <Button type="submit" loading={busy} variant="primary">
+              Save member
             </Button>
           </div>
         </form>
       </Modal>
       <Confirm
-        open={!!removing}
-        onOpenChange={(open) => {
-          if (!open) setRemoving(null);
-        }}
-        title={`${removing?.active ? 'Suspend' : 'Restore'} ${removing?.name || 'member'}?`}
-        description="Update this team member's active access status in the system."
-        action={removing?.active ? 'Suspend member' : 'Restore member'}
-        danger={!!removing?.active}
-        onConfirm={() => {
-          if (!removing) return;
-          patch({
-            members: state.members.map((m) =>
-              m.id === removing.id ? { ...m, active: !m.active } : m,
-            ),
-          });
-          log(
-            removing.active ? 'Team member suspended' : 'Team member restored',
-            removing.name,
-            'access',
-          );
-          toast.success('Team member status updated.');
-          setRemoving(null);
+        open={!!confirm}
+        onOpenChange={(v) => !v && setConfirm(null)}
+        title={
+          (confirm?.status === 'active' ? 'Suspend ' : 'Restore ') +
+          (confirm?.fullName || 'member') +
+          '?'
+        }
+        description="The server applies the status change and revokes existing sessions."
+        action={confirm?.status === 'active' ? 'Suspend member' : 'Restore member'}
+        onConfirm={async () => {
+          try {
+            await request('/api/team/' + confirm.id, {
+              status: confirm.status === 'active' ? 'suspended' : 'active',
+            });
+            setConfirm(null);
+            await load();
+          } catch (e) {
+            toast.error((e as Error).message);
+          }
         }}
       />
     </div>

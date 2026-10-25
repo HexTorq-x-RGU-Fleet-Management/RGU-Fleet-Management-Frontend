@@ -1,38 +1,53 @@
-# Backend extraction handoff
+# Authenticated frontend / Windows API
 
-This document describes integration work still required. It is not a statement
-that the new Windows/Linux repositories already implement these endpoints.
+Normal local origins: UI http://127.0.0.1:3107, API http://127.0.0.1:8101.
+Requests include credentials. No password, SDK grant or viewer token is stored
+in localStorage. Backend HttpOnly sessions and PostgreSQL RLS are authoritative.
 
-| Existing V3 route          | Frontend purpose          |
-| -------------------------- | ------------------------- |
-| GET /api/auth/status       | Session/setup status      |
-| POST /api/auth/login       | Viewer login              |
-| POST /api/auth/signup      | Pending workspace request |
-| POST /api/auth/logout      | Session revocation        |
-| POST /api/auth/password    | Viewer password change    |
-| POST /api/connect/personal | Admin provider login      |
+| Area | Endpoints |
+| --- | --- |
+| Viewer | /api/auth/status, setup, signup, login, logout, password |
+| Bootstrap | GET /api/workspace |
+| Preferences | GET/POST /api/ui/preferences |
+| Provider | /api/status, /api/connect/personal, /api/connect/desktop, /api/disconnect |
+| Recovery | /api/provider/recovery/retry, /api/provider/recovery/disable |
+| Real inventory | GET /api/devices |
+| Verified snapshots | GET /api/previews/frame?deviceId=ID&channel=N |
+| Media | /api/live/start, stop, stop-all, status, events, audio-events, audio-focus |
+| Fleet | /api/fleet/buses, buses/remove, telemetry, history |
+| Backend simulator | Admin POST /api/fleet/mock/poll (stored JSONB, never camera fixtures) |
+| Members | /api/team and /api/team/ID |
+| Approvals | /api/platform/workspaces, /api/platform/requests/ID/ACTION |
+| Password support | /api/platform/workspaces/ID/users, /api/platform/users/ID/password |
+| Clips | /api/recordings, recordings/ID/video, recordings/ID/delete, recordings/settings |
+| Audit/health | /api/audit, /api/platform/health and alert acknowledge/resolve |
 
-The current client uses include credentials, JSON, no-store and X-Hik-Local: 1.
-It validates the /api prefix, applies a timeout, preserves safe backend error
-codes and does not expose malformed response bodies. Real credentials are not
-saved or sent when NEXT_PUBLIC_API_BASE_URL is empty.
+Bootstrap returns the authenticated principal, private UI preferences, permitted
+real devices/channels, buses, provider status and stored telemetry. Superadmin
+receives no tenant camera/fleet data. Members receive only granted resources.
+No frontend fallback dataset is used when requests fail.
 
-Both extracted backends must agree on principal/tenant scope, session lifetime,
-forced password changes, auth error codes, provider reconnection, device/channel
-schemas, recording ownership, role permissions, audit/health and live media.
-The frontend preview currently uses only local sample state for these screens.
+Device channels retain their actual numbers/names and record/download flags.
+Health starts unknown. SDK preview success or received live frames mark working;
+stale observations expire and known recorder offline is unavailable. Authentication
+or network failure is not proof a camera channel is offline.
 
-For a Vercel frontend on a different origin, explicitly design allowlisted CORS
-and preflight, cookie domain/SameSite/Secure, CSRF protection, user binding for
-media subscriptions and authorization on every stream/download. Do not enable a
-wildcard origin with credentials. A same-site reverse-proxy setup is another
-integration option, but none is configured by this frontend-only delivery.
+Writes are JSON POST with X-Hik-Local:1 and X-Saas-User. Media requests also carry
+the public provider connection fingerprint. EventSource URLs carry expected user
+and connection identity and use withCredentials. They do not contain login tokens.
 
-Keep frame/audio delivery outside Vercel functions until the media contract and
-capacity are tested. The old SSE/WebCodecs/JPEG/PCM paths are migration references,
-not embedded legacy UI scripts in this React implementation. Browser microphone
-forwarding and historical DVR playback remain deferred, matching prior scope.
+Smooth frames carry H264 Annex-B chunks and timestamps through SSE. React uses
+the retained baseline WebCodecs presentation queue. Compatibility draws received
+JPEGs. A separate selected-camera PCM stream feeds Web Audio after explicit unmute.
+Snapshot/recording capture actual decoded frames, not generated mock canvases.
+Clips are uploaded as WebM with validated metadata; server storage checks grants.
+HTML video requests also carry expected viewer identity.
 
-A preview-role menu must never appear as a production privilege selector.
-When real session/device wiring is added, replace the sample source with a tenant-
-authorized provider and retain explicit loading/empty/offline/expired/error states.
+Forced password changes block the workspace. Account/logout/session changes clear
+private state, old streams and audio. Cross-tab events trigger session revalidation.
+Server approval, suspension, grant revocation and tenant isolation remain necessary
+even when frontend controls are hidden.
+
+Live camera testing remains pending while recorders are offline. Browser acceptance
+uses only a separate backend fixture API on 8109 with a temporary test database.
+The normal service has no test-device or synthetic-media fallback.

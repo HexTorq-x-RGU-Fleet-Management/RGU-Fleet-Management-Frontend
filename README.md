@@ -1,139 +1,96 @@
 # RGU Fleet Management Frontend
 
-React/Next.js frontend for the separate RGU Windows and Linux backends.
-Repository: https://github.com/HexTorq-x-RGU-Fleet-Management/RGU-Fleet-Management-Frontend
+React/Next.js frontend for HexTorq’s RGU bus fleet system. It uses the separate
+Windows API for authentication, fleet configuration, real Hik-Connect cameras,
+team permissions, recordings, audit and platform health.
 
-## Current delivery
+No sample business data or role-switching preview is bundled in the frontend.
+GPS/fuel samples, when enabled, are read from the backend PostgreSQL JSONB store.
+Real vendor GPS/fuel integration is phase 2. Real camera acceptance is pending
+until the recorders are online; isolated backend media fixtures verify the API path.
 
-Product direction: [bus-first fleet model](docs/FLEET-PRODUCT.md).
-Routes: / (fleet overview), /buses (compact directory), /buses?bus=ID (vehicle),
-/cameras (all camera tools, including the recorder library) and /recordings.
-Legacy /tracking redirects to /buses; /recorders redirects into Camera workspace.
-The mock follows the supplied vendor envelope. Leaflet/OpenStreetMap now supplies
-real road tiles focused on Tamil Nadu; bus positions/fuel remain simulated.
-See [map setup and attribution](docs/MAPS.md). Sidebar collapse is browser-persisted,
-with an edge-centred circular toggle and independent native scrolling.
-Fleet preview settings stay in this browser. Windows fleet API methods exist
-in src/lib/api.ts; authenticated application wiring is still pending.
+## Local setup
 
-A complete navigable frontend **preview**, independently buildable for Vercel.
-Windows API extraction and fleet persistence exist separately. No real camera account, live video, tenant
-session or production monitoring is connected by this change. The UI permanently
-labels sample recorder panels/statuses and browser-local changes as preview data.
-It does not load the old vanilla application or import sibling source folders.
+Node 24.x. Start the configured Windows backend on 127.0.0.1:8101 first.
 
-## Stack
-
-- Next.js App Router, React and TypeScript; exact versions are locked in package-lock.json.
-- Tailwind CSS 4 plus modular application CSS and dark/light theme tokens.
-- Framer Motion for component/reveal animation, GSAP/useGSAP for dashboard entry,
-  ScrollTrigger/Lenis for coordinated smooth scrolling, with reduced-motion support.
-- Lucide React icons throughout; no emoji UI icons.
-- Radix React dialogs, alert dialogs and dropdowns; Sonner custom React toasts.
-- IndexedDB for browser-local clip blobs and localStorage for non-secret preview preferences.
-
-## Run locally
-
-Node.js **24.x** and npm are required. Run from this repository root:
-
-```sh
+```powershell
 npm ci
+Copy-Item .env.example .env.local
 npm run dev
 ```
 
-Open http://127.0.0.1:3107. This dedicated port avoids other local development apps.
-To test a production build: `npm run build`, then `npm start`.
-No database, Python, SDK DLL or sibling repository is required for the frontend preview.
+Set NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8101 in ignored .env.local.
+Open http://127.0.0.1:3107. Use 127.0.0.1 consistently for frontend/API so local
+Strict cookies remain same-site. No database password or SDK token belongs here.
 
-## Screens and working interactions
+For a fresh database: create the single platform owner, request an admin workspace
+from the sign-in screen, approve it as the owner, then sign in as that admin.
+Connect Hik-Connect under Settings and authorize playback using the installed
+iVMS sign-in when required. Import/refresh recorders, create a bus, and map it.
+Check channel availability when the recorder is online; star the working channels.
 
-- Fleet overview: bus setup, registration/driver/route, separate recorder and telemetry mappings, filters and mock readings.
-- Bus details: synchronized GPS/fuel/speed timeline, replay and history windows, working sample cameras and starred default grids.
-- GPS & fuel: mock route exploration; recorder library is a separate hardware screen.
-- Camera workspace: automatic recorder grids, 1/4/9/16 tiles, paging/rotation,
-  single-click selection, explicit/double-click focus, zoom/pan/reset, picture fit/fill,
-  fullscreen, named persistent layouts and sample quality preferences.
-- Preview snapshots download watermarked JPEGs. Preview recording creates real,
-  labelled WebM files from the code-rendered frame/clock, capped at 15 minutes or 128 MB.
-  These are not live camera recordings and contain no camera audio.
-- Recordings: persistent browser-local video files, local MP4/WebM upload (128 MB
-  per file), playback, download, search/sort and React-confirmed deletion.
-- Team: local sample member creation/editing, recorder permissions and suspend/restore.
-- Settings: persisted appearance, reduced motion, viewing/rotation/retention preferences,
-  provider connection dialog, account password dialog and confirmed preference reset.
-- Activity: searchable/filterable browser-preview events and JSON export.
-- Platform approvals and health: role-gated preview screens, sample request decisions
-  and acknowledgement of integration notices. No fake server-health measurements.
-- Login/signup: React forms and safe API error feedback; no simulated real sign-in.
-- Responsive navigation, keyboard search (Ctrl/Cmd+K), focus-managed dialogs,
-  mobile controls, loading/error/404 states and Lucide icon buttons.
+## Data and security
 
-Role switching in the profile menu is **preview only**, not authentication or a
-security boundary. The future backend must enforce tenant isolation and permissions.
+- HttpOnly backend viewer sessions; actual server principal controls navigation.
+- PostgreSQL stores buses, settings, favourites, layouts, users and permissions.
+- Recorder inventory is fetched from real Hik-Connect APIs, with explicit channel
+  unknown/working/unavailable observations. No guessed channel numbering.
+- Source/availability messages distinguish missing provider/playback authorization
+  and offline/unverified cameras. No sample-feed fallback exists.
+- EventSource uses credentials and expected user/provider identity. API mutations
+  preserve origin checks, X-Hik-Local and expected-user checks.
+- Sign-out/account changes clear private React state. Browser-local demo state is
+  retired and never restored. No provider secrets are returned to the client.
+- Camera recording uses actual received frames, optional selected-camera audio,
+  and uploads to authenticated server storage. Wait for save before closing or
+  refreshing the browser tab. Completed clips survive frontend refresh.
 
-## Vercel
+## Screens
 
-Import this frontend repository into Vercel. Use the Next.js framework preset,
-repository root as Root Directory, `npm ci` for installation and `npm run build`
-for building. Keep the default Next.js output directory; do not set it to dist/out.
-vercel.json and package.json provide the framework/build commands and Node 24.x.
-No local absolute paths or native SDK dependencies are used by the build.
+- Fleet overview and compact Buses directory: API-owned vehicle/driver/mappings.
+- Bus details: stored GPS/fuel history, real channel verification/previews/stars.
+- Camera workspace: recorder library, verified-channel grids, SD/HD/adaptive
+  quality, Smooth H264/Compatibility JPEG, focus, fit/fill/original, zoom/pan,
+  fullscreen, selected-camera listening, volume, snapshot and server clips.
+- Recording storage: permission-checked server playback/download/deletion/retention.
+- Team: actual member creation, grants, temporary passwords and suspension.
+- Platform: real workspace approvals and direct password support; no email reset.
+- Audit and superadmin health: real persisted events/metrics from the API.
+- Settings: actual Hik-Connect/iVMS connection, opt-in encrypted account recovery,
+  password changes and saved viewing preferences.
 
-Leave NEXT_PUBLIC_API_BASE_URL blank for this clearly labelled preview. Later,
-set it to the HTTPS backend origin and redeploy. Values prefixed NEXT_PUBLIC_
-are public build-time configuration: never put provider passwords, grants or keys there.
-No Vercel project/deployment was created by this change; Git push may trigger your
-own preconfigured Vercel integration if one exists.
+Push-to-talk is disabled because the current backend does not forward browser
+microphone audio. Camera archive-footage playback remains deferred.
+Layouts/preferences are API-backed; rotation uses actual camera connections.
+Reconnection is bounded and stops for authorization/offline/permission failures.
 
-## Backend boundary
+## Frontend stack and deployment
 
-src/lib/api.ts provides typed, credentialed JSON requests and fixed error handling
-for auth status/login/signup/logout, viewer password change and provider connection.
-It uses the V3 /api routes and X-Hik-Local header. Without a configured backend,
-requests fail visibly instead of manufacturing a successful login or connection.
-No provider/viewer password is written to browser storage or URL query strings.
+Next.js App Router, React, TypeScript, Tailwind, Framer Motion, GSAP, Lenis,
+Lucide, Radix dialogs/dropdowns and Sonner toasts. Leaflet renders road maps.
+No stock/AI image assets or browser-native alert/confirm/prompt flows.
 
-Cross-origin deployment still needs explicit backend CORS/preflight, cookie/CSRF,
-session and media contracts. The original V3 server blocks unrelated origins;
-setting an environment variable alone does not complete that integration. Device
-transport, streaming/audio, provider renewal, server recordings/storage, real
-member management/audit/health and historical DVR playback are not implemented
-against the new separate backends in this frontend phase. See docs/BACKEND-CONTRACT.md.
+npm run build creates the Vercel-compatible build. NEXT_PUBLIC_API_BASE_URL is
+public and fixed at build time; set the real HTTPS backend URL in Vercel.
+The backend must allow the exact frontend origin. Separate-site deployments
+need HTTPS and the appropriate Secure/SameSite cookie policy; browser cookie
+restrictions still apply. Prefer frontend/API under one site. No VPS deployment
+or Linux runtime migration was performed by this change.
 
 ## Checks
 
-```sh
+```powershell
 npm run typecheck
 npm test
 npm run build
-npm run test:e2e
 ```
 
-The browser suite owns a production server on port 3107 and refuses to reuse an
-unrelated app. Windows uses installed Chrome; Linux CI can provision Chromium with
-`npx playwright install --with-deps chromium`. Browser artifacts are ignored.
-The suite exercises core flows, a 390px viewport and standard/reduced-motion behavior.
-`npm run format` formats maintained source/configuration. Dependencies have no
-reported audit vulnerabilities at implementation time; retain the lockfile.
+For browser integration tests, start npm run test:acceptance:serve in the Windows
+backend repo, then npm run test:e2e here. The API fixture owns a temporary isolated
+PostgreSQL database on port 8109. Next runs independently on 3117 with .next-e2e.
+All synthetic vehicles/devices/media/tiles live in that backend tool. No frontend
+API stubs are used. Stop the fixture with Ctrl+C so its temporary DB is removed.
+Normal development uses API 8101 and contains no seeded fixture account/camera.
 
-## Project layout
-
-```text
-src/app/              App Router pages, layouts and modular CSS
-src/components/       React shell, screens, accessible UI and animation providers
-src/lib/              API boundary, typed preview model and clip persistence
-public/               Code-native product icon; no stock/generated photos
-tests/unit/           Policies/display helpers and API error behavior
-tests/e2e/            Actual Chrome UI and recording workflows
-docs/                 Backend contract and asset references
-```
-
-Reference implementation: https://github.com/HexTorq-CCTV-Camera-Web/Hik-Vision/tree/standalone-baseline-2026-10-25/v3
-Related backends remain separate repositories and were not modified.
-
-Official implementation references: [Next.js](https://nextjs.org/docs/app/getting-started/installation),
-[Tailwind](https://tailwindcss.com/docs/installation/framework-guides/nextjs),
-[GSAP React](https://gsap.com/resources/React/), [Lenis](https://github.com/darkroomengineering/lenis),
-[Vercel Node versions](https://vercel.com/docs/functions/runtimes/node-js/node-js-versions).
-
-No AI image generation, image-search integration or stock-photo assets are used. All decorative preview panels are CSS and Lucide icons.
+See docs/BACKEND-CONTRACT.md, docs/VERIFICATION.md and
+docs/REAL-CAMERA-ACCEPTANCE.md.

@@ -38,3 +38,4 @@ test-results/
 artifacts/
 .vercel/
 next-env.d.ts
+.next-e2e/

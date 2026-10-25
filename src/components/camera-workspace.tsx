@@ -1,9 +1,10 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { toast } from 'sonner';
 import {
-  ArrowLeft,
+  Cctv,
   Play,
   Square,
   Maximize,
@@ -12,331 +13,661 @@ import {
   ZoomOut,
   RotateCcw,
   VolumeX,
+  Volume2,
   Camera,
   Clapperboard,
-  LayoutGrid,
-  Save,
   FolderOpen,
+  ArrowLeft,
   ChevronLeft,
   ChevronRight,
-  Cctv,
-  Move,
   MicOff,
-  X,
 } from 'lucide-react';
 import { useWorkspace } from './workspace-provider';
-import { Button, IconButton, Badge, Modal, Field } from './ui';
-import { recorders, channelName, gridFor, safeFilename } from '@/lib/model';
-import { putClip, downloadBlob } from '@/lib/clips';
-import { workingChannels, cameraChannels } from '@/lib/fleet';
+import { Button, IconButton, Modal, Field, PageHeading } from './ui';
+import { channelName, gridFor, safeFilename } from '@/lib/model';
+import { request, apiUrl, streamUrl, uploadRecording, api, currentViewerId } from '@/lib/api';
+import { SmoothPlayer } from '@/lib/media/smooth.mjs';
+import { CameraAudio } from '@/lib/media/audio.mjs';
+import { downloadBlob } from '@/lib/clips';
+type Tile = { slot: number; channel: number; deviceId: string; name: string };
+type LiveState = {
+  state: string;
+  detail?: string;
+  width?: number;
+  height?: number;
+  fps?: number;
+  audioState?: string;
+  lastFrameAt?: number;
+};
 export function CameraWorkspace() {
-  const query = useSearchParams();
-  const { state, patch, log, ready } = useWorkspace();
-  const [device, setDevice] = useState(query.get('recorder') || 'kpm-3');
-  const [grid, setGrid] = useState(9);
-  const [selected, setSelected] = useState(1);
-  const [focused, setFocused] = useState(false);
-  const [paused, setPaused] = useState<number[]>([]);
-  const [zoom, setZoom] = useState(1);
-  const [pan, setPan] = useState({ x: 0, y: 0 });
-  const [fit, setFit] = useState<string>(state.settings.fit);
-  const [quality, setQuality] = useState<string>(state.settings.quality);
-  const [playback, setPlayback] = useState('smooth');
-  const [rotation, setRotation] = useState(false);
-  const [page, setPage] = useState(0);
-  const [layoutModal, setLayoutModal] = useState(false);
-  const [layoutName, setLayoutName] = useState('');
-  const [recording, setRecording] = useState(false);
-  const [seconds, setSeconds] = useState(0);
-  const [busy, setBusy] = useState(false);
-  const stage = useRef<HTMLDivElement>(null);
-  const recorder = useRef<MediaRecorder | null>(null);
-  const timer = useRef<ReturnType<typeof setInterval> | null>(null);
-  const frame = useRef<number>(0);
-  const captureTimer = useRef<ReturnType<typeof setInterval> | null>(null);
-  const timeout = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const drag = useRef<{ x: number; y: number; px: number; py: number } | null>(null);
-  const d = recorders.find((r) => r.id === device) || recorders[0];
-  const bus = state.buses.find((b) => b.id === query.get('bus'));
-  const channels = bus && bus.recorderId === d.id ? cameraChannels(bus) : workingChannels(d.id);
+  const query = useSearchParams(),
+    { state, user, provider, refresh, refreshDevices, patch } = useWorkspace();
+  const [device, setDevice] = useState(query.get('recorder') || ''),
+    [grid, setGrid] = useState(9),
+    [selected, setSelected] = useState(0),
+    [focused, setFocused] = useState(false),
+    [page, setPage] = useState(0),
+    [rotation, setRotation] = useState(false),
+    [running, setRunning] = useState(true),
+    [delivery, setDelivery] = useState<'smooth' | 'mjpeg'>('smooth'),
+    [quality, setQuality] = useState('auto'),
+    [fit, setFit] = useState('contain'),
+    [zoom, setZoom] = useState(1),
+    [pan, setPan] = useState({ x: 0, y: 0 }),
+    [states, setStates] = useState<Record<number, LiveState>>({}),
+    [layoutModal, setLayoutModal] = useState(false),
+    [layoutName, setLayoutName] = useState(''),
+    [probing, setProbing] = useState(false),
+    [muted, setMuted] = useState(true),
+    [volume, setVolume] = useState(0.7),
+    [recording, setRecording] = useState(false),
+    [uploading, setUploading] = useState(false),
+    [seconds, setSeconds] = useState(0);
+  const stage = useRef<HTMLDivElement>(null),
+    canvases = useRef(new Map<number, HTMLCanvasElement>()),
+    players = useRef(new Map<number, SmoothPlayer>()),
+    wanted = useRef(new Set<number>()),
+    tilesRef = useRef<Tile[]>([]),
+    epoch = useRef(0),
+    audio = useRef<CameraAudio | null>(null),
+    audioSource = useRef<EventSource | null>(null),
+    source = useRef<EventSource | null>(null),
+    recorder = useRef<MediaRecorder | null>(null),
+    recordingStop = useRef<(() => void) | null>(null),
+    cancelUpload = useRef<(() => void) | null>(null),
+    drag = useRef<{ x: number; y: number; px: number; py: number } | null>(null),
+    fallback = useRef(false),
+    frameTimes = useRef(new Map<number, number>()),
+    jpegVersions = useRef(new Map<number, number>());
+  const r =
+      state.recorders.find((r) => r.id === device) ||
+      state.recorders.find((r) => r.online) ||
+      state.recorders[0],
+    bus = state.buses.find((b) => b.id === query.get('bus')),
+    recorders = state.recorders;
+  const channels =
+    r?.channelList.filter(
+      (c) =>
+        c.health === 'working' &&
+        (!bus || (bus.recorderId === r.id && bus.favoriteChannels.includes(c.number))),
+    ) ?? [];
   const pages = Math.max(1, Math.ceil(channels.length / grid));
-  const slots = focused ? [selected] : channels.slice(page * grid, (page + 1) * grid);
-  const activeCount = d.online ? channels.filter((i) => !paused.includes(i)).length : 0;
-  useEffect(() => {
-    if (!channels.includes(selected)) setSelected(channels[0] ?? 1);
-    setPage(0);
-    setFocused(false);
-  }, [device, channels.join(',')]);
-  useEffect(() => {
-    if (ready) {
-      setFit(state.settings.fit);
-      setQuality(state.settings.quality);
+  const tiles: Tile[] = channels
+    .slice(Math.min(page, pages - 1) * grid, (Math.min(page, pages - 1) + 1) * grid)
+    .map((c, i) => ({ slot: i, channel: c.number, deviceId: r!.id, name: c.name }));
+  tilesRef.current = tiles;
+  const plan = tiles.map((t) => t.deviceId + ':' + t.channel).join('|'),
+    selectedTile = tiles.find((t) => t.slot === selected) ?? tiles[0],
+    selectedChannel = r?.channelList.find((c) => c.number === selectedTile?.channel);
+  const requestedQuality = quality === 'auto' ? (focused ? 'hd' : 'sd') : quality;
+  const [runVersion, setRunVersion] = useState(0);
+  const retryTimers = useRef(new Map<number, ReturnType<typeof setTimeout>>()),
+    retryCounts = useRef(new Map<number, number>());
+  function retry(tile: Tile, code?: string) {
+    if (!wanted.current.has(tile.slot) || retryTimers.current.has(tile.slot)) return;
+    const count = retryCounts.current.get(tile.slot) || 0;
+    if (
+      count >= 3 ||
+      [
+        'viewer-auth-required',
+        'provider-auth-required',
+        'playback-auth-required',
+        'access-denied',
+        'recorder-offline',
+        'channel-unavailable',
+        'account-changed',
+      ].includes(code || '')
+    ) {
+      wanted.current.delete(tile.slot);
+      return;
     }
-  }, [ready]);
+    retryCounts.current.set(tile.slot, count + 1);
+    const current = epoch.current;
+    status(tile.slot, {
+      state: 'reconnecting',
+      detail: 'Retrying camera connection (' + (count + 1) + '/3)…',
+    });
+    retryTimers.current.set(
+      tile.slot,
+      setTimeout(
+        () => {
+          retryTimers.current.delete(tile.slot);
+          if (epoch.current === current && wanted.current.has(tile.slot)) void start(tile, current);
+        },
+        Math.min(20000, 2000 * 2 ** count),
+      ),
+    );
+  }
+  function status(slot: number, value: Partial<LiveState>) {
+    setStates((s) => ({ ...s, [slot]: { ...(s[slot] || { state: 'stopped' }), ...value } }));
+  }
+  function reset(slot: number) {
+    players.current.get(slot)?.reset();
+    players.current.delete(slot);
+    frameTimes.current.delete(slot);
+    jpegVersions.current.set(slot, (jpegVersions.current.get(slot) ?? 0) + 1);
+    const canvas = canvases.current.get(slot);
+    canvas?.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height);
+  }
+  async function start(tile: Tile, currentEpoch = epoch.current) {
+    if (currentEpoch !== epoch.current) return;
+    wanted.current.add(tile.slot);
+    reset(tile.slot);
+    status(tile.slot, { state: 'connecting', detail: 'Connecting to camera…' });
+    try {
+      await request('/api/live/start', {
+        deviceId: tile.deviceId,
+        channel: tile.channel,
+        quality: requestedQuality,
+        delivery,
+        slot: tile.slot,
+      });
+      if (currentEpoch === epoch.current)
+        status(tile.slot, {
+          state: 'waiting',
+          detail: 'Camera connected. Waiting for decoded video…',
+        });
+    } catch (e) {
+      if (currentEpoch !== epoch.current) return;
+      status(tile.slot, { state: 'failed', detail: (e as Error).message });
+      retry(tile, (e as any).code);
+    }
+  }
+  async function stop(slot: number) {
+    wanted.current.delete(slot);
+    if (selectedTile?.slot === slot) {
+      audio.current?.stop();
+      setMuted(true);
+      if (recording) recordingStop.current?.();
+    }
+    reset(slot);
+    status(slot, { state: 'stopped', detail: 'Stopped' });
+    try {
+      await request('/api/live/stop', { slot });
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  }
   useEffect(() => {
     const id = query.get('recorder');
-    if (id && recorders.some((r) => r.id === id)) {
-      setDevice(id);
-      const r = recorders.find((r) => r.id === id)!;
-      setGrid(gridFor(workingChannels(r.id).length));
-      setPage(0);
-      setSelected(1);
-      setFocused(false);
-    }
-  }, [query]);
+    if (id && recorders.some((r) => r.id === id)) setDevice(id);
+    else if (!recorders.some((r) => r.id === device))
+      setDevice(recorders.find((r) => r.online)?.id ?? recorders[0]?.id ?? '');
+    setFocused(false);
+    setSelected(0);
+    setPage(0);
+  }, [query, recorders.map((r) => r.id).join('|')]);
   useEffect(() => {
-    if (!rotation || focused) return;
+    setQuality(state.settings.quality);
+    setFit(state.settings.fit);
+  }, [user?.id]);
+  useEffect(() => {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+  }, [selected, focused, device]);
+  useEffect(() => {
+    if (!user || !provider?.playbackReady) return;
+    const actor = user.id,
+      connection = provider.connectionId;
+    const events = new EventSource(streamUrl('/api/live/events'), { withCredentials: true });
+    source.current = events;
+    let opened = false;
+    events.onopen = () => {
+      if (opened)
+        for (const tile of tilesRef.current) if (wanted.current.has(tile.slot)) void start(tile);
+      opened = true;
+    };
+    events.addEventListener('frame', (event) => {
+      let packet: any;
+      try {
+        packet = JSON.parse((event as MessageEvent).data);
+      } catch {
+        return;
+      }
+      const tile = tilesRef.current.find(
+        (t) =>
+          t.slot === packet.slot && t.deviceId === packet.deviceId && t.channel === packet.channel,
+      );
+      if (
+        !tile ||
+        !wanted.current.has(tile.slot) ||
+        (packet.quality && packet.quality !== requestedQuality)
+      )
+        return;
+      const canvas = canvases.current.get(tile.slot);
+      if (!canvas) return;
+      const painted = () => {
+        const pending = retryTimers.current.get(tile.slot);
+        if (pending) clearTimeout(pending);
+        retryTimers.current.delete(tile.slot);
+        retryCounts.current.delete(tile.slot);
+        const now = Date.now();
+        if (now - (frameTimes.current.get(tile.slot) ?? 0) > 500) {
+          frameTimes.current.set(tile.slot, now);
+          status(tile.slot, {
+            state: 'playing',
+            detail: undefined,
+            width: packet.width,
+            height: packet.height,
+            fps: packet.fps,
+            lastFrameAt: now,
+          });
+        }
+      };
+      if (packet.h264) {
+        let player = players.current.get(tile.slot);
+        if (!player) {
+          player = new SmoothPlayer(canvas, painted, () => {
+            status(tile.slot, { state: 'failed', detail: 'H264 decoding failed.' });
+            if (!fallback.current) {
+              fallback.current = true;
+              toast.warning('Smooth decoding unavailable. Switching to Compatibility.');
+              setDelivery('mjpeg');
+            }
+          });
+          players.current.set(tile.slot, player);
+        }
+        player.push(packet);
+      } else if (packet.jpeg) {
+        const version = (jpegVersions.current.get(tile.slot) ?? 0) + 1;
+        jpegVersions.current.set(tile.slot, version);
+        const image = new Image();
+        image.onload = () => {
+          if (jpegVersions.current.get(tile.slot) !== version || !wanted.current.has(tile.slot))
+            return;
+          canvas.width = packet.displayWidth || image.naturalWidth;
+          canvas.height = image.naturalHeight;
+          canvas.getContext('2d')?.drawImage(image, 0, 0, canvas.width, canvas.height);
+          painted();
+        };
+        image.src = 'data:image/jpeg;base64,' + packet.jpeg;
+      }
+    });
+    events.addEventListener('states', (event) => {
+      try {
+        const values = JSON.parse((event as MessageEvent).data);
+        for (const value of values) {
+          if (!wanted.current.has(value.slot)) continue;
+          if (value.state === 'failed') {
+            status(value.slot, { state: 'failed', detail: value.error || 'Camera stream failed.' });
+            const tile = tilesRef.current.find((t) => t.slot === value.slot);
+            if (tile) retry(tile, value.errorCode);
+          } else if (value.state === 'stopped')
+            status(value.slot, { state: 'stopped', detail: 'Camera stream ended.' });
+          else if (value.audioState) status(value.slot, { audioState: value.audioState });
+        }
+      } catch {}
+    });
+    events.onerror = () => {
+      for (const slot of wanted.current) {
+        players.current.get(slot)?.reset();
+        status(slot, {
+          state: 'reconnecting',
+          detail: 'Stream connection interrupted; reconnecting…',
+        });
+      }
+      void api
+        .status()
+        .then((a) => {
+          if (!a.authenticated) void refresh();
+        })
+        .catch(() => {});
+    };
+    return () => {
+      epoch.current++;
+      events.close();
+      source.current = null;
+      wanted.current.clear();
+      for (const player of players.current.values()) player.reset();
+      players.current.clear();
+      audio.current?.stop();
+      audioSource.current?.close();
+      cancelUpload.current?.();
+      recordingStop.current?.();
+      void fetch(apiUrl('/api/live/stop-all'), {
+        method: 'POST',
+        credentials: 'include',
+        keepalive: true,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Hik-Local': '1',
+          'X-Saas-User': actor,
+          ...(connection ? { 'X-Hik-Connection': connection } : {}),
+        },
+        body: '{}',
+      }).catch(() => {});
+    };
+  }, [user?.id, provider?.connectionId, provider?.playbackReady, requestedQuality]);
+  useEffect(() => {
+    const current = ++epoch.current;
+    wanted.current.clear();
+    for (const timer of retryTimers.current.values()) clearTimeout(timer);
+    retryTimers.current.clear();
+    retryCounts.current.clear();
+    for (const slot of canvases.current.keys()) reset(slot);
+    setStates({});
+    if (!user) return;
+    let disposed = false;
+    void (async () => {
+      try {
+        await request('/api/live/stop-all', {});
+        if (
+          disposed ||
+          current !== epoch.current ||
+          !running ||
+          !provider?.playbackReady ||
+          !r?.online ||
+          !tiles.length
+        )
+          return;
+        const pending = [...tiles];
+        await Promise.all(
+          Array.from({ length: Math.min(2, pending.length) }, async () => {
+            while (pending.length && !disposed && current === epoch.current) {
+              const tile = pending.shift()!;
+              await start(tile, current);
+            }
+          }),
+        );
+      } catch (e) {
+        if (!disposed) toast.error((e as Error).message);
+      }
+    })();
+    return () => {
+      disposed = true;
+    };
+  }, [
+    plan,
+    r?.online,
+    running,
+    provider?.playbackReady,
+    provider?.connectionId,
+    delivery,
+    requestedQuality,
+    runVersion,
+  ]);
+  useEffect(() => {
+    if (!rotation || focused || recording) return;
     const id = setInterval(() => setPage((p) => (p + 1) % pages), state.settings.rotation * 1000);
     return () => clearInterval(id);
-  }, [rotation, focused, pages, state.settings.rotation]);
-  useEffect(
-    () => () => {
-      recorder.current?.stop();
-      cancelAnimationFrame(frame.current);
-      if (captureTimer.current) clearInterval(captureTimer.current);
-      if (timer.current) clearInterval(timer.current);
-      if (timeout.current) clearTimeout(timeout.current);
-    },
-    [],
-  );
-  function choose(id: string) {
-    if (bus && id !== bus.recorderId) {
-      toast.info('Return to the fleet to choose a different bus recorder.');
-      return;
-    }
-    if (recording) {
-      toast.info('Stop the preview recording before switching recorders.');
-      return;
-    }
-    const next = recorders.find((r) => r.id === id)!;
-    setDevice(id);
-    setGrid(gridFor(next.channels));
-    setSelected(1);
-    setPage(0);
-    setPaused([]);
-    setFocused(false);
-    setZoom(1);
-    setPan({ x: 0, y: 0 });
-    setRotation(false);
-  }
-  function stopRecording() {
-    if (recorder.current?.state === 'recording') recorder.current.stop();
-  }
-  async function imageCanvas() {
-    const image = document.createElement('canvas');
-    image.width = 1280;
-    image.height = 720;
-    const surface = image.getContext('2d')!;
-    surface.fillStyle = '#0d151b';
-    surface.fillRect(0, 0, 1280, 720);
-    surface.strokeStyle = '#26343d';
-    surface.lineWidth = 1;
-    for (let x = 0; x < 1280; x += 48) {
-      surface.beginPath();
-      surface.moveTo(x, 0);
-      surface.lineTo(x, 720);
-      surface.stroke();
-    }
-    for (let y = 0; y < 720; y += 48) {
-      surface.beginPath();
-      surface.moveTo(0, y);
-      surface.lineTo(1280, y);
-      surface.stroke();
-    }
-    surface.strokeStyle = '#00a3e0';
-    surface.lineWidth = 4;
-    surface.strokeRect(580, 250, 100, 70);
-    surface.beginPath();
-    surface.moveTo(680, 265);
-    surface.lineTo(718, 248);
-    surface.lineTo(718, 322);
-    surface.lineTo(680, 306);
-    surface.stroke();
-    surface.textAlign = 'center';
-    surface.fillStyle = '#00a3e0';
-    surface.font = '24px sans-serif';
-    surface.fillText('RATHINAM GLOBAL UNIVERSITY', 640, 390);
-    surface.fillStyle = '#8e9fa8';
-    surface.font = '18px sans-serif';
-    surface.fillText('CODE-RENDERED PREVIEW - NOT CAMERA FOOTAGE', 640, 425);
-    const canvas = document.createElement('canvas');
-    canvas.width = 1280;
-    canvas.height = 720;
-    const ctx = canvas.getContext('2d')!;
-    return { image, canvas, ctx };
-  }
-  async function snapshot() {
-    try {
-      const { canvas, ctx, image } = await imageCanvas();
-      ctx.drawImage(image, 0, 0, 1280, 720);
-      ctx.fillStyle = 'rgba(0,0,0,.65)';
-      ctx.fillRect(0, 670, 1280, 50);
-      ctx.fillStyle = 'white';
-      ctx.font = '18px sans-serif';
-      ctx.fillText(`RGU PREVIEW / ${d.name} / ${channelName(selected)} / SAMPLE SNAPSHOT`, 24, 703);
-      canvas.toBlob(
-        (blob) => {
-          if (blob) {
-            downloadBlob(
-              blob,
-              safeFilename(d.name + '-' + selected + '-preview-snapshot') + '.jpg',
-            );
-            toast.success('Snapshot captured and downloaded.');
-          }
-        },
-        'image/jpeg',
-        0.92,
-      );
-    } catch {
-      toast.error('The snapshot could not be captured.');
-    }
-  }
-  async function startRecording() {
-    if (recording) return stopRecording();
-    if (!d.online || paused.includes(selected))
-      return toast.info('Start an active camera tile first.');
-    if (!globalThis.MediaRecorder)
-      return toast.error('Your browser does not support local recording.');
-    setBusy(true);
-    try {
-      const { image, canvas, ctx } = await imageCanvas();
-      let stream = canvas.captureStream(0);
-      if (
-        typeof (stream.getVideoTracks()[0] as CanvasCaptureMediaStreamTrack).requestFrame !==
-        'function'
-      ) {
-        stream.getTracks().forEach((track) => track.stop());
-        stream = canvas.captureStream(15);
-      }
-      const mime = ['video/webm;codecs=vp8', 'video/webm;codecs=vp9', 'video/webm'].find((t) =>
-        MediaRecorder.isTypeSupported(t),
-      );
-      if (!mime) throw Error('WebM recording is unavailable in this browser.');
-      const media = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 1_000_000 });
-      recorder.current = media;
-      const chunks: BlobPart[] = [];
-      let bytes = 0;
-      const started = Date.now();
-      let elapsed = 0;
-      const draw = () => {
-        ctx.drawImage(image, 0, 0, 1280, 720);
-        ctx.fillStyle = 'rgba(0,0,0,.7)';
-        ctx.fillRect(0, 650, 1280, 70);
-        ctx.fillStyle = 'white';
-        ctx.font = '18px sans-serif';
-        ctx.fillText(
-          `RGU PREVIEW / ${d.name} / ${channelName(selected)} / NOT CAMERA FOOTAGE`,
-          24,
-          678,
-        );
-        ctx.fillText(
-          new Date().toLocaleTimeString() + '.' + String(Date.now() % 1000).padStart(3, '0'),
-          24,
-          705,
-        );
-        const track = stream.getVideoTracks()[0] as CanvasCaptureMediaStreamTrack;
-        track.requestFrame?.();
-      };
-      media.ondataavailable = (e) => {
-        if (e.data.size) {
-          chunks.push(e.data);
-          bytes += e.data.size;
-          if (bytes >= 128 * 1024 ** 2 && media.state === 'recording') media.stop();
-        }
-      };
-      media.onstop = async () => {
-        cancelAnimationFrame(frame.current);
-        if (captureTimer.current) clearInterval(captureTimer.current);
-        stream.getTracks().forEach((t) => t.stop());
-        if (timer.current) clearInterval(timer.current);
-        if (timeout.current) clearTimeout(timeout.current);
-        setRecording(false);
-        const blob = new Blob(chunks, { type: 'video/webm' });
-        if (!blob.size) {
-          toast.error('No preview frames were captured. Start a new clip and try again.');
+  }, [rotation, focused, recording, pages, state.settings.rotation]);
+  useEffect(() => {
+    if (muted || !selectedTile) return;
+    let disposed = false;
+    const cameraAudio = new CameraAudio({ onError: (message) => toast.error(message) });
+    audio.current = cameraAudio;
+    cameraAudio.setVolume(volume);
+    void cameraAudio
+      .start({ external: true, record: true, bufferDelay: delivery === 'smooth' ? 1 : 0.2 })
+      .then(async () => {
+        if (disposed) {
+          cameraAudio.stop();
           return;
         }
-        const id = crypto.randomUUID();
-        const clip = {
-          id,
-          name: `${d.name} - ${channelName(selected)} preview`,
-          camera: `${d.name} / Camera ${String(selected).padStart(2, '0')}`,
-          created: new Date().toISOString(),
-          bytes: blob.size,
-          type: 'video/webm',
+        await request('/api/live/audio-focus', { slots: [selectedTile.slot] });
+        if (disposed) return;
+        const events = new EventSource(streamUrl('/api/live/audio-events'), {
+          withCredentials: true,
+        });
+        audioSource.current = events;
+        events.addEventListener('audio', (e) => {
+          try {
+            const p = JSON.parse((e as MessageEvent).data);
+            if (
+              p.slot === selectedTile.slot &&
+              p.deviceId === selectedTile.deviceId &&
+              p.channel === selectedTile.channel
+            )
+              cameraAudio.play(p);
+          } catch {}
+        });
+        events.onerror = () => {
+          cameraAudio.stop();
+          setMuted(true);
+          toast.info('Audio connection ended. Click Unmute to retry.');
         };
-        try {
-          await putClip(id, blob);
-          patch({ clips: [clip, ...state.clips] });
-          log('Preview clip recorded', clip.camera, 'recording');
-          toast.success('Preview clip saved in Recordings.');
-        } catch {
-          downloadBlob(blob, 'rgu-recording.webm');
-          toast.warning('Browser storage full. Recording downloaded to device.');
+      })
+      .catch((e) => {
+        if (!disposed) {
+          setMuted(true);
+          toast.error(e.message);
         }
-      };
-      media.start(1000);
-      draw();
-      captureTimer.current = setInterval(draw, 1000 / 15);
-      setRecording(true);
-      setSeconds(0);
-      timer.current = setInterval(() => setSeconds(++elapsed), 1000);
-      timeout.current = setTimeout(
-        () => {
-          if (media.state === 'recording') media.stop();
-        },
-        15 * 60 * 1000,
-      );
-      toast.info(`Recording started for ${channelName(selected)}.`);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Recording could not start.');
+      });
+    return () => {
+      disposed = true;
+      audioSource.current?.close();
+      audioSource.current = null;
+      cameraAudio.stop();
+    };
+  }, [
+    muted,
+    selectedTile?.slot,
+    selectedTile?.deviceId,
+    selectedTile?.channel,
+    provider?.connectionId,
+    delivery,
+  ]);
+  useEffect(() => {
+    audio.current?.setVolume(volume);
+  }, [volume]);
+  async function probe() {
+    if (!r) return;
+    setProbing(true);
+    let count = 0;
+    try {
+      for (const channel of r.channelList) {
+        try {
+          await request(
+            '/api/previews/frame?' +
+              new URLSearchParams({ deviceId: r.id, channel: String(channel.number) }),
+          );
+          count++;
+        } catch (e) {
+          if (
+            ['provider-auth-required', 'playback-auth-required', 'viewer-auth-required'].includes(
+              (e as any).code,
+            )
+          )
+            throw e;
+        }
+      }
+      await refresh();
+      setGrid(gridFor(count));
+      toast.info(count + ' channels returned camera frames.');
+    } catch (e) {
+      toast.error((e as Error).message);
     } finally {
-      setBusy(false);
+      setProbing(false);
     }
   }
-  function select(channel: number) {
-    if (channel === selected) return;
-    setSelected(channel);
-    setZoom(1);
-    setPan({ x: 0, y: 0 });
+  async function fullscreen() {
+    try {
+      if (document.fullscreenElement) await document.exitFullscreen();
+      else await stage.current?.requestFullscreen();
+    } catch {
+      toast.error('Fullscreen is unavailable.');
+    }
   }
+  function snapshot() {
+    if (!selectedTile) return;
+    const canvas = canvases.current.get(selectedTile.slot);
+    if (!canvas || states[selectedTile.slot]?.state !== 'playing')
+      return toast.error('Wait for a live frame.');
+    canvas.toBlob(
+      (blob) => {
+        if (blob)
+          downloadBlob(
+            blob,
+            safeFilename(
+              (bus?.busNumber || r?.name) +
+                '-' +
+                selectedTile.channel +
+                '-' +
+                new Date().toISOString(),
+            ) + '.jpg',
+          );
+      },
+      'image/jpeg',
+      0.94,
+    );
+  }
+  async function record() {
+    if (recording) {
+      recordingStop.current?.();
+      return;
+    }
+    if (!selectedTile || states[selectedTile.slot]?.state !== 'playing')
+      return toast.error('Wait for live video before recording.');
+    const canvas = canvases.current.get(selectedTile.slot);
+    if (!canvas || !globalThis.MediaRecorder)
+      return toast.error('Recording is unavailable in this browser.');
+    const actor = user!.id,
+      tile = { ...selectedTile },
+      stream = canvas.captureStream(15),
+      sound = audio.current?.recordDestination?.stream.getAudioTracks() ?? [];
+    if (!muted) for (const track of sound) stream.addTrack(track.clone());
+    const mime = (
+      stream.getAudioTracks().length
+        ? ['video/webm;codecs=vp8,opus', 'video/webm;codecs=vp9,opus', 'video/webm']
+        : ['video/webm;codecs=vp8', 'video/webm;codecs=vp9', 'video/webm']
+    ).find((t) => MediaRecorder.isTypeSupported(t));
+    if (!mime) {
+      stream.getTracks().forEach((t) => t.stop());
+      return toast.error('WebM recording unavailable.');
+    }
+    const media = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 2500000 }),
+      chunks: BlobPart[] = [],
+      began = Date.now();
+    let bytes = 0,
+      allowed = true;
+    const abort = new AbortController();
+    cancelUpload.current = () => {
+      if (currentViewerId() !== actor) {
+        allowed = false;
+        abort.abort();
+      }
+    };
+    const clock = setInterval(() => setSeconds(Math.floor((Date.now() - began) / 1000)), 1000),
+      limit = setTimeout(() => media.state === 'recording' && media.stop(), 15 * 60 * 1000);
+    media.ondataavailable = (e) => {
+      if (e.data.size) {
+        chunks.push(e.data);
+        bytes += e.data.size;
+        if (bytes >= 128 * 1024 ** 2 && media.state === 'recording') media.stop();
+      }
+    };
+    media.onstop = async () => {
+      clearInterval(clock);
+      clearTimeout(limit);
+      stream.getTracks().forEach((t) => t.stop());
+      setRecording(false);
+      const blob = new Blob(chunks, { type: 'video/webm' });
+      if (!allowed || currentViewerId() !== actor) return;
+      if (!blob.size) return toast.error('No video frames were recorded.');
+      setUploading(true);
+      try {
+        await uploadRecording(
+          blob,
+          {
+            deviceId: tile.deviceId,
+            channel: tile.channel,
+            duration: (Date.now() - began) / 1000,
+            audio: stream.getAudioTracks().length > 0,
+          },
+          abort.signal,
+          actor,
+        );
+        if (allowed && currentViewerId() === actor) {
+          toast.success('Camera clip saved on the server.');
+          dispatchEvent(new Event('rgu-recordings-updated'));
+        }
+      } catch (e) {
+        if (allowed && currentViewerId() === actor) toast.error((e as Error).message);
+      } finally {
+        setUploading(false);
+      }
+    };
+    recorder.current = media;
+    recordingStop.current = () => {
+      if (media.state === 'recording') media.stop();
+    };
+    media.start(1000);
+    setSeconds(0);
+    setRecording(true);
+  }
+  const selectedState = states[selectedTile?.slot ?? 0];
+  if (!r)
+    return (
+      <div className="fleet-no-data">
+        <Cctv size={32} />
+        <h1>No camera recorders available</h1>
+        <p>Connect Hik-Connect and refresh inventory. Members need recorder permissions.</p>
+        <Link href="/settings" className="btn btn-primary">
+          Account settings
+        </Link>
+      </div>
+    );
   return (
     <div>
+      {bus && (
+        <Link className="btn btn-ghost fleet-back" href={'/buses?bus=' + bus.id}>
+          <ArrowLeft size={15} />
+          Back to {bus.busNumber}
+        </Link>
+      )}
       <div className="camera-page-heading">
         <div>
           <p className="eyebrow">CAMERA WORKSPACE</p>
-          <h1>{bus ? bus.busNumber + ' · Onboard cameras' : 'Your fleet. Every angle.'}</h1>
+          <h1>{bus ? bus.busNumber + ' · Onboard cameras' : r.name}</h1>
           <p className="page-description">
-            Select a tile to control it. Double-click or use expand to focus.
+            Real SDK camera video. Single-click selects; double-click or expand focuses.
           </p>
         </div>
-        <Button onClick={() => setLayoutModal(true)}>
-          <FolderOpen size={15} />
-          Layouts
-        </Button>
+        <div className="control-actions">
+          <Button onClick={() => setLayoutModal(true)}>
+            <FolderOpen size={15} />
+            Layouts
+          </Button>
+          <Button
+            loading={probing}
+            disabled={!r.online || !provider?.playbackReady || recording}
+            onClick={() => void probe()}
+          >
+            Check camera availability
+          </Button>
+        </div>
       </div>
-      {bus && (
-        <a className="btn btn-ghost fleet-back" href={'/buses?bus=' + bus.id}>
-          <ArrowLeft size={15} />
-          Back to {bus.busNumber}
-        </a>
-      )}
-      <p className="fleet-source">
-        Camera preview · simulated per-channel availability · no live media connected
-      </p>
       {!bus && (
         <div className="recorder-tabs" aria-label="Select recorder">
-          {recorders.map((r) => (
+          {recorders.map((item) => (
             <button
-              key={r.id}
-              className={d.id === r.id ? 'selected' : ''}
-              onClick={() => choose(r.id)}
+              key={item.id}
+              className={r.id === item.id ? 'selected' : ''}
+              disabled={recording}
+              onClick={() => {
+                setDevice(item.id);
+                setGrid(gridFor(item.channelList.filter((c) => c.health === 'working').length));
+                setPage(0);
+                setSelected(0);
+                setFocused(false);
+                setRunning(true);
+              }}
             >
-              <span className={`status-dot ${r.online ? '' : 'offline'}`} />
-              {r.name}
-              <span>{r.channels}</span>
+              <span className={'status-dot ' + (item.online ? '' : 'offline')} />
+              {item.name}
+              <span>{item.channels}</span>
             </button>
           ))}
+        </div>
+      )}
+      {!provider?.playbackReady && (
+        <div className="info-box">
+          <p>
+            {provider?.connected
+              ? 'Connect iVMS playback authorization in Settings.'
+              : 'Connect Hik-Connect to load cameras and playback access.'}
+          </p>
+          <Link href="/settings">Account settings</Link>
         </div>
       )}
       <section className="monitor-panel">
@@ -346,23 +677,20 @@ export function CameraWorkspace() {
               <Cctv size={20} />
             </span>
             <div>
-              <h2>
-                {d.name}
-                <Badge tone={d.online ? 'green' : 'neutral'}>
-                  {d.online ? 'Online · 1080p' : 'Standby / Offline'}
-                </Badge>
-              </h2>
+              <h2>{r.name}</h2>
               <p>
-                {d.location} / {d.channels} channels / {activeCount} active feeds streaming
+                {r.status} · {channels.length} recently verified channels ·{' '}
+                {r.channelList.filter((c) => c.health === 'unknown').length} unchecked
               </p>
             </div>
           </div>
           <div className="monitor-tools">
             <label className="compact-select">
-              <span>Grid</span>
+              Grid
               <select
                 aria-label="Camera grid"
                 value={grid}
+                disabled={recording}
                 onChange={(e) => {
                   setGrid(Number(e.target.value));
                   setPage(0);
@@ -376,18 +704,7 @@ export function CameraWorkspace() {
                 ))}
               </select>
             </label>
-            <IconButton
-              label="Fullscreen grid"
-              onClick={() => {
-                if (!stage.current?.requestFullscreen) {
-                  toast.info('Fullscreen is not supported by this browser.');
-                  return;
-                }
-                void stage.current
-                  ?.requestFullscreen()
-                  .catch(() => toast.error('Fullscreen is unavailable.'));
-              }}
-            >
+            <IconButton label="Fullscreen grid" onClick={() => void fullscreen()}>
               <Maximize size={17} />
             </IconButton>
           </div>
@@ -396,9 +713,10 @@ export function CameraWorkspace() {
           <div>
             <Button
               variant="ghost"
+              disabled={!r.online || !provider?.playbackReady || recording}
               onClick={() => {
-                setPaused([]);
-                toast.success('All camera feeds active.');
+                setRunning(true);
+                setRunVersion((v) => v + 1);
               }}
             >
               <Play size={13} />
@@ -407,8 +725,14 @@ export function CameraWorkspace() {
             <Button
               variant="ghost"
               onClick={() => {
-                if (recording) stopRecording();
-                setPaused(Array.from({ length: d.channels }, (_, i) => i + 1));
+                setRunning(false);
+                wanted.current.clear();
+                recordingStop.current?.();
+                void request('/api/live/stop-all', {}).catch((e) => toast.error(e.message));
+                for (const tile of tiles) {
+                  reset(tile.slot);
+                  status(tile.slot, { state: 'stopped' });
+                }
               }}
             >
               <Square size={13} />
@@ -416,11 +740,8 @@ export function CameraWorkspace() {
             </Button>
             <Button
               variant={rotation ? 'primary' : 'ghost'}
-              onClick={() => {
-                if (pages === 1)
-                  return toast.info('Choose a smaller grid to rotate between camera pages.');
-                setRotation(!rotation);
-              }}
+              disabled={pages < 2}
+              onClick={() => setRotation(!rotation)}
             >
               <RotateCcw size={13} />
               {rotation ? 'Stop rotation' : 'Rotate views'}
@@ -440,177 +761,164 @@ export function CameraWorkspace() {
           </div>
         </div>
         <div ref={stage} className="camera-stage">
-          {!channels.length && (
-            <div className="fleet-no-data">
-              <Cctv size={30} />
-              <h3>No available cameras in this view</h3>
-              <p>Choose working channels and star them in bus settings.</p>
-            </div>
-          )}
           {focused && (
-            <button
-              className="back-to-grid"
-              onClick={() => {
-                setFocused(false);
-                setZoom(1);
-              }}
-            >
+            <Button className="back-to-grid" onClick={() => setFocused(false)}>
               <ArrowLeft size={14} />
               Back to cameras
-            </button>
+            </Button>
           )}
-          <div
-            className={`camera-grid ${focused ? 'focused' : ''}`}
-            style={
-              {
-                '--grid-columns': focused || grid === 1 ? 1 : grid === 4 ? 2 : grid === 9 ? 3 : 4,
-              } as React.CSSProperties
-            }
-          >
-            {slots.map((channel) => (
-              <div
-                key={channel}
-                className={`camera-tile ${selected === channel ? 'tile-selected' : ''} ${paused.includes(channel) || !d.online ? 'tile-stopped' : ''}`}
-                role="button"
-                tabIndex={0}
-                aria-label={`Select ${d.name} Camera ${channel}`}
-                aria-pressed={selected === channel}
-                onClick={() => select(channel)}
-                onDoubleClick={() => {
-                  select(channel);
-                  setFocused(true);
-                }}
-                onKeyDown={(e) => {
-                  if (e.target !== e.currentTarget) return;
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    select(channel);
-                  }
-                }}
-                onWheel={(e) => {
-                  if (selected === channel && focused)
-                    setZoom((z) => Math.max(1, Math.min(4, z - e.deltaY * 0.002)));
-                }}
-                onPointerDown={(e) => {
-                  if ((e.target as HTMLElement).closest('button')) return;
-                  if (zoom > 1 && selected === channel) {
-                    drag.current = { x: e.clientX, y: e.clientY, px: pan.x, py: pan.y };
-                    e.currentTarget.setPointerCapture(e.pointerId);
-                  }
-                }}
-                onPointerMove={(e) => {
-                  if (drag.current) {
-                    const limit = (zoom - 1) * 80;
-                    setPan({
-                      x: Math.max(
-                        -limit,
-                        Math.min(limit, drag.current.px + (e.clientX - drag.current.x)),
-                      ),
-                      y: Math.max(
-                        -limit,
-                        Math.min(limit, drag.current.py + (e.clientY - drag.current.y)),
-                      ),
-                    });
-                  }
-                }}
-                onPointerUp={() => {
-                  drag.current = null;
-                }}
-                onPointerCancel={() => {
-                  drag.current = null;
-                }}
-              >
-                {d.online && !paused.includes(channel) ? (
-                  <>
-                    <div
-                      className="tile-placeholder"
+          {!tiles.length ? (
+            <div className="fleet-no-data">
+              <Cctv size={30} />
+              <h3>No verified cameras in this view</h3>
+              <p>
+                {!r.online
+                  ? 'Hik-Connect reports the recorder offline.'
+                  : bus
+                    ? 'Check availability and star working channels in the bus camera page.'
+                    : 'Check camera availability to discover working channels. Unchecked channels are never shown as live.'}
+              </p>
+            </div>
+          ) : (
+            <div
+              className={`camera-grid ${focused ? 'focused' : ''}`}
+              style={
+                {
+                  '--grid-columns': focused || grid === 1 ? 1 : grid === 4 ? 2 : grid === 9 ? 3 : 4,
+                } as React.CSSProperties
+              }
+            >
+              {tiles.map((tile) => {
+                const s = states[tile.slot] ?? { state: 'stopped' };
+                return (
+                  <div
+                    key={tile.slot}
+                    className={`camera-tile ${selected === tile.slot ? 'tile-selected' : ''}`}
+                    style={focused && selected !== tile.slot ? { display: 'none' } : undefined}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={'Select ' + r.name + ' Camera ' + tile.channel}
+                    aria-pressed={selected === tile.slot}
+                    onClick={() => setSelected(tile.slot)}
+                    onDoubleClick={() => {
+                      setSelected(tile.slot);
+                      setFocused(true);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
+                        e.preventDefault();
+                        setSelected(tile.slot);
+                      }
+                    }}
+                    onWheel={(e) => {
+                      if (focused && selected === tile.slot)
+                        setZoom((z) => Math.max(1, Math.min(4, z - e.deltaY * 0.002)));
+                    }}
+                    onPointerDown={(e) => {
+                      if (
+                        zoom > 1 &&
+                        selected === tile.slot &&
+                        !(e.target as HTMLElement).closest('button')
+                      ) {
+                        drag.current = { x: e.clientX, y: e.clientY, px: pan.x, py: pan.y };
+                        e.currentTarget.setPointerCapture(e.pointerId);
+                      }
+                    }}
+                    onPointerMove={(e) => {
+                      if (drag.current)
+                        setPan({
+                          x: drag.current.px + e.clientX - drag.current.x,
+                          y: drag.current.py + e.clientY - drag.current.y,
+                        });
+                    }}
+                    onPointerUp={() => (drag.current = null)}
+                  >
+                    <canvas
+                      ref={(canvas) => {
+                        if (canvas) canvases.current.set(tile.slot, canvas);
+                        else canvases.current.delete(tile.slot);
+                      }}
+                      width={640}
+                      height={360}
+                      className="live-camera-canvas"
                       style={{
-                        width: fit === 'none' ? 320 : '100%',
-                        height: fit === 'cover' ? '100%' : undefined,
-                        aspectRatio: fit === 'cover' ? undefined : '16/9',
-                        transform: `translate(calc(-50% + ${selected === channel ? pan.x : 0}px), calc(-50% + ${selected === channel ? pan.y : 0}px)) scale(${selected === channel ? zoom : 1})`,
+                        objectFit: fit === 'none' ? 'none' : (fit as 'contain' | 'cover'),
+                        transform:
+                          selected === tile.slot
+                            ? `translate(${pan.x}px,${pan.y}px) scale(${zoom})`
+                            : undefined,
                       }}
-                    >
-                      <Cctv size={32} strokeWidth={1} />
-                      <span>CAMERA PREVIEW</span>
-                    </div>
-                    <span className="tile-vignette" />
-                    <span className="tile-live-badge">
-                      <span className="live-dot" />
-                      PREVIEW
-                    </span>
-                  </>
-                ) : (
-                  <div className="stopped-tile">
-                    <Cctv size={26} />
-                    <strong>{d.online ? 'Feed Standby' : 'Recorder Offline'}</strong>
-                    <small>
-                      {d.online
-                        ? 'Click play to activate this sample tile.'
-                        : 'Sample recorder is offline.'}
-                    </small>
-                  </div>
-                )}
-                <div className="tile-top">
-                  <span>{String(channel).padStart(2, '0')}</span>
-                  <div>
-                    <IconButton
-                      label={`Expand Camera ${channel}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        select(channel);
-                        setFocused(!focused);
-                      }}
-                    >
-                      {focused ? <Minimize size={14} /> : <Maximize size={14} />}
-                    </IconButton>
-                    <IconButton
-                      label={`${paused.includes(channel) ? 'Start' : 'Stop'} Camera ${channel}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (recording && selected === channel) stopRecording();
-                        setPaused((p) =>
-                          p.includes(channel) ? p.filter((c) => c !== channel) : [...p, channel],
-                        );
-                      }}
-                    >
-                      {paused.includes(channel) ? <Play size={14} /> : <Square size={13} />}
-                    </IconButton>
-                  </div>
-                </div>
-                <div className="tile-caption">
-                  <span>
-                    {channelName(channel)}
-                    <small>
-                      {d.name} / Camera {String(channel).padStart(2, '0')}
-                    </small>
-                  </span>
-                  <span className="tile-status">
-                    {recording && selected === channel ? (
-                      <>
-                        <span className="recording-dot" />
-                        REC
-                      </>
-                    ) : d.online && !paused.includes(channel) ? (
-                      'Preview'
-                    ) : (
-                      'Stopped'
+                    />
+                    {s.state !== 'playing' && (
+                      <div className="stopped-tile">
+                        <Cctv size={26} />
+                        <strong>{s.state}</strong>
+                        <small>{s.detail || 'Ready to connect'}</small>
+                        {s.state === 'failed' && (
+                          <Button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              void start(tile);
+                            }}
+                          >
+                            Retry camera
+                          </Button>
+                        )}
+                      </div>
                     )}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
+                    <div className="tile-top">
+                      <span>{String(tile.channel).padStart(2, '0')}</span>
+                      <div>
+                        <IconButton
+                          label={'Expand Camera ' + tile.channel}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelected(tile.slot);
+                            setFocused(!focused);
+                          }}
+                        >
+                          {focused ? <Minimize size={14} /> : <Maximize size={14} />}
+                        </IconButton>
+                        <IconButton
+                          label={
+                            (s.state === 'stopped' ? 'Start' : 'Stop') + ' Camera ' + tile.channel
+                          }
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void (s.state === 'stopped' ? start(tile) : stop(tile.slot));
+                          }}
+                        >
+                          {s.state === 'stopped' ? <Play size={14} /> : <Square size={13} />}
+                        </IconButton>
+                      </div>
+                    </div>
+                    <div className="tile-caption">
+                      <span>
+                        {tile.name}
+                        <small>
+                          {r.name} / Camera {String(tile.channel).padStart(2, '0')}
+                        </small>
+                      </span>
+                      <span className="tile-status">
+                        {s.state === 'playing' ? 'Live' : s.state}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
         <div className="camera-pagination">
           <span>
-            <span className="status-dot" />
-            Grid Layout <span className="muted">/ select tile for active controls</span>
+            {selectedState?.width ? selectedState.width + ' × ' + selectedState.height + ' · ' : ''}
+            {delivery === 'smooth' ? 'H264 Smooth' : 'JPEG Compatibility'} · sound muted until
+            enabled
           </span>
           <div>
             <IconButton
               label="Previous camera page"
-              disabled={page === 0 || focused}
+              disabled={page === 0 || focused || recording}
               onClick={() => setPage((p) => p - 1)}
             >
               <ChevronLeft size={16} />
@@ -620,7 +928,7 @@ export function CameraWorkspace() {
             </span>
             <IconButton
               label="Next camera page"
-              disabled={page >= pages - 1 || focused}
+              disabled={page >= pages - 1 || focused || recording}
               onClick={() => setPage((p) => p + 1)}
             >
               <ChevronRight size={16} />
@@ -628,29 +936,27 @@ export function CameraWorkspace() {
           </div>
         </div>
       </section>
-      {channels.length > 0 && (
+      {selectedTile && (
         <div className="selected-controls">
           <div className="selected-label">
             <Cctv size={17} />
             <span>
               <strong>
-                {d.name} / Camera {String(selected).padStart(2, '0')}
+                {r.name} / Camera {String(selectedTile.channel).padStart(2, '0')}
               </strong>
-              <small>{channelName(selected)}</small>
+              <small>{channelName(selectedTile.channel, r)}</small>
             </span>
           </div>
           <div className="control-group">
             <span className="muted small">Playback</span>
             <select
               aria-label="Playback preference"
-              value={playback}
-              onChange={(event) => {
-                setPlayback(event.target.value);
-                toast.info(`Playback mode: ${event.target.value}`);
-              }}
+              value={delivery}
+              disabled={recording}
+              onChange={(e) => setDelivery(e.target.value as 'smooth' | 'mjpeg')}
             >
               <option value="smooth">Smooth</option>
-              <option value="compatibility">Compatibility</option>
+              <option value="mjpeg">Compatibility</option>
             </select>
           </div>
           <div className="control-group">
@@ -658,10 +964,8 @@ export function CameraWorkspace() {
             <select
               aria-label="Selected camera quality"
               value={quality}
-              onChange={(e) => {
-                setQuality(e.target.value);
-                toast.info(`Stream quality: ${e.target.value.toUpperCase()}`);
-              }}
+              disabled={recording}
+              onChange={(e) => setQuality(e.target.value)}
             >
               <option value="auto">Adaptive</option>
               <option value="hd">HD / Main</option>
@@ -688,127 +992,103 @@ export function CameraWorkspace() {
           </div>
           <div className="control-actions">
             <Button
-              onClick={() => void snapshot()}
-              disabled={!d.online || paused.includes(selected)}
+              disabled={!selectedChannel?.canDownload || selectedState?.state !== 'playing'}
+              onClick={snapshot}
             >
               <Camera size={15} />
               Snapshot
             </Button>
-            {state.role !== 'member' && (
-              <Button
-                variant={recording ? 'danger' : 'secondary'}
-                loading={busy}
-                onClick={() => void startRecording()}
-                disabled={!d.online}
-              >
-                {recording ? <Square size={14} /> : <Clapperboard size={15} />}{' '}
-                {recording
-                  ? `Stop ${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
-                  : 'Record preview'}
-              </Button>
-            )}
-            <IconButton
-              label="Mute / Unmute audio"
-              onClick={() => toast.info('Camera audio is not connected in this preview.')}
+            <Button
+              loading={uploading}
+              disabled={
+                !selectedChannel?.canRecord || (!recording && selectedState?.state !== 'playing')
+              }
+              onClick={() => void record()}
             >
-              <VolumeX size={17} />
-            </IconButton>
+              {recording ? <Square size={14} /> : <Clapperboard size={15} />}{' '}
+              {recording
+                ? 'Stop ' + Math.floor(seconds / 60) + ':' + String(seconds % 60).padStart(2, '0')
+                : 'Record clip'}
+            </Button>
+            <Button disabled={selectedState?.state !== 'playing'} onClick={() => setMuted(!muted)}>
+              {muted ? <VolumeX size={16} /> : <Volume2 size={16} />} {muted ? 'Unmute' : 'Mute'}
+            </Button>
             <input
-              className="preview-volume"
               type="range"
-              min="0"
-              max="100"
-              value="0"
-              disabled
-              aria-label="Audio channel muted"
-              title="Audio channel muted"
+              aria-label="Volume"
+              min={0}
+              max={1}
+              step={0.05}
+              value={volume}
+              onChange={(e) => setVolume(Number(e.target.value))}
             />
-            <IconButton label="Push-to-talk channel standby" disabled>
+            <IconButton label="Push-to-talk unavailable in this backend" disabled>
               <MicOff size={16} />
             </IconButton>
           </div>
         </div>
       )}
-      <div className="workspace-footnote">
-        <Move size={13} />
-        <span>
-          Wheel to zoom in focus view. Drag to pan when zoomed. Preview captures are labelled and
-          saved only in your browser.
-        </span>
-      </div>
+      <p className="workspace-footnote">
+        Actual camera video and audio arrive through the authenticated Windows API. Quality depends
+        on recorder stream settings. Only the selected tile is heard. Recordings are uploaded to
+        server storage.
+      </p>
       <Modal
         open={layoutModal}
         onOpenChange={setLayoutModal}
-        title="Make room for your view"
-        description="Save this recorder, grid and picture sizing as a named preview layout."
+        title="Camera layouts"
+        description="Layouts and favourites are stored in your account."
       >
         <form
-          onSubmit={(e) => {
+          onSubmit={async (e) => {
             e.preventDefault();
-            const name = layoutName.trim();
-            if (!name) return;
-            patch({
-              layouts: [
-                ...state.layouts,
-                { id: crypto.randomUUID(), name, recorder: d.id, grid, fit },
-              ],
-            });
-            log('Viewing layout saved', name, 'settings');
-            setLayoutName('');
-            toast.success('Layout saved.');
+            if (!layoutName.trim()) return;
+            try {
+              await patch({
+                layouts: [
+                  ...state.layouts,
+                  { id: crypto.randomUUID(), name: layoutName.trim(), recorder: r.id, grid, fit },
+                ],
+              });
+              setLayoutName('');
+              toast.success('Layout saved.');
+            } catch {}
           }}
         >
           <Field label="Layout name">
             <input
+              maxLength={60}
               value={layoutName}
               onChange={(e) => setLayoutName(e.target.value)}
-              placeholder="Morning campus check"
-              maxLength={60}
               required
             />
           </Field>
-          <Button variant="primary" type="submit" className="w-full">
-            <Save size={15} />
+          <Button type="submit" variant="primary">
             Save current layout
           </Button>
         </form>
-        <div className="saved-layouts">
-          {state.layouts.length ? (
-            state.layouts.map((l) => (
-              <div key={l.id}>
-                <LayoutGrid size={17} />
-                <span>
-                  <strong>{l.name}</strong>
-                  <small>
-                    {recorders.find((r) => r.id === l.recorder)?.name} / {l.grid} tiles
-                  </small>
-                </span>
-                <Button
-                  onClick={() => {
-                    choose(l.recorder);
-                    setGrid(l.grid);
-                    setFit(l.fit);
-                    setLayoutModal(false);
-                    toast.success('Layout loaded.');
-                  }}
-                >
-                  Load
-                </Button>
-                <IconButton
-                  label={`Remove layout ${l.name}`}
-                  onClick={() => {
-                    patch({ layouts: state.layouts.filter((x) => x.id !== l.id) });
-                    toast.success('Layout removed.');
-                  }}
-                >
-                  <X size={15} />
-                </IconButton>
-              </div>
-            ))
-          ) : (
-            <p className="muted small">Your saved layouts will appear here.</p>
-          )}
-        </div>
+        {state.layouts.map((l) => (
+          <div className="setting-row" key={l.id}>
+            <strong>{l.name}</strong>
+            <Button
+              disabled={recording}
+              onClick={() => {
+                setDevice(l.recorder);
+                setGrid(l.grid);
+                setFit(l.fit);
+                setPage(0);
+                setLayoutModal(false);
+              }}
+            >
+              Load
+            </Button>
+            <Button
+              onClick={() => void patch({ layouts: state.layouts.filter((x) => x.id !== l.id) })}
+            >
+              Remove
+            </Button>
+          </div>
+        ))}
       </Modal>
     </div>
   );

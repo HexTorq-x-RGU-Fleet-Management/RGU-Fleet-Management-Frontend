@@ -1,19 +1,19 @@
-# Local acceptance
+# Local application flow
 
-Start npm run dev and open http://127.0.0.1:3107.
+Start the Windows API on 8101 and this frontend on 3107. Use 127.0.0.1 for both.
+If setup is required, create the one platform owner. Request a workspace admin
+account and approve it as the owner. Sign in as that approved admin.
 
-1. Fleet overview: inspect each bus's speed, fuel, driver and mapped hardware.
-2. Add bus: provide number, registration and driver. An unmapped bus is valid;
-   enter a unique mock GPS/fuel device ID to generate simulated telemetry.
-3. Open a bus. Move the journey slider: location, speed, ignition and fuel all
-   refer to that selected timestamp. Try replay, Latest and the history window.
-4. Bus cameras: unavailable channels are excluded. Star/unstar channels, then
-   open the bus camera view; only starred working sample channels appear.
-5. Refresh the browser: bus configuration and stars remain in this preview.
-6. Edit a bus to clear its telemetry mapping: show missing data, never zero fuel.
-7. Check the offline recorder's bus: show no available cameras.
+Connect Hik-Connect from Settings. Device access and SDK playback authorization
+are separate states; use the installed iVMS sign-in when playback needs it.
+Refresh real recorder inventory, add a bus and map its recorder. No mock bus or
+camera is seeded into this application. An unmapped bus is valid during setup.
 
-Only workspace-admin preview role exposes bus editing. Server authorization is
-separate and enforced in the Windows API. No real cameras or vendor credentials
-are needed for these steps. Preview persistence is browser-local, not server
-storage or a claim of SaaS account isolation.
+When online, check camera availability, star working channels, and open the bus
+camera view. Camera frames/audio must come from the backend SDK. Offline or
+unchecked channels must never show generated footage. See REAL-CAMERA-ACCEPTANCE.md.
+
+If optional mock GPS/fuel is needed before vendor phase 2, assign a telemetry
+device ID and use the admin backend simulator action in Settings. It stores
+observations in PostgreSQL. The browser reads history through the API.
+Without observations the UI shows no stored data, not zero fuel or fake motion.

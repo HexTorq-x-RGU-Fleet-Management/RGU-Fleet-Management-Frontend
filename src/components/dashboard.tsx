@@ -3,15 +3,16 @@ import { useRef, useState } from 'react';
 import Link from 'next/link';
 import { gsap } from 'gsap';
 import { useGSAP } from '@gsap/react';
-import { Cctv, HardDrive, Radio, Star, ArrowUpRight, Link2 } from 'lucide-react';
-import { recorders } from '@/lib/model';
+import { Cctv, HardDrive, Radio, Star, ArrowUpRight, Link2, RefreshCw } from 'lucide-react';
 import { workingChannels } from '@/lib/fleet';
 import { useWorkspace } from './workspace-provider';
 import { RecorderCard } from './recorder-card';
-import { PageHeading, Reveal, Badge } from './ui';
+import { PageHeading, Reveal, Button } from './ui';
+import { toast } from 'sonner';
 export function RecorderLibrary() {
-  const { state } = useWorkspace(),
+  const { state, provider, refreshDevices } = useWorkspace(),
     [filter, setFilter] = useState('all'),
+    [busy, setBusy] = useState(false),
     scope = useRef<HTMLDivElement>(null);
   useGSAP(
     () => {
@@ -27,20 +28,32 @@ export function RecorderLibrary() {
     },
     { scope, dependencies: [state.settings.reduceMotion] },
   );
-  const list = recorders.filter(
-    (r) =>
-      filter === 'all' ||
-      (filter === 'online' && r.online) ||
-      (filter === 'favourites' && state.favorites.includes(r.id)),
-  );
+  const recorders = state.recorders,
+    list = recorders.filter(
+      (r) =>
+        filter === 'all' ||
+        (filter === 'online' && r.online) ||
+        (filter === 'favourites' && state.favorites.includes(r.id)),
+    );
   return (
     <div ref={scope}>
       <PageHeading
         eyebrow="CAMERA HARDWARE"
         title="Recorder library"
-        description="Import recorders separately, then map each one to a bus. Cameras belong to that same vehicle."
+        description="Real owned and shared Hik-Connect recorders. Import them before mapping buses."
       >
-        <Badge tone="amber">Sample inventory</Badge>
+        <Button
+          loading={busy}
+          onClick={() => {
+            setBusy(true);
+            void refreshDevices()
+              .catch((e) => toast.error(e.message))
+              .finally(() => setBusy(false));
+          }}
+        >
+          <RefreshCw size={15} />
+          Refresh recorders
+        </Button>
         <Link className="btn btn-primary" href="/settings">
           <Link2 size={16} />
           Hik-Connect account
@@ -50,10 +63,14 @@ export function RecorderLibrary() {
       <div className="stats-grid three-stats">
         {[
           { label: 'Recorders', value: recorders.length, icon: HardDrive },
-          { label: 'Sample online', value: recorders.filter((r) => r.online).length, icon: Radio },
           {
-            label: 'Working sample cameras',
-            value: recorders.reduce((n, r) => n + workingChannels(r.id).length, 0),
+            label: 'Online recorders',
+            value: recorders.filter((r) => r.online).length,
+            icon: Radio,
+          },
+          {
+            label: 'SDK-verified channels',
+            value: recorders.reduce((n, r) => n + workingChannels(recorders, r.id).length, 0),
             icon: Cctv,
           },
         ].map((item) => (
@@ -65,14 +82,6 @@ export function RecorderLibrary() {
             <div className="stat-value">{item.value}</div>
           </div>
         ))}
-      </div>
-      <div className="fleet-source">
-        <Radio size={15} />
-        <strong>Preview inventory</strong>
-        <span>
-          Hardware import, channel probing and actual streaming use the authenticated Windows
-          backend. This collection is simulated.
-        </span>
       </div>
       <div className="library-tools">
         <div className="segmented" aria-label="Recorder filter">
@@ -96,13 +105,25 @@ export function RecorderLibrary() {
           <ArrowUpRight size={14} />
         </Link>
       </div>
-      <div className="recorder-grid">
-        {list.map((r, i) => (
-          <Reveal key={r.id} delay={i * 0.035}>
-            <RecorderCard recorder={r} />
-          </Reveal>
-        ))}
-      </div>
+      {!list.length ? (
+        <div className="fleet-no-data">
+          <Cctv size={30} />
+          <h3>No recorders available</h3>
+          <p>
+            {provider?.connected
+              ? 'Refresh inventory, or ask your administrator for recorder permissions.'
+              : 'Connect Hik-Connect from account settings first.'}
+          </p>
+        </div>
+      ) : (
+        <div className="recorder-grid">
+          {list.map((r, i) => (
+            <Reveal key={r.id} delay={i * 0.035}>
+              <RecorderCard recorder={r} />
+            </Reveal>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

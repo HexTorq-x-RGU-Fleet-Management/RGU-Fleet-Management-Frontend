@@ -1,0 +1,66 @@
+.camera-tile {
+  position: relative;
+  overflow: hidden;
+}
+.live-camera-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: #080d12;
+  transform-origin: center;
+}
+.camera-tile .stopped-tile {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: var(--bg);
+}
+.camera-tile .tile-top,
+.camera-tile .tile-caption {
+  z-index: 2;
+}
+.camera-tile .stopped-tile small {
+  padding: 0 15px;
+  max-width: 100%;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.bus-camera-placeholder img {
+  min-height: 150px;
+}
+.clips-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  gap: 20px;
+}
+.clip-card .clip-body {
+  padding: 18px;
+}
+.clip-preview {
+  width: 100%;
+  min-height: 170px;
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  justify-content: center;
+  background: var(--panel-hover);
+  border: 0;
+}
+.clip-card .clip-body h3 {
+  overflow-wrap: anywhere;
+}
+.settings-panel .control-actions {
+  flex-wrap: wrap;
+}
+.setting-row p {
+  color: var(--muted);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.settings-nav button {
+  text-align: left;
+}
+.auth-form-card .info-box {
+  margin-bottom: 20px;
+}

@@ -1,3 +1,4 @@
+import type { Principal } from './model';
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -8,55 +9,86 @@ export class ApiError extends Error {
   }
 }
 export const apiBase = (process.env.NEXT_PUBLIC_API_BASE_URL || '').replace(/\/$/, '');
-export async function request<T>(path: string, data?: unknown, signal?: AbortSignal): Promise<T> {
+let viewerId: string | null = null,
+  connectionId: string | null = null;
+export function bindViewer(id: string | null) {
+  viewerId = id;
+  connectionId = null;
+}
+export function currentViewerId() {
+  return viewerId;
+}
+export function bindProvider(id: string | null) {
+  connectionId = id;
+}
+export function apiUrl(path: string) {
   if (!apiBase)
     throw new ApiError(
-      'The camera backend is not configured yet. You can explore the preview workspace.',
+      'Configure NEXT_PUBLIC_API_BASE_URL to connect the Windows API.',
       0,
       'not-configured',
     );
   if (!path.startsWith('/api/')) throw new ApiError('Invalid API path.', 400);
+  return apiBase + path;
+}
+export function streamUrl(path: string) {
+  const q = new URLSearchParams();
+  if (viewerId) q.set('user', viewerId);
+  if (connectionId) q.set('connection', connectionId);
+  return apiUrl(path) + (q.size ? '?' + q : '');
+}
+export async function request<T = any>(
+  path: string,
+  data?: unknown,
+  signal?: AbortSignal,
+): Promise<T> {
   let response: Response;
   try {
-    response = await fetch(apiBase + path, {
+    response = await fetch(apiUrl(path), {
       method: data === undefined ? 'GET' : 'POST',
       credentials: 'include',
       cache: 'no-store',
-      headers: { 'Content-Type': 'application/json', 'X-Hik-Local': '1' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Hik-Local': '1',
+        ...(viewerId ? { 'X-Saas-User': viewerId } : {}),
+        ...(connectionId && path.startsWith('/api/live/')
+          ? { 'X-Hik-Connection': connectionId }
+          : {}),
+      },
       ...(data === undefined ? {} : { body: JSON.stringify(data) }),
-      signal: signal || AbortSignal.timeout(20000),
+      signal:
+        signal ??
+        AbortSignal.timeout(
+          path.includes('/live/start') || path.includes('/previews/') ? 60000 : 20000,
+        ),
     });
   } catch (error) {
-    if (error instanceof Error && error.name === 'AbortError') throw error;
-    throw new ApiError('The backend could not be reached. Check its address and connection.');
+    if (error instanceof ApiError || (error instanceof Error && error.name === 'AbortError'))
+      throw error;
+    throw new ApiError('The backend could not be reached. Check its connection.');
   }
-  let result: Record<string, unknown>;
+  let result: any;
   try {
     result = await response.json();
   } catch {
-    throw new ApiError(
-      'The backend returned an unexpected response.',
-      response.status,
-      'invalid-response',
-    );
+    throw new ApiError('Unexpected API response.', response.status, 'invalid-response');
   }
-  if (!response.ok)
-    throw new ApiError(
-      typeof result.error === 'string' ? result.error : 'The request could not be completed.',
-      response.status,
-      typeof result.code === 'string' ? result.code : 'request-failed',
-    );
+  if (!response.ok) {
+    if (response.status === 401 && typeof window !== 'undefined')
+      window.dispatchEvent(new Event('rgu-session-expired'));
+    throw new ApiError(result.error || 'The request failed.', response.status, result.code);
+  }
   return result as T;
 }
 export const api = {
   status: () =>
-    request<{
-      authenticated: boolean;
-      user?: { fullName: string; role: import('./model').Role };
-      setupRequired: boolean;
-    }>('/api/auth/status'),
-  login: (email: string, password: string) =>
-    request<{ authenticated: boolean }>('/api/auth/login', { email, password }),
+    request<{ authenticated: boolean; user: Principal | null; setupRequired: boolean }>(
+      '/api/auth/status',
+    ),
+  login: (email: string, password: string) => request('/api/auth/login', { email, password }),
+  setup: (fullName: string, email: string, password: string) =>
+    request('/api/auth/setup', { fullName, email, password }),
   signup: (fullName: string, email: string, password: string, workspaceName: string) =>
     request('/api/auth/signup', { fullName, email, password, workspaceName }),
   logout: () => request('/api/auth/logout', {}),
@@ -65,26 +97,47 @@ export const api = {
   changePassword: (currentPassword: string, newPassword: string) =>
     request('/api/auth/password', { currentPassword, newPassword }),
 };
-// Fleet endpoints are available on the Windows backend. The current fleet UI
-// intentionally uses local mock data until authenticated application wiring.
 export const fleetApi = {
-  telemetry: () =>
-    request<import('./fleet').TelemetryEnvelope & { source: 'mock' }>('/api/fleet/telemetry'),
-  buses: () => request<{ buses: import('./fleet').Bus[] }>('/api/fleet/buses'),
-  saveBus: (bus: Omit<import('./fleet').Bus, 'id'> & { id?: string }) =>
-    request<{ bus: import('./fleet').Bus }>('/api/fleet/buses', bus),
-  removeBus: (id: string) => request<{ removed: boolean }>('/api/fleet/buses/remove', { id }),
-  pollMock: () =>
-    request<import('./fleet').TelemetryEnvelope & { source: 'mock' }>('/api/fleet/mock/poll', {}),
-  history: (busId: string, from: number, to: number) =>
+  buses: () => request('/api/fleet/buses'),
+  saveBus: (bus: import('./fleet').Bus) =>
+    request('/api/fleet/buses', { ...bus, ...(!bus.id ? { id: undefined } : {}) }),
+  removeBus: (id: string) => request('/api/fleet/buses/remove', { id }),
+  telemetry: () => request<import('./fleet').TelemetryEnvelope>('/api/fleet/telemetry'),
+  pollMock: () => request('/api/fleet/mock/poll', {}),
+  history: (busId: string, from: number, to: number, signal?: AbortSignal) =>
     request<{
-      bus: import('./fleet').Bus;
       samples: {
         vehicle: import('./fleet').Vehicle;
         source: 'mock' | 'vendor';
         receivedAt: string;
       }[];
-      from: number;
-      to: number;
-    }>('/api/fleet/history?' + new URLSearchParams({ busId, from: String(from), to: String(to) })),
+    }>(
+      '/api/fleet/history?' + new URLSearchParams({ busId, from: String(from), to: String(to) }),
+      undefined,
+      signal,
+    ),
 };
+export async function uploadRecording(
+  blob: Blob,
+  metadata: unknown,
+  signal?: AbortSignal,
+  expectedUser = viewerId,
+) {
+  const res = await fetch(apiUrl('/api/recordings'), {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      'X-Hik-Local': '1',
+      'Content-Type': blob.type || 'video/webm',
+      'X-Recording-Id': crypto.randomUUID(),
+      'X-Recording-Meta': encodeURIComponent(JSON.stringify(metadata)),
+      ...(expectedUser ? { 'X-Saas-User': expectedUser } : {}),
+    },
+    body: blob,
+    signal,
+  });
+  const value = await res.json();
+  if (!res.ok)
+    throw new ApiError(value.error || 'Recording upload failed.', res.status, value.code);
+  return value;
+}

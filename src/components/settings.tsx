@@ -1,309 +1,273 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
+import { Link2, Settings as SettingsIcon, HardDrive, RefreshCw, LogOut } from 'lucide-react';
 import { toast } from 'sonner';
-import {
-  Link2,
-  ShieldCheck,
-  HardDrive,
-  Palette,
-  ExternalLink,
-  LockKeyhole,
-  Info,
-  Server,
-  Save,
-  RotateCcw,
-} from 'lucide-react';
 import { useWorkspace } from './workspace-provider';
-import { PageHeading, Button, Field, Modal, Confirm, Badge } from './ui';
-import { formatBytes, type Settings as SettingsType } from '@/lib/model';
-import { api, apiBase } from '@/lib/api';
+import { PageHeading, Button, Modal, Field, Badge, Confirm } from './ui';
+import { api, request, fleetApi } from '@/lib/api';
+import { formatBytes } from '@/lib/model';
 export function Settings() {
-  const { state, patch, log } = useWorkspace();
-  const [tab, setTab] = useState('general');
-  const [connection, setConnection] = useState(false);
-  const [password, setPassword] = useState(false);
-  const [reset, setReset] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [draft, setDraft] = useState(state.settings);
-  useEffect(() => setDraft(state.settings), [state.settings]);
-  function save() {
-    patch({ settings: draft });
-    log('Preferences updated', 'Workspace preferences', 'settings');
-    toast.success('Workspace preferences saved.');
+  const { state, user, provider, patch, refresh, refreshDevices, signOut } = useWorkspace();
+  const [tab, setTab] = useState<string>(user?.role === 'superadmin' ? 'viewing' : 'account'),
+    [connection, setConnection] = useState(false),
+    [busy, setBusy] = useState(false),
+    [disconnect, setDisconnect] = useState(false),
+    [storage, setStorage] = useState<any>(null);
+  useEffect(() => {
+    if (tab === 'storage' && user?.role !== 'superadmin')
+      void request('/api/recordings/storage')
+        .then((d) => setStorage(d.storage))
+        .catch((e) => toast.error(e.message));
+  }, [tab, user?.id]);
+  async function action(work: () => Promise<unknown>) {
+    setBusy(true);
+    try {
+      await work();
+      await refresh();
+      toast.success('Connection updated.');
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
   }
   return (
     <div>
       <PageHeading
-        eyebrow="MAKE THE WORKSPACE YOURS"
-        title="A view that fits you."
-        description="Set your preferences, manage account access and understand storage."
+        eyebrow="WORKSPACE SETTINGS"
+        title="Your workspace, your way."
+        description="Manage provider access and your saved viewing preferences."
       />
       <div className="settings-layout">
-        <nav className="settings-tabs" aria-label="Settings sections">
+        <nav className="settings-nav" aria-label="Settings sections">
           {[
-            { id: 'general', label: 'Appearance & viewing', icon: Palette },
-            { id: 'connection', label: 'Account connection', icon: Link2 },
-            { id: 'storage', label: 'Recording storage', icon: HardDrive },
-            { id: 'security', label: 'Account security', icon: ShieldCheck },
-          ].map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              className={tab === t.id ? 'active' : ''}
-            >
-              <t.icon size={17} />
-              {t.label}
-            </button>
-          ))}
+            ['account', 'Hik-Connect account'],
+            ['viewing', 'Viewing preferences'],
+            ['storage', 'Recording storage'],
+            ['security', 'Viewer password'],
+          ]
+            .filter(([id]) => user?.role !== 'superadmin' || ['viewing', 'security'].includes(id))
+            .map(([id, label]) => (
+              <button key={id} className={tab === id ? 'active' : ''} onClick={() => setTab(id)}>
+                {label}
+              </button>
+            ))}
         </nav>
-        <div className="settings-content">
-          {tab === 'general' && (
+        <div>
+          {tab === 'account' && user?.role !== 'superadmin' && (
             <section className="panel settings-panel">
-              <div className="settings-section-heading">
-                <Palette size={20} />
-                <div>
-                  <h2>Appearance & viewing</h2>
-                  <p>Small details, a better everyday workspace.</p>
-                </div>
-              </div>
-              <div className="setting-row">
-                <div>
-                  <strong>Appearance</strong>
-                  <p>Choose the environment that feels right.</p>
-                </div>
-                <div className="segmented">
-                  {(['dark', 'light'] as const).map((v) => (
-                    <button
-                      key={v}
-                      className={draft.theme === v ? 'selected' : ''}
-                      onClick={() => setDraft({ ...draft, theme: v })}
-                    >
-                      {v === 'dark' ? 'Dark' : 'Light'}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="setting-row">
-                <div>
-                  <strong>Default camera quality</strong>
-                  <p>Adaptive prefers SD grids and HD focus when connected.</p>
-                </div>
-                <select
-                  aria-label="Default camera quality"
-                  value={draft.quality}
-                  onChange={(e) =>
-                    setDraft({ ...draft, quality: e.target.value as SettingsType['quality'] })
-                  }
-                >
-                  <option value="auto">Adaptive</option>
-                  <option value="hd">HD / Main stream</option>
-                  <option value="sd">SD / Substream</option>
-                </select>
-              </div>
-              <div className="setting-row">
-                <div>
-                  <strong>Picture sizing</strong>
-                  <p>Keep original proportions or fill each tile.</p>
-                </div>
-                <select
-                  aria-label="Default picture sizing"
-                  value={draft.fit}
-                  onChange={(e) =>
-                    setDraft({ ...draft, fit: e.target.value as 'contain' | 'cover' })
-                  }
-                >
-                  <option value="contain">Fit</option>
-                  <option value="cover">Fill</option>
-                </select>
-              </div>
-              <div className="setting-row">
-                <div>
-                  <strong>Rotation interval</strong>
-                  <p>Time between preview camera pages.</p>
-                </div>
-                <select
-                  aria-label="Rotation interval"
-                  value={draft.rotation}
-                  onChange={(e) => setDraft({ ...draft, rotation: Number(e.target.value) })}
-                >
-                  {[15, 30, 60, 120].map((n) => (
-                    <option key={n} value={n}>
-                      {n} seconds
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="setting-row">
-                <div>
-                  <strong>Reduce motion</strong>
-                  <p>Disable smooth scrolling and simplify interface animations.</p>
-                </div>
-                <button
-                  className={`switch ${draft.reduceMotion ? 'on' : ''}`}
-                  role="switch"
-                  aria-checked={draft.reduceMotion}
-                  aria-label="Reduce motion"
-                  onClick={() => setDraft({ ...draft, reduceMotion: !draft.reduceMotion })}
-                >
-                  <span />
-                </button>
-              </div>
-              <div className="panel-footer">
-                <span>Preferences are active for this device.</span>
-                <Button variant="primary" onClick={save}>
-                  <Save size={15} />
-                  Save preferences
-                </Button>
-              </div>
-            </section>
-          )}
-          {tab === 'connection' && (
-            <section className="panel settings-panel">
-              <div className="settings-section-heading">
-                <Link2 size={20} />
-                <div>
-                  <h2>Hik-Connect account</h2>
-                  <p>Your provider connection belongs to your workspace.</p>
-                </div>
-                <Badge tone="amber">Not connected</Badge>
-              </div>
-              <div className="connection-illustration">
-                <Server size={32} />
-                <h3>Your real cameras start here.</h3>
-                <p>
-                  The new backend is the next implementation phase. Provider access requires its
-                  authorized SDK and account flow.
-                </p>
-                {state.role === 'admin' ? (
+              <h2>Hik-Connect account</h2>
+              <Badge tone={provider?.connected ? 'green' : 'amber'}>
+                {provider?.authorizationState || 'Disconnected'}
+              </Badge>
+              <p>
+                {provider?.user?.email ||
+                  provider?.user?.username ||
+                  (provider?.connected
+                    ? 'Workspace camera connection active'
+                    : 'No provider account connected')}
+              </p>
+              <p className="muted">
+                {provider?.playbackReady
+                  ? 'Playback authorization saved.'
+                  : provider?.connected
+                    ? 'Device access is connected. Playback authorization is still required.'
+                    : 'Sign in to load your owned and shared recorders.'}
+              </p>
+              {user?.role === 'admin' ? (
+                <div className="control-actions mt-4">
                   <Button variant="primary" onClick={() => setConnection(true)}>
                     <Link2 size={15} />
-                    Connect Hik-Connect
+                    Sign in to Hik-Connect
                   </Button>
-                ) : (
-                  <p className="small muted">
-                    A workspace administrator manages the provider connection.
-                  </p>
-                )}
-              </div>
-              <div className="info-box">
-                <Info size={17} />
-                <p>
-                  {apiBase
-                    ? `Configured backend: ${apiBase}`
-                    : 'No backend address is configured. Preview mode never stores a provider password.'}
-                </p>
-              </div>
-              <a
-                className="text-link mt-4"
-                href="https://www.hik-connect.com/views/login/index.html"
-                target="_blank"
-                rel="noreferrer"
+                  <Button
+                    loading={busy}
+                    onClick={() => void action(() => request('/api/connect/desktop', {}))}
+                  >
+                    Use iVMS playback sign-in
+                  </Button>
+                  <Button disabled={!provider?.connected} onClick={() => setDisconnect(true)}>
+                    Disconnect Hik-Connect
+                  </Button>
+                  <Button
+                    loading={busy}
+                    onClick={() => void action(() => request('/api/provider/recovery/retry', {}))}
+                  >
+                    <RefreshCw size={14} />
+                    Retry saved recovery
+                  </Button>
+                  {provider?.automaticReconnect && (
+                    <Button
+                      loading={busy}
+                      onClick={() =>
+                        void action(() => request('/api/provider/recovery/disable', {}))
+                      }
+                    >
+                      Disable automatic recovery
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <p>Your workspace administrator manages this connection.</p>
+              )}
+              <p className="small muted mt-4">
+                Provider credentials stay on the backend. Verification challenges must be completed
+                as required by Hik-Connect; playback may need separate iVMS authorization.
+              </p>
+            </section>
+          )}
+          {tab === 'viewing' && (
+            <section className="panel settings-panel">
+              <h2>Viewing preferences</h2>
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  const d = new FormData(e.currentTarget);
+                  await patch({
+                    settings: {
+                      ...state.settings,
+                      theme: String(d.get('theme')) as 'dark' | 'light',
+                      quality: String(d.get('quality')) as 'auto' | 'sd' | 'hd',
+                      rotation: Number(d.get('rotation')),
+                      reduceMotion: d.get('motion') === 'on',
+                    },
+                  });
+                  toast.success('Preferences saved to your account.');
+                }}
               >
-                Open official Hik-Connect
-                <ExternalLink size={14} />
-              </a>
+                <Field label="Appearance">
+                  <select name="theme" defaultValue={state.settings.theme}>
+                    <option value="dark">Dark</option>
+                    <option value="light">Light</option>
+                  </select>
+                </Field>
+                <Field label="Default quality">
+                  <select name="quality" defaultValue={state.settings.quality}>
+                    <option value="auto">Adaptive</option>
+                    <option value="sd">SD</option>
+                    <option value="hd">HD</option>
+                  </select>
+                </Field>
+                <Field label="Rotation interval">
+                  <select name="rotation" defaultValue={state.settings.rotation}>
+                    {[15, 30, 60, 120].map((n) => (
+                      <option key={n} value={n}>
+                        {n} seconds
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                <label className="setting-row">
+                  <span>Reduce motion</span>
+                  <input
+                    type="checkbox"
+                    name="motion"
+                    defaultChecked={state.settings.reduceMotion}
+                  />
+                </label>
+                <Button type="submit" variant="primary">
+                  Save preferences
+                </Button>
+              </form>
             </section>
           )}
           {tab === 'storage' && (
             <section className="panel settings-panel">
-              <div className="settings-section-heading">
-                <HardDrive size={20} />
-                <div>
-                  <h2>Recording storage</h2>
-                  <p>Know what is kept, and where.</p>
-                </div>
-              </div>
-              <div className="storage-figure">
-                <strong>{formatBytes(state.clips.reduce((n, c) => n + c.bytes, 0))}</strong>
-                <span>{state.clips.length} local clips / browser storage</span>
-              </div>
-              <div className="storage-bar">
-                <span
-                  style={{
-                    width:
-                      Math.min(
-                        100,
-                        (state.clips.reduce((n, c) => n + c.bytes, 0) / (128 * 1024 ** 2)) * 100,
-                      ) + '%',
-                  }}
-                />
-              </div>
-              <p className="muted small">
-                Preview uploads are limited to 128 MB each. Browser capacity varies by device.
-              </p>
-              <div className="setting-row">
-                <div>
-                  <strong>Preferred server retention</strong>
-                  <p>A preference until backend storage is connected.</p>
-                </div>
-                <select
-                  aria-label="Retention period"
-                  value={draft.retention}
-                  onChange={(e) => setDraft({ ...draft, retention: Number(e.target.value) })}
-                >
-                  {[
-                    [1, '1 day'],
-                    [7, '7 days'],
-                    [30, '1 month'],
-                    [90, '3 months'],
-                  ].map(([n, label]) => (
-                    <option key={n} value={n}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="info-box">
-                <Info size={17} />
-                <p>
-                  Local preview files remain until deleted or browser data is cleared. Server
-                  retention is not active.
-                </p>
-              </div>
-              <div className="panel-footer">
-                <span>Future backend storage policy</span>
-                <Button variant="primary" onClick={save}>
-                  Save preference
-                </Button>
-              </div>
+              <h2>Server recording storage</h2>
+              {storage ? (
+                <>
+                  <p>
+                    {formatBytes(storage.usedBytes)} / {formatBytes(storage.maxBytes)}
+                  </p>
+                  <p>{storage.clipCount} stored clips</p>
+                  {user?.role === 'admin' && (
+                    <Field label="Retention period">
+                      <select
+                        value={storage.retentionDays}
+                        onChange={async (e) => {
+                          try {
+                            const d = await request('/api/recordings/settings', {
+                              retentionDays: Number(e.target.value),
+                              maxBytes: storage.maxBytes,
+                            });
+                            setStorage(d.storage || d);
+                            toast.success('Retention saved.');
+                          } catch (e) {
+                            toast.error((e as Error).message);
+                          }
+                        }}
+                      >
+                        {[1, 7, 30, 90].map((n) => (
+                          <option value={n} key={n}>
+                            {n} days
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+                  )}
+                  <Button
+                    onClick={() =>
+                      void fleetApi
+                        .pollMock()
+                        .then(() => refresh())
+                        .then(() => toast.success('Mock telemetry stored in PostgreSQL.'))
+                        .catch((e) => toast.error(e.message))
+                    }
+                    disabled={user?.role !== 'admin'}
+                  >
+                    Generate backend GPS/fuel samples
+                  </Button>
+                  <p className="small muted">
+                    Optional simulator for mapped telemetry devices only. Real GPS/fuel vendor
+                    integration is phase 2.
+                  </p>
+                </>
+              ) : (
+                <p>Storage summary unavailable or not permitted.</p>
+              )}
             </section>
           )}
           {tab === 'security' && (
             <section className="panel settings-panel">
-              <div className="settings-section-heading">
-                <ShieldCheck size={20} />
-                <div>
-                  <h2>Account security</h2>
-                  <p>Keep workspace access in your control.</p>
-                </div>
-              </div>
-              <div className="setting-row">
-                <div>
-                  <strong>Viewer password</strong>
-                  <p>Your viewer account is separate from Hik-Connect.</p>
-                </div>
-                <Button onClick={() => setPassword(true)}>
-                  <LockKeyhole size={14} />
-                  Change password
+              <h2>Change viewer password</h2>
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  const form = e.currentTarget,
+                    d = new FormData(form);
+                  setBusy(true);
+                  try {
+                    await api.changePassword(String(d.get('current')), String(d.get('new')));
+                    await refresh();
+                    form.reset();
+                    toast.success('Password changed; other viewer sessions were signed out.');
+                  } catch (e) {
+                    toast.error((e as Error).message);
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              >
+                <Field label="Current password">
+                  <input type="password" name="current" autoComplete="current-password" required />
+                </Field>
+                <Field label="New password">
+                  <input
+                    type="password"
+                    name="new"
+                    autoComplete="new-password"
+                    minLength={12}
+                    required
+                  />
+                </Field>
+                <Button type="submit" loading={busy}>
+                  Save new password
                 </Button>
-              </div>
-              <div className="setting-row">
-                <div>
-                  <strong>Password recovery</strong>
-                  <p>Contact your platform administrator for a manual reset.</p>
-                </div>
-                <Badge>Administrator managed</Badge>
-              </div>
-              <div className="setting-row">
-                <div>
-                  <strong>Viewing preferences</strong>
-                  <p>Reset layouts, favourites and appearance. Team, role and clips stay intact.</p>
-                </div>
-                <Button variant="danger" onClick={() => setReset(true)}>
-                  <RotateCcw size={14} />
-                  Reset preferences
-                </Button>
-              </div>
+              </form>
+              <Button className="mt-4" onClick={() => void signOut()}>
+                <LogOut size={15} />
+                Sign out
+              </Button>
             </section>
           )}
         </div>
@@ -311,136 +275,65 @@ export function Settings() {
       <Modal
         open={connection}
         onOpenChange={setConnection}
-        title="Connect your Hik-Connect account"
-        description="Credentials are sent only to the configured backend and never saved in browser storage."
+        title="Sign in to Hik-Connect"
+        description="Connect your workspace’s owned and shared recorders."
       >
         <form
           onSubmit={async (e) => {
             e.preventDefault();
-            const form = e.currentTarget;
-            const data = new FormData(form);
+            const form = e.currentTarget,
+              d = new FormData(form);
             setBusy(true);
             try {
-              await api.connect(
-                String(data.get('account')),
-                String(data.get('password')),
-                String(data.get('region')),
-                data.get('renewal') === 'on',
-              );
-              toast.success(
-                'Backend connection request completed. Camera integration still needs validation.',
-              );
+              await request('/api/connect/personal', {
+                account: String(d.get('account')),
+                password: String(d.get('password')),
+                origin: String(d.get('origin')),
+                autoReconnect: d.get('recover') === 'on',
+              });
+              await refresh();
+              await refreshDevices();
               setConnection(false);
-            } catch (error) {
-              toast.error(error instanceof Error ? error.message : 'Connection failed.');
+              toast.success('Hik-Connect account connected.');
+            } catch (e) {
+              toast.error((e as Error).message);
             } finally {
-              form.reset();
+              const input = form.elements.namedItem('password') as HTMLInputElement;
+              if (input) input.value = '';
               setBusy(false);
             }
           }}
         >
-          <Field label="Hik-Connect ID or email">
-            <input
-              name="account"
-              autoComplete="username"
-              required
-              placeholder="Your Hik-Connect account"
-            />
+          <Field label="Hik-Connect ID">
+            <input name="account" autoComplete="username" required />
           </Field>
-          <Field label="Password">
-            <input name="password" type="password" autoComplete="current-password" required />
+          <Field label="Hik-Connect password">
+            <input type="password" name="password" autoComplete="current-password" required />
           </Field>
           <Field label="Region">
-            <select name="region">
-              <option value="india">India</option>
-              <option value="global">Global</option>
+            <select name="origin">
+              <option value="https://iindia.hik-connect.com">India</option>
+              <option value="https://www.hik-connect.com">Global</option>
             </select>
           </Field>
-          <label className="check-row">
-            <input type="checkbox" name="renewal" />
-            Allow encrypted reconnect credentials on the backend
+          <label className="setting-row">
+            <span>Save encrypted credentials for account recovery</span>
+            <input type="checkbox" name="recover" />
           </label>
-          <div className="modal-footer">
-            <Button type="button" onClick={() => setConnection(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" variant="primary" loading={busy}>
-              Connect account
-            </Button>
-          </div>
-        </form>
-      </Modal>
-      <Modal
-        open={password}
-        onOpenChange={setPassword}
-        title="Update your viewer password"
-        description="Requires a connected backend. Session revocation is enforced by the server."
-      >
-        <form
-          onSubmit={async (e) => {
-            e.preventDefault();
-            const form = e.currentTarget;
-            const data = new FormData(form);
-            if (data.get('new') !== data.get('confirm'))
-              return toast.error('The new passwords do not match.');
-            setBusy(true);
-            try {
-              await api.changePassword(String(data.get('current')), String(data.get('new')));
-              toast.success('Password updated by the backend.');
-              setPassword(false);
-            } catch (error) {
-              toast.error(
-                error instanceof Error ? error.message : 'Password could not be updated.',
-              );
-            } finally {
-              form.reset();
-              setBusy(false);
-            }
-          }}
-        >
-          <Field label="Current password">
-            <input type="password" name="current" autoComplete="current-password" required />
-          </Field>
-          <Field label="New password">
-            <input type="password" name="new" autoComplete="new-password" minLength={12} required />
-          </Field>
-          <Field label="Confirm new password">
-            <input
-              type="password"
-              name="confirm"
-              autoComplete="new-password"
-              minLength={12}
-              required
-            />
-          </Field>
-          <div className="modal-footer">
-            <Button variant="primary" type="submit" loading={busy}>
-              Save password
-            </Button>
-          </div>
+          <Button variant="primary" loading={busy} type="submit">
+            Connect account
+          </Button>
         </form>
       </Modal>
       <Confirm
-        open={reset}
-        onOpenChange={setReset}
-        title="Reset viewing preferences?"
-        description="Resets layouts, favourites and appearance. Team, preview role and recording files stay intact."
-        action="Reset preferences"
-        onConfirm={() => {
-          patch({
-            favorites: ['kpm-3', 'kpm-5'],
-            layouts: [],
-            settings: {
-              retention: 7,
-              quality: 'auto',
-              fit: 'contain',
-              theme: 'dark',
-              rotation: 30,
-              reduceMotion: false,
-            },
-          });
-          toast.success('Viewing preferences reset.');
-        }}
+        open={disconnect}
+        onOpenChange={setDisconnect}
+        title="Disconnect Hik-Connect?"
+        description="Camera streams stop and this saved provider connection is removed. Your viewer account remains."
+        action="Disconnect"
+        onConfirm={() =>
+          action(() => request('/api/disconnect', {})).then(() => setDisconnect(false))
+        }
       />
     </div>
   );

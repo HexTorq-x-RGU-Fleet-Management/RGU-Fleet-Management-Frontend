@@ -4,6 +4,7 @@ import * as Alert from '@radix-ui/react-alert-dialog';
 import { motion, useReducedMotion } from 'framer-motion';
 import { X, LoaderCircle, ArrowUpRight, Search } from 'lucide-react';
 import type { ReactNode, ButtonHTMLAttributes } from 'react';
+import { useId, isValidElement, cloneElement } from 'react';
 export function Button({
   children,
   variant = 'secondary',
@@ -222,12 +223,22 @@ export function Field({
   children: ReactNode;
   hint?: string;
 }) {
+  const id = useId(),
+    hintId = id + '-hint';
+  const control = isValidElement<{ id?: string; 'aria-describedby'?: string }>(children)
+    ? cloneElement(children, {
+        id,
+        'aria-describedby': hint ? hintId : children.props['aria-describedby'],
+      })
+    : children;
   return (
-    <label className="field">
-      <span>{label}</span>
-      {children}
-      {hint && <small>{hint}</small>}
-    </label>
+    <div className="field">
+      <span>
+        <label htmlFor={id}>{label}</label>
+      </span>
+      {control}
+      {hint && <small id={hintId}>{hint}</small>}
+    </div>
   );
 }
 export function ExternalMark() {

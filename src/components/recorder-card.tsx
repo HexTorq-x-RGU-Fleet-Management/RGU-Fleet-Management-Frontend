@@ -16,7 +16,7 @@ export function RecorderCard({ recorder: r }: { recorder: Recorder }) {
           <span>CAMERA WORKSPACE</span>
         </div>
         <span className="preview-shade" />
-        <span className="preview-stamp">PREVIEW READY</span>
+        <span className="preview-stamp">ACTIVE 1080P</span>
         <span className="recorder-preview-meta">
           <Cctv size={15} />
           {r.channels} channels
@@ -53,7 +53,7 @@ export function RecorderCard({ recorder: r }: { recorder: Recorder }) {
         </p>
         <div className="recorder-card-bottom">
           <Badge tone={r.online ? 'green' : 'neutral'}>
-            {r.online ? 'Available' : 'Offline'} <span className="sr-only">in preview</span>
+            {r.online ? 'Active' : 'Offline'}
           </Badge>
           <span>
             <BusFront size={13} />

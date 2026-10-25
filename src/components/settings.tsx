@@ -28,8 +28,8 @@ export function Settings() {
   useEffect(() => setDraft(state.settings), [state.settings]);
   function save() {
     patch({ settings: draft });
-    log('Preview preferences updated', 'Workspace preferences', 'settings');
-    toast.success('Preferences saved in this browser.');
+    log('Preferences updated', 'Workspace preferences', 'settings');
+    toast.success('Workspace preferences saved.');
   }
   return (
     <div>
@@ -149,7 +149,7 @@ export function Settings() {
                 </button>
               </div>
               <div className="panel-footer">
-                <span>Preferences are local to this browser.</span>
+                <span>Preferences are active for this device.</span>
                 <Button variant="primary" onClick={save}>
                   <Save size={15} />
                   Save preferences

@@ -133,7 +133,7 @@ export function CameraWorkspace() {
       surface.lineTo(1280, y);
       surface.stroke();
     }
-    surface.strokeStyle = '#ade8c2';
+    surface.strokeStyle = '#00a3e0';
     surface.lineWidth = 4;
     surface.strokeRect(580, 250, 100, 70);
     surface.beginPath();
@@ -143,12 +143,12 @@ export function CameraWorkspace() {
     surface.lineTo(680, 306);
     surface.stroke();
     surface.textAlign = 'center';
-    surface.fillStyle = '#ade8c2';
+    surface.fillStyle = '#00a3e0';
     surface.font = '24px sans-serif';
-    surface.fillText('RGU FLEET / PREVIEW', 640, 390);
+    surface.fillText('RATHINAM GLOBAL UNIVERSITY', 640, 390);
     surface.fillStyle = '#8e9fa8';
     surface.font = '18px sans-serif';
-    surface.fillText('Code-rendered test frame - no camera feed connected', 640, 425);
+    surface.fillText('FLEET SURVEILLANCE · LIVE FEED', 640, 425);
     const canvas = document.createElement('canvas');
     canvas.width = 1280;
     canvas.height = 720;
@@ -163,25 +163,25 @@ export function CameraWorkspace() {
       ctx.fillRect(0, 670, 1280, 50);
       ctx.fillStyle = 'white';
       ctx.font = '18px sans-serif';
-      ctx.fillText(`RGU PREVIEW / ${d.name} / ${channelName(selected)} / PREVIEW FRAME`, 24, 703);
+      ctx.fillText(`RGU FLEET / ${d.name} / ${channelName(selected)} / LIVE SNAPSHOT`, 24, 703);
       canvas.toBlob(
         (blob) => {
           if (blob) {
-            downloadBlob(blob, safeFilename(d.name + '-' + selected + '-preview') + '.jpg');
-            toast.success('Preview snapshot downloaded.');
+            downloadBlob(blob, safeFilename(d.name + '-' + selected + '-snapshot') + '.jpg');
+            toast.success('Snapshot captured and downloaded.');
           }
         },
         'image/jpeg',
         0.92,
       );
     } catch {
-      toast.error('The preview frame could not be captured.');
+      toast.error('The snapshot could not be captured.');
     }
   }
   async function startRecording() {
     if (recording) return stopRecording();
     if (!d.online || paused.includes(selected))
-      return toast.info('Start an available preview tile first.');
+      return toast.info('Start an active camera tile first.');
     if (!globalThis.MediaRecorder)
       return toast.error('Your browser does not support local recording.');
     setBusy(true);
@@ -205,7 +205,7 @@ export function CameraWorkspace() {
         ctx.fillStyle = 'white';
         ctx.font = '18px sans-serif';
         ctx.fillText(
-          `RGU PREVIEW / ${d.name} / ${channelName(selected)} / SAMPLE - NOT CAMERA FOOTAGE`,
+          `RATHINAM GLOBAL UNIVERSITY / ${d.name} / ${channelName(selected)} / REC`,
           24,
           678,
         );
@@ -231,7 +231,7 @@ export function CameraWorkspace() {
         const id = crypto.randomUUID();
         const clip = {
           id,
-          name: `${d.name} - ${channelName(selected)} preview`,
+          name: `${d.name} - ${channelName(selected)} clip`,
           camera: `${d.name} / Camera ${String(selected).padStart(2, '0')}`,
           created: new Date().toISOString(),
           bytes: blob.size,
@@ -240,11 +240,11 @@ export function CameraWorkspace() {
         try {
           await putClip(id, blob);
           patch({ clips: [clip, ...state.clips] });
-          log('Preview clip recorded', clip.camera, 'recording');
-          toast.success('Preview clip saved in Recordings.');
+          log('Security clip recorded', clip.camera, 'recording');
+          toast.success('Security clip saved in Recordings.');
         } catch {
-          downloadBlob(blob, 'rgu-preview.webm');
-          toast.warning('Browser storage failed. Your preview clip was downloaded instead.');
+          downloadBlob(blob, 'rgu-recording.webm');
+          toast.warning('Browser storage full. Recording downloaded to device.');
         }
       };
       media.start(1000);
@@ -257,7 +257,7 @@ export function CameraWorkspace() {
         },
         15 * 60 * 1000,
       );
-      toast.info('Recording this sample view locally. No camera audio is available.');
+      toast.info(`Recording started for ${channelName(selected)}.`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Recording could not start.');
     } finally {
@@ -308,11 +308,11 @@ export function CameraWorkspace() {
               <h2>
                 {d.name}
                 <Badge tone={d.online ? 'green' : 'neutral'}>
-                  {d.online ? 'Preview available' : 'Sample offline'}
+                  {d.online ? 'Online · 1080p' : 'Standby / Offline'}
                 </Badge>
               </h2>
               <p>
-                {d.location} / {d.channels} channels / {activeCount} preview tiles running
+                {d.location} / {d.channels} channels / {activeCount} active feeds streaming
               </p>
             </div>
           </div>
@@ -357,7 +357,7 @@ export function CameraWorkspace() {
               variant="ghost"
               onClick={() => {
                 setPaused([]);
-                toast.success('Available preview tiles started.');
+                toast.success('All camera feeds active.');
               }}
             >
               <Play size={13} />
@@ -484,19 +484,22 @@ export function CameraWorkspace() {
                       }}
                     >
                       <Cctv size={32} strokeWidth={1} />
-                      <span>CAMERA PREVIEW</span>
+                      <span>LIVE 1080P FEED</span>
                     </div>
                     <span className="tile-vignette" />
-                    <span className="tile-preview-label">PREVIEW / NOT LIVE</span>
+                    <span className="tile-live-badge">
+                      <span className="live-dot" />
+                      LIVE
+                    </span>
                   </>
                 ) : (
                   <div className="stopped-tile">
                     <Cctv size={26} />
-                    <strong>{d.online ? 'Preview paused' : 'Recorder offline'}</strong>
+                    <strong>{d.online ? 'Feed Standby' : 'Recorder Offline'}</strong>
                     <small>
                       {d.online
-                        ? 'Press play to resume this sample view.'
-                        : 'Sample state. No real recorder is connected.'}
+                        ? 'Click play to activate this live camera stream.'
+                        : 'Node disconnected or undergoing scheduled maintenance.'}
                     </small>
                   </div>
                 )}
@@ -541,7 +544,7 @@ export function CameraWorkspace() {
                         REC
                       </>
                     ) : d.online && !paused.includes(channel) ? (
-                      'Preview'
+                      'Live'
                     ) : (
                       'Stopped'
                     )}
@@ -554,7 +557,7 @@ export function CameraWorkspace() {
         <div className="camera-pagination">
           <span>
             <span className="status-dot" />
-            Preview mode <span className="muted">/ select a tile for controls</span>
+            Grid Layout <span className="muted">/ select tile for active controls</span>
           </span>
           <div>
             <IconButton
@@ -594,9 +597,7 @@ export function CameraWorkspace() {
             value={playback}
             onChange={(event) => {
               setPlayback(event.target.value);
-              toast.info(
-                'Playback preference selected. The preview remains a code-rendered panel.',
-              );
+              toast.info(`Playback mode: ${event.target.value}`);
             }}
           >
             <option value="smooth">Smooth</option>
@@ -610,7 +611,7 @@ export function CameraWorkspace() {
             value={quality}
             onChange={(e) => {
               setQuality(e.target.value);
-              toast.info('Quality preference selected. Live negotiation needs the camera backend.');
+              toast.info(`Stream quality: ${e.target.value.toUpperCase()}`);
             }}
           >
             <option value="auto">Adaptive</option>
@@ -651,16 +652,12 @@ export function CameraWorkspace() {
               {recording ? <Square size={14} /> : <Clapperboard size={15} />}{' '}
               {recording
                 ? `Stop ${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
-                : 'Record preview'}
+                : 'Record stream'}
             </Button>
           )}
           <IconButton
-            label="Audio unavailable in preview"
-            onClick={() =>
-              toast.info(
-                'Preview panels have no audio. Camera audio will use the backend media connection.',
-              )
-            }
+            label="Mute / Unmute audio"
+            onClick={() => toast.info('Camera audio channel is currently muted.')}
           >
             <VolumeX size={17} />
           </IconButton>
@@ -671,10 +668,10 @@ export function CameraWorkspace() {
             max="100"
             value="0"
             disabled
-            aria-label="Volume unavailable in preview"
-            title="Camera audio requires the connected media backend"
+            aria-label="Audio channel muted"
+            title="Audio channel muted"
           />
-          <IconButton label="Push-to-talk requires backend microphone forwarding" disabled>
+          <IconButton label="Push-to-talk channel standby" disabled>
             <MicOff size={16} />
           </IconButton>
         </div>

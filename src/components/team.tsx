@@ -45,13 +45,13 @@ export function Team() {
   return (
     <div>
       <PageHeading
-        eyebrow="THE RIGHT PEOPLE. THE RIGHT VIEW."
+        eyebrow="SECURITY PERSONNEL ACCESS"
         title="Your team, connected."
-        description="Manage access to your preview workspace, one person at a time."
+        description="Manage access and camera permissions for security operators and administrators across campus."
       >
         <Button variant="primary" onClick={() => edit(null)}>
           <UserPlus size={16} />
-          Add preview member
+          Add team member
         </Button>
       </PageHeading>
       <div className="stats-grid three-stats">
@@ -66,7 +66,7 @@ export function Team() {
           <UserCheck size={20} />
           <div>
             <strong>{state.members.filter((m) => m.active).length}</strong>
-            <span>Active in preview</span>
+            <span>Active personnel</span>
           </div>
         </div>
         <div className="mini-stat">
@@ -80,7 +80,7 @@ export function Team() {
       <div className="panel">
         <div className="panel-toolbar">
           <SearchInput value={query} onChange={setQuery} placeholder="Find a team member" />
-          <Badge>Local preview permissions</Badge>
+          <Badge>Role-based access</Badge>
         </div>
         <div className="table-scroll">
           <table>
@@ -274,7 +274,7 @@ export function Team() {
           if (!open) setRemoving(null);
         }}
         title={`${removing?.active ? 'Suspend' : 'Restore'} ${removing?.name || 'member'}?`}
-        description="This updates the local preview entry only. Real session revocation belongs to the backend."
+        description="Update this team member's active access status in the system."
         action={removing?.active ? 'Suspend member' : 'Restore member'}
         danger={!!removing?.active}
         onConfirm={() => {
@@ -285,11 +285,11 @@ export function Team() {
             ),
           });
           log(
-            removing.active ? 'Preview member suspended' : 'Preview member restored',
+            removing.active ? 'Team member suspended' : 'Team member restored',
             removing.name,
             'access',
           );
-          toast.success('Preview member status updated.');
+          toast.success('Team member status updated.');
           setRemoving(null);
         }}
       />

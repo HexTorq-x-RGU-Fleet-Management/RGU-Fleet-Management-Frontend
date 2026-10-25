@@ -96,15 +96,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Route size={22} strokeWidth={2.5} />
           </span>
           <span>
-            RGU<span className="brand-light"> / Fleet</span>
-            <small>TRANSPORT INTELLIGENCE</small>
+            <span className="brand-logo-rgu">
+              <span className="brand-r">R</span>
+              <span className="brand-g">G</span>
+              <span className="brand-u">U</span>
+            </span>
+            <span className="brand-light"> / Fleet</span>
+            <small>RATHINAM GLOBAL UNIVERSITY</small>
           </span>
         </Link>
         <div className="workspace-switch">
           <span className="workspace-monogram">R</span>
           <div>
             <strong>Rathinam campus</strong>
-            <small>Preview workspace</small>
+            <small>Campus Fleet Operations</small>
           </div>
           <ChevronDown size={14} />
         </div>
@@ -151,14 +156,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </Link>
             </>
           )}
-          <div className="sidebar-note">
-            <span className="tiny-live" />
-            <strong>A space to explore.</strong>
-            <p>Sample cameras and local changes. Your real fleet stays untouched.</p>
-            <button onClick={() => nav('/settings')}>
-              About preview mode <ArrowUpRight size={13} />
-            </button>
-          </div>
           <Link
             className={`nav-link ${path === '/settings' ? 'active' : ''}`}
             href="/settings"
@@ -183,7 +180,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 align="start"
                 sideOffset={12}
               >
-                <Dropdown.Label className="dropdown-label">PREVIEW ROLE</Dropdown.Label>
+                <Dropdown.Label className="dropdown-label">OPERATIONS ROLE</Dropdown.Label>
                 {(['admin', 'member', 'superadmin'] as Role[]).map((role) => (
                   <Dropdown.Item
                     key={role}
@@ -192,7 +189,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                       patch({ role });
                       if (!canAccess(role, path.slice(1))) router.push('/');
                       toast.info(
-                        `Preview role: ${role === 'superadmin' ? 'platform owner' : role}`,
+                        `Active role: ${role === 'superadmin' ? 'platform owner' : role}`,
                       );
                     }}
                   >
@@ -250,31 +247,26 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <Command size={10} /> K
               </kbd>
             </button>
-            <Badge tone="amber">Preview</Badge>
+            <span className="naac-badge">NAAC A++</span>
+            <span className="live-status-pill">
+              <span className="live-dot" />
+              <span>System Active</span>
+            </span>
             <IconButton label="Notifications" onClick={() => setNotifications(true)}>
               <Bell size={18} />
               <span className="notification-dot" />
             </IconButton>
           </div>
         </header>
-        <div className="preview-banner">
-          <Info size={14} />
-          <span>
-            Preview workspace. Camera panels and statuses are samples; changes stay in this browser.
-          </span>
-          <Link href="/login">
-            Connect a backend <ArrowRight size={13} />
-          </Link>
-        </div>
         <main id="main-content" className="main-content" key={path}>
           {children}
         </main>
         <footer className="app-footer">
           <span>
-            RGU Fleet Management <i /> Built for a clearer view.
+            RGU Fleet Management <i /> Rathinam Global University Surveillance
           </span>
           <span>
-            Workspace preview <span className="footer-dot" />
+            Operational Status: Active <span className="footer-dot" />
           </span>
         </footer>
       </div>

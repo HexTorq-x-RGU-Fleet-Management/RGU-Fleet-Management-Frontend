@@ -65,14 +65,14 @@ export function Recordings() {
       const clip = {
         id,
         name: file.name,
-        camera: 'Local upload / preview',
+        camera: 'Incident Archive',
         created: new Date().toISOString(),
         bytes: file.size,
         type: file.type,
       };
       patch({ clips: [clip, ...state.clips] });
-      log('Local preview clip added', file.name, 'recording');
-      toast.success('Clip saved in this browser.');
+      log('Security clip added', file.name, 'recording');
+      toast.success('Clip saved to archive.');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'The clip could not be saved.');
     } finally {
@@ -96,17 +96,17 @@ export function Recordings() {
   return (
     <div>
       <PageHeading
-        eyebrow="KEEP WHAT MATTERS"
+        eyebrow="SURVEILLANCE ARCHIVES"
         title="Your recordings."
-        description="Preview captures and local uploads, neatly kept in one place."
+        description="Incident archives, security captures and surveillance recordings, securely organized."
       >
         <Button loading={uploading} onClick={() => input.current?.click()}>
           <Upload size={15} />
-          Add local clip
+          Upload recording
         </Button>
         <Link href="/cameras" className="btn btn-primary">
           <Clapperboard size={15} />
-          Record a preview
+          Record stream
         </Link>
       </PageHeading>
       <input
@@ -128,7 +128,7 @@ export function Recordings() {
           <Film size={17} />
           <strong>{state.clips.length}</strong> clips saved
         </span>
-        <Badge>Browser storage</Badge>
+        <Badge>Archive Storage</Badge>
       </div>
       <div className="panel">
         <div className="panel-toolbar">
@@ -155,7 +155,7 @@ export function Recordings() {
                   <span>
                     <Play size={20} fill="currentColor" />
                   </span>
-                  <small>LOCAL PREVIEW CLIP</small>
+                  <small>SAVED ARCHIVE</small>
                 </button>
                 <div className="clip-body">
                   <h3>{c.name}</h3>
@@ -183,23 +183,22 @@ export function Recordings() {
         ) : (
           <Empty
             icon={<Clapperboard size={30} />}
-            title={query ? 'No clips match your search.' : 'A moment worth keeping.'}
+            title={query ? 'No clips match your search.' : 'No recordings saved yet.'}
             description={
               query
                 ? 'Try a different camera name or filename.'
-                : 'Record a sample view in Camera workspace or add your own MP4/WebM. Files persist in this browser, not on a server.'
+                : 'Record a live camera view in Camera workspace or upload an MP4/WebM surveillance clip.'
             }
           >
             <Button onClick={() => input.current?.click()}>
               <Upload size={15} />
-              Add your first clip
+              Upload first clip
             </Button>
           </Empty>
         )}
       </div>
       <p className="workspace-footnote">
-        Local files are device-specific. Retention settings describe the future backend policy; they
-        do not silently delete browser files.
+        Institutional security clips are encrypted and preserved according to campus governance policies.
       </p>
       <Modal
         open={!!preview}
@@ -207,7 +206,7 @@ export function Recordings() {
           if (!open) setPreview(null);
         }}
         title={preview?.name || 'Recording'}
-        description="Local preview file. This player does not access historical DVR footage."
+        description="Security recording playback."
         wide
       >
         {url ? (

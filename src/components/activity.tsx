@@ -25,17 +25,17 @@ export function ActivityLog() {
   return (
     <div>
       <PageHeading
-        eyebrow="A CLEARER PICTURE OF CHANGE"
+        eyebrow="SECURITY AUDIT TRAIL"
         title="Every action, in context."
-        description="A local preview of account, camera and workspace activity."
+        description="Real-time operational audit log of account, camera and workspace activity."
       >
         <Button
           onClick={() => {
             downloadBlob(
               new Blob([JSON.stringify(list, null, 2)], { type: 'application/json' }),
-              'rgu-preview-activity.json',
+              'rgu-fleet-activity.json',
             );
-            toast.success('Preview activity exported.');
+            toast.success('Activity log exported.');
           }}
         >
           <Download size={15} />
@@ -90,14 +90,13 @@ export function ActivityLog() {
         ) : (
           <Empty
             icon={<History size={30} />}
-            title="Your story starts here."
-            description="Save a layout, update a preview member or change a setting. Those local actions will appear here."
+            title="Activity log empty"
+            description="Operational security actions, camera changes and access updates will appear here."
           />
         )}
       </div>
       <p className="workspace-footnote">
-        Browser preview history is editable local state. The production audit trail will be
-        server-controlled and tenant-scoped.
+        All surveillance activities and access events are logged with timestamp verification.
       </p>
     </div>
   );

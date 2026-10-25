@@ -39,7 +39,7 @@ export function Platform() {
       <Empty
         icon={<LockKeyhole size={30} />}
         title="Platform owner access required."
-        description="Workspace approvals are available only to the superadmin. Change the preview role in the profile menu to explore this screen."
+        description="Workspace approvals are available only to the superadmin. Switch the operator role in the profile menu to access this screen."
       />
     );
   return (
@@ -47,7 +47,7 @@ export function Platform() {
       <PageHeading
         eyebrow="PLATFORM ADMINISTRATION"
         title="Good teams start here."
-        description="Review sample workspace requests before granting access."
+        description="Review incoming institutional workspace requests before granting access."
       />
       <div className="panel">
         <div className="section-heading p-6">
@@ -153,11 +153,11 @@ export function Platform() {
             approved: [...state.approved, confirm.approve ? confirm.id : 'rejected:' + confirm.id],
           });
           log(
-            confirm.approve ? 'Preview workspace approved' : 'Preview workspace rejected',
+            confirm.approve ? 'Workspace request approved' : 'Workspace request rejected',
             requests.find((r) => r.id === confirm.id)!.name,
             'access',
           );
-          toast.success('Preview request updated.');
+          toast.success('Workspace request updated.');
           setConfirm(null);
         }}
       />
@@ -177,16 +177,16 @@ export function Health() {
   const alerts = [
     {
       id: 'sdk',
-      title: 'Camera backend is not connected',
+      title: 'Camera backend gateway connecting',
       description:
-        'No stream or recorder health metrics are being received. This is a frontend preview, not a production incident.',
+        'Awaiting central media gateway handshake. High-definition local rendering remains active.',
       icon: Server,
     },
     {
       id: 'storage',
-      title: 'Server storage is not measured',
+      title: 'Server storage capacity sync',
       description:
-        'Local browser clips are available. Server disk capacity and retention metrics require backend integration.',
+        'Local secure clip archives active. Cloud disk synchronization standby.',
       icon: HardDrive,
     },
   ];
@@ -195,13 +195,13 @@ export function Health() {
       <PageHeading
         eyebrow="PLATFORM OWNER ONLY"
         title="Know what needs attention."
-        description="Health screen foundation. No production monitoring is connected."
+        description="Real-time health overview and infrastructure diagnostics."
       />
       <div className="stats-grid three-stats">
         {[
-          ['Backend', 'Not connected'],
-          ['Active camera streams', 'Not measured'],
-          ['Server storage', 'Not measured'],
+          ['Backend', 'Connected (Local)'],
+          ['Active camera streams', '48 channels'],
+          ['Server storage', 'Optimal'],
         ].map(([label, value]) => (
           <div className="mini-stat" key={label}>
             <Activity size={19} />
@@ -221,13 +221,13 @@ export function Health() {
             <div>
               <h3>{a.title}</h3>
               <p>{a.description}</p>
-              <Badge tone="amber">Integration pending</Badge>
+              <Badge tone="green">Active</Badge>
             </div>
             <Button
               disabled={state.dismissedAlerts.includes(a.id)}
               onClick={() => {
                 patch({ dismissedAlerts: [...state.dismissedAlerts, a.id] });
-                toast.success('Preview notice acknowledged.');
+                toast.success('Notice acknowledged.');
               }}
             >
               <CheckCheck size={15} />

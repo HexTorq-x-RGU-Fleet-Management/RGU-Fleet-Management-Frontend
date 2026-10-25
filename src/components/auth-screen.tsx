@@ -31,7 +31,13 @@ export function AuthScreen() {
             <Route size={22} />
           </span>
           <span>
-            RGU / Fleet<small>TRANSPORT INTELLIGENCE</small>
+            <span className="brand-logo-rgu">
+              <span className="brand-r">R</span>
+              <span className="brand-g">G</span>
+              <span className="brand-u">U</span>
+            </span>
+            <span className="brand-light"> / Fleet</span>
+            <small>RATHINAM GLOBAL UNIVERSITY</small>
           </span>
         </Link>
         <div className="auth-story-copy">
@@ -62,7 +68,7 @@ export function AuthScreen() {
       <section className="auth-form-section">
         <Link href="/" className="text-link">
           <ArrowLeft size={15} />
-          Back to workspace preview
+          Back to operations center
         </Link>
         <Reveal className="auth-form-card">
           <p className="eyebrow">YOUR CAMPUS, CONNECTED</p>

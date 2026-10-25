@@ -1,52 +1,69 @@
-/* Readable dense-workspace typography, before breakpoint adjustments. */
+/* Readable dense-workspace typography and responsive layout */
+
 .stats-grid.three-stats {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
+
 .nav-link {
   font-size: 12px;
 }
+
 .nav-caption {
   font-size: 9px;
 }
+
 .stat-top {
   font-size: 11px;
 }
+
 .stat-card > p {
   font-size: 10px;
 }
+
 .stat-value span {
   font-size: 9px;
 }
+
 .section-heading p {
   font-size: 11px;
 }
+
 .recorder-location {
   font-size: 10px;
 }
+
 .recorder-card-bottom > span:last-child {
   font-size: 9px;
 }
+
 .profile-button strong {
   font-size: 11px;
 }
+
 .profile-button small {
   font-size: 10px;
 }
+
 .topbar-location {
   font-size: 11px;
 }
+
 .sidebar-note p {
-  font-size: 11px;
+  font-size: 10px;
 }
+
 .sidebar-note strong {
   font-size: 11px;
 }
+
 .sidebar-note button {
   font-size: 10px;
 }
+
 .icon-button.mobile-menu {
   display: none;
 }
+
 @media (min-width: 1600px) {
   .main-content {
     padding: 42px 48px 60px;
@@ -60,7 +77,7 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
   .overview-columns {
-    grid-template-columns: minmax(0, 1fr) 285px;
+    grid-template-columns: minmax(0, 1fr) 300px;
   }
   .recorder-preview {
     height: 180px;
@@ -72,10 +89,11 @@
     font-size: 40px;
   }
 }
+
 @media (max-width: 1250px) {
   .overview-columns {
-    grid-template-columns: minmax(0, 1fr) 230px;
-    gap: 18px;
+    grid-template-columns: minmax(0, 1fr) 240px;
+    gap: 20px;
   }
   .main-content {
     padding: 28px 24px 40px;
@@ -92,30 +110,31 @@
     display: none;
   }
   .stat-card {
-    padding: 16px;
+    padding: 18px;
   }
   .overview-aside .coverage-card,
   .overview-aside .activity-card {
-    padding: 15px;
+    padding: 16px;
   }
   .selected-controls {
-    gap: 12px;
+    gap: 14px;
   }
   .control-actions {
     margin-left: auto;
   }
   .settings-layout {
-    grid-template-columns: 180px minmax(0, 1fr);
-    gap: 20px;
+    grid-template-columns: 190px minmax(0, 1fr);
+    gap: 22px;
   }
 }
+
 @media (max-width: 1050px) {
   .sidebar {
-    width: 205px;
-    padding: 25px 13px 14px;
+    width: 210px;
+    padding: 24px 14px 14px;
   }
   .main-shell {
-    margin-left: 205px;
+    margin-left: 210px;
   }
   .overview-columns {
     grid-template-columns: minmax(0, 1fr);
@@ -124,10 +143,11 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     align-items: start;
-    margin-top: 10px;
+    margin-top: 12px;
+    gap: 16px;
   }
   .quick-tip {
-    grid-column: 1/-1;
+    grid-column: 1 / -1;
     padding: 15px 4px;
   }
   .global-search > span,
@@ -145,24 +165,24 @@
   }
   .settings-tabs button {
     white-space: nowrap;
-    font-size: 10px;
-    padding: 10px;
+    font-size: 11px;
+    padding: 10px 12px;
   }
   .heading-actions .btn {
-    font-size: 10px;
+    font-size: 11px;
   }
   .camera-grid .tile-caption {
-    font-size: 8px;
-    left: 7px;
-    bottom: 7px;
+    font-size: 9px;
+    left: 8px;
+    bottom: 8px;
   }
   .tile-caption small {
-    font-size: 6px;
+    font-size: 7px;
   }
   .tile-top {
-    left: 5px;
-    top: 5px;
-    right: 5px;
+    left: 6px;
+    top: 6px;
+    right: 6px;
   }
   .stopped-tile small {
     display: none;
@@ -171,24 +191,25 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .auth-story {
-    padding: 30px;
+    padding: 32px;
   }
   .auth-form-section {
-    padding: 30px;
+    padding: 32px;
   }
   .auth-checks {
     flex-wrap: wrap;
-    gap: 12px;
+    gap: 14px;
   }
   .health-alert {
     flex-wrap: wrap;
   }
 }
+
 @media (max-width: 760px) {
   .sidebar {
     transform: translateX(-100%);
-    transition: transform 0.25s;
-    width: 232px;
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    width: 240px;
     z-index: 60;
   }
   .sidebar.sidebar-open {
@@ -198,8 +219,9 @@
     display: block;
     position: fixed;
     inset: 0;
-    background: #0008;
-    backdrop-filter: blur(3px);
+    background: rgba(4, 7, 10, 0.75);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     border: 0;
     z-index: 55;
   }
@@ -210,7 +232,7 @@
     margin-left: 0;
   }
   .topbar {
-    height: 61px;
+    height: 62px;
     padding: 0 18px;
   }
   .topbar-location {
@@ -225,74 +247,74 @@
     display: none;
   }
   .preview-banner {
-    font-size: 8px;
-    padding: 9px 18px;
-    line-height: 1.7;
-    gap: 7px;
+    font-size: 9px;
+    padding: 8px 18px;
+    line-height: 1.6;
+    gap: 8px;
   }
   .preview-banner a {
     display: none;
   }
   .main-content {
-    padding: 28px 18px 35px;
+    padding: 26px 18px 36px;
   }
   .page-heading {
     align-items: flex-start;
     flex-direction: column;
-    gap: 20px;
-    margin-bottom: 25px;
+    gap: 18px;
+    margin-bottom: 24px;
   }
   .heading-actions {
     width: 100%;
-    gap: 9px;
+    gap: 10px;
     flex-wrap: wrap;
   }
   .heading-actions > .btn {
     font-size: 11px;
   }
   .page-description {
-    font-size: 11px;
-    margin-top: 10px;
+    font-size: 12px;
+    margin-top: 8px;
   }
   .eyebrow {
-    font-size: 8px;
-    letter-spacing: 1.6px;
+    font-size: 9px;
+    letter-spacing: 0.12em;
   }
   .stats-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
-    margin-bottom: 30px;
+    gap: 12px;
+    margin-bottom: 28px;
   }
   .stat-card {
     padding: 16px;
   }
   .stat-top {
-    font-size: 9px;
+    font-size: 10px;
   }
   .stat-value {
-    font-size: 31px;
-    margin-top: 14px;
+    font-size: 30px;
+    margin-top: 12px;
   }
   .stat-card > p {
-    font-size: 8px;
+    font-size: 9px;
   }
   .recorder-grid {
-    gap: 12px;
+    gap: 14px;
   }
   .recorder-preview {
-    height: 140px;
+    height: 145px;
   }
   .recorder-card-body {
-    padding: 10px;
+    padding: 12px;
   }
   .recorder-card-bottom {
     flex-wrap: wrap;
     gap: 8px;
-    margin-top: 13px;
+    margin-top: 12px;
     padding-top: 10px;
   }
   .recorder-card-bottom > span:last-child {
-    font-size: 7px;
+    font-size: 8px;
   }
   .library-tools > .small {
     display: none;
@@ -304,14 +326,14 @@
     font-size: 17px;
   }
   .section-heading > .text-link {
-    font-size: 9px;
+    font-size: 10px;
   }
   .overview-aside {
-    gap: 12px;
+    gap: 14px;
   }
   .coverage-card,
   .activity-card {
-    padding: 14px;
+    padding: 16px;
   }
   .coverage-map {
     height: 150px;
@@ -320,8 +342,8 @@
     padding: 18px;
     align-items: flex-start;
     flex-direction: column;
-    font-size: 8px;
-    gap: 7px;
+    font-size: 9px;
+    gap: 8px;
   }
   .panel-toolbar {
     padding: 14px;
@@ -338,53 +360,53 @@
   .mini-stat {
     flex-direction: column;
     align-items: flex-start;
-    padding: 15px;
-    gap: 9px;
+    padding: 16px;
+    gap: 10px;
   }
   .mini-stat strong {
     font-size: 24px;
   }
   .mini-stat span {
-    font-size: 8px;
+    font-size: 9px;
   }
   .mini-stat .health-value {
-    font-size: 12px;
+    font-size: 13px;
     letter-spacing: 0;
   }
   .settings-tabs button {
-    font-size: 9px;
-    gap: 7px;
+    font-size: 10px;
+    gap: 8px;
   }
   .settings-panel {
-    padding: 19px;
+    padding: 20px;
   }
   .setting-row {
-    gap: 15px;
+    gap: 16px;
   }
   .setting-row p {
-    font-size: 9px;
+    font-size: 10px;
   }
   .setting-row strong {
-    font-size: 11px;
+    font-size: 12px;
   }
   .setting-row > select {
-    font-size: 9px;
-    max-width: 130px;
+    font-size: 10px;
+    max-width: 140px;
     padding: 8px;
   }
   .panel-footer {
     align-items: flex-start;
     flex-direction: column;
-    gap: 17px;
+    gap: 16px;
   }
   .modal {
-    padding: 25px 20px;
+    padding: 24px 20px;
   }
   .modal-title {
     font-size: 20px;
   }
   .modal-description {
-    font-size: 11px;
+    font-size: 12px;
   }
   .modal-footer .btn {
     font-size: 11px;
@@ -392,74 +414,74 @@
   .recordings-summary {
     gap: 14px;
     flex-wrap: wrap;
-    padding: 15px;
-    font-size: 10px;
+    padding: 16px;
+    font-size: 11px;
   }
   .recordings-summary > .badge {
     margin-left: 0;
   }
   .recordings-summary > span:not(.badge) {
-    font-size: 10px;
+    font-size: 11px;
   }
   .camera-page-heading {
     align-items: flex-start;
   }
   .camera-page-heading h1 {
-    font-size: 25px;
-    letter-spacing: -1px;
+    font-size: 26px;
+    letter-spacing: -0.03em;
   }
   .camera-page-heading .btn {
-    font-size: 10px;
-    padding: 9px;
+    font-size: 11px;
+    padding: 8px 12px;
   }
   .camera-page-heading .page-description {
-    max-width: 230px;
-    font-size: 10px;
+    max-width: 240px;
+    font-size: 11px;
   }
   .recorder-tabs button {
     font-size: 10px;
-    padding: 8px 10px;
+    padding: 8px 12px;
   }
   .monitor-header {
-    padding: 13px;
+    padding: 14px;
     flex-wrap: wrap;
   }
   .monitor-title h2 {
-    font-size: 14px;
+    font-size: 15px;
   }
   .monitor-title p {
-    font-size: 8px;
+    font-size: 9px;
   }
   .monitor-icon {
-    width: 31px;
-    height: 31px;
+    width: 34px;
+    height: 34px;
   }
   .monitor-tools {
     margin-left: auto;
-    gap: 7px;
+    gap: 8px;
   }
   .monitor-subbar {
-    padding: 7px;
+    padding: 8px;
     flex-wrap: wrap;
   }
   .monitor-subbar > div {
-    gap: 3px;
+    gap: 4px;
   }
   .monitor-subbar .btn {
-    font-size: 8px;
-    padding: 5px;
+    font-size: 9px;
+    padding: 5px 8px;
   }
   .monitor-subbar > div:last-child {
     margin-left: auto;
   }
   .monitor-subbar .small {
-    font-size: 8px;
+    font-size: 9px;
   }
   .camera-stage {
-    padding: 5px;
+    padding: 6px;
   }
   .camera-grid {
-    gap: 4px;
+    gap: 5px;
   }
   .camera-tile {
     aspect-ratio: 4/3;
@@ -472,8 +494,8 @@
     opacity: 1;
   }
   .tile-top .icon-button {
-    width: 21px;
-    height: 21px;
+    width: 22px;
+    height: 22px;
   }
   .tile-caption {
     font-size: 9px !important;
@@ -481,23 +503,23 @@
     bottom: 7px;
   }
   .tile-status {
-    font-size: 6px;
+    font-size: 7px;
   }
   .tile-preview-label {
-    font-size: 5px;
-    letter-spacing: 0.5px;
-    left: 7px;
+    font-size: 6px;
+    letter-spacing: 0.8px;
+    left: 8px;
   }
   .camera-pagination {
-    font-size: 8px;
-    padding: 8px;
+    font-size: 9px;
+    padding: 10px;
   }
   .camera-pagination .muted {
     display: none;
   }
   .selected-controls {
-    padding: 12px;
-    gap: 13px;
+    padding: 14px;
+    gap: 14px;
   }
   .selected-label {
     width: 100%;
@@ -506,7 +528,7 @@
     margin-right: auto;
   }
   .control-group .small {
-    font-size: 9px;
+    font-size: 10px;
   }
   .control-actions {
     width: 100%;
@@ -517,40 +539,40 @@
     font-size: 10px;
   }
   .workspace-footnote {
-    font-size: 9px;
+    font-size: 10px;
   }
   .auth-page {
     grid-template-columns: 1fr;
   }
   .auth-story {
     min-height: auto;
-    padding: 25px;
+    padding: 28px;
   }
   .auth-story-copy {
-    padding: 60px 0 20px;
+    padding: 50px 0 20px;
   }
   .auth-story h1 {
-    font-size: 43px;
-    letter-spacing: -1.7px;
+    font-size: 42px;
+    letter-spacing: -0.03em;
   }
   .auth-story-copy > p {
-    margin: 18px 0;
-    font-size: 11px;
+    margin: 16px 0;
+    font-size: 12px;
   }
   .auth-checks,
   .auth-image-credit {
     display: none;
   }
   .auth-form-section {
-    padding: 26px 22px;
-    min-height: 650px;
+    padding: 28px 24px;
+    min-height: 600px;
   }
   .auth-form-card {
-    margin: 45px 0;
+    margin: 36px 0;
     max-width: 420px;
   }
   .auth-form-card h2 {
-    font-size: 27px;
+    font-size: 28px;
   }
   .health-alert {
     padding: 18px;
@@ -560,7 +582,7 @@
     margin-left: 56px;
   }
   .health-alert h3 {
-    font-size: 12px;
+    font-size: 13px;
   }
   .health-alert p {
     font-size: 10px;
@@ -569,12 +591,13 @@
     left: 20px;
   }
 }
+
 @media (max-width: 390px) {
   .recorder-grid {
     grid-template-columns: 1fr;
   }
   .recorder-preview {
-    height: 175px;
+    height: 170px;
   }
   .overview-aside {
     grid-template-columns: 1fr;
@@ -593,7 +616,7 @@
     grid-template-columns: 1fr;
   }
   .topbar-actions {
-    gap: 5px;
+    gap: 6px;
   }
   .three-stats {
     grid-template-columns: 1fr;
@@ -606,12 +629,16 @@
     flex-wrap: wrap;
   }
   .segmented button {
-    padding: 6px 7px;
+    padding: 6px 8px;
   }
   .settings-tabs button > svg {
     display: none;
   }
+  .stats-grid.three-stats {
+    grid-template-columns: 1fr;
+  }
 }
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -621,15 +648,10 @@
     scroll-behavior: auto !important;
   }
 }
+
 :root[data-motion='reduced'] *,
 :root[data-motion='reduced'] *::before,
 :root[data-motion='reduced'] *::after {
   animation-duration: 0.01ms !important;
   transition-duration: 0.01ms !important;
-}
-
-@media (max-width: 390px) {
-  .stats-grid.three-stats {
-    grid-template-columns: 1fr;
-  }
 }

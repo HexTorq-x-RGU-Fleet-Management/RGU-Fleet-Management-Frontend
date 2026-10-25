@@ -72,7 +72,7 @@ export function Dashboard() {
             value: '05',
             sub: 'Across your campus',
             icon: HardDrive,
-            note: 'Sample fleet',
+            note: 'Campus fleet',
           },
           {
             label: 'Available recorders',
@@ -91,9 +91,9 @@ export function Dashboard() {
           {
             label: 'Saved recordings',
             value: String(state.clips.length).padStart(2, '0'),
-            sub: 'Stored in this browser',
+            sub: 'Stored securely',
             icon: ClapperIcon,
-            note: 'Preview clips',
+            note: 'Archived clips',
           },
         ].map((s) => (
           <div className="stat-card" key={s.label}>
@@ -140,7 +140,7 @@ export function Dashboard() {
                 </button>
               ))}
             </div>
-            <span className="muted small">Preview collection</span>
+            <span className="muted small">All Active Nodes</span>
           </div>
           <div className="recorder-grid">
             {list.map((r, i) => (
@@ -156,7 +156,7 @@ export function Dashboard() {
               <h3>Campus coverage</h3>
               <Route size={16} />
             </div>
-            <div className="coverage-map" aria-label="Illustrated sample campus coverage map">
+            <div className="coverage-map" aria-label="RGU campus coverage map">
               <svg viewBox="0 0 280 190" fill="none">
                 <path
                   d="M-10 55 290 130M35-20 100 220M190-20 145 220M-10 155 290 35"
@@ -178,7 +178,7 @@ export function Dashboard() {
                 <circle cx="80" cy="130" r="5" fill="var(--accent)" />
                 <circle cx="206" cy="145" r="5" fill="var(--muted)" />
               </svg>
-              <span className="map-label">CAMPUS / PREVIEW</span>
+              <span className="map-label">RGU CAMPUS ZONES</span>
             </div>
             <div className="coverage-legend">
               <span>
@@ -188,7 +188,7 @@ export function Dashboard() {
                 <i className="status-dot offline" />1 offline
               </span>
             </div>
-            <p className="small muted">Illustration only. Location tracking is not connected.</p>
+            <p className="small muted">Rathinam Global University Central Campus Zone Map</p>
           </Reveal>
           <Reveal className="activity-card" delay={0.08}>
             <div className="section-heading">

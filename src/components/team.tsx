@@ -45,9 +45,9 @@ export function Team() {
   return (
     <div>
       <PageHeading
-        eyebrow="SECURITY PERSONNEL ACCESS"
+        eyebrow="FLEET TEAM ACCESS"
         title="Your team, connected."
-        description="Manage access and camera permissions for security operators and administrators across campus."
+        description="Manage recorder access and camera permissions for fleet operators and administrators. Sample members stay in this browser."
       >
         <Button variant="primary" onClick={() => edit(null)}>
           <UserPlus size={16} />

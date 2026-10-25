@@ -3,21 +3,23 @@ test('overview and search have no hydration or browser errors', async ({ page })
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'Everything in view.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'One fleet. Every perspective.' })).toBeVisible();
+  await expect(page.locator('.bus-card')).toHaveCount(5);
+  await page.goto('/recorders');
   await expect(page.locator('.recorder-card')).toHaveCount(5);
   await page.getByRole('button', { name: 'Available', exact: true }).click();
   await expect(page.locator('.recorder-card')).toHaveCount(4);
   await page.keyboard.press('Control+k');
   await expect(page.getByRole('dialog')).toBeVisible();
   await page.getByPlaceholder('Search cameras, pages or locations').fill('KPM 3');
-  await page.getByRole('button', { name: 'KPM 3 Main campus' }).click();
+  await page.getByRole('button', { name: 'KPM 3 Onboard bus recorder' }).click();
   await expect(page).toHaveURL(/cameras/);
-  await expect(page.locator('.camera-tile')).toHaveCount(8);
+  await expect(page.locator('.camera-tile')).toHaveCount(6);
   expect(errors).toEqual([]);
 });
 test('grid selection, single selection, focus, zoom and layout persistence', async ({ page }) => {
   await page.goto('/cameras');
-  await expect(page.locator('.camera-tile')).toHaveCount(8);
+  await expect(page.locator('.camera-tile')).toHaveCount(6);
   await page.getByRole('combobox', { name: 'Camera grid' }).selectOption('4');
   await expect(page.locator('.camera-tile')).toHaveCount(4);
   await page.getByRole('button', { name: 'Select KPM 3 Camera 2', exact: true }).click();
@@ -41,10 +43,10 @@ test('grid selection, single selection, focus, zoom and layout persistence', asy
 });
 test('preview members can be added, edited and suspended with React dialogs', async ({ page }) => {
   await page.goto('/team');
-  await page.getByRole('button', { name: 'Add preview member' }).click();
+  await page.getByRole('button', { name: 'Add team member' }).click();
   await page.getByLabel('Full name', { exact: true }).fill('Taylor Test');
   await page.getByLabel('Email address', { exact: true }).fill('taylor@example.test');
-  await page.getByRole('checkbox', { name: 'KPM 3 Main campus' }).check();
+  await page.getByRole('checkbox', { name: 'KPM 3 Onboard bus recorder' }).check();
   await page.getByRole('button', { name: 'Save preview member' }).click();
   await expect(page.getByRole('cell', { name: 'Taylor Test taylor@example.test' })).toBeVisible();
   await page.getByRole('button', { name: 'Suspend Taylor Test' }).click();
@@ -125,8 +127,16 @@ test('mobile navigation and core pages fit the viewport', async ({ page }) => {
   await page.getByRole('button', { name: 'Open navigation' }).click();
   await expect(page.getByRole('link', { name: 'Camera workspace', exact: true })).toBeVisible();
   await page.getByRole('link', { name: 'Camera workspace', exact: true }).click();
-  await expect(page.locator('.camera-tile')).toHaveCount(8);
-  for (const route of ['/', '/cameras', '/settings', '/recordings', '/login']) {
+  await expect(page.locator('.camera-tile')).toHaveCount(6);
+  for (const route of [
+    '/',
+    '/buses?bus=bus-1',
+    '/tracking',
+    '/cameras',
+    '/settings',
+    '/recordings',
+    '/login',
+  ]) {
     await page.goto(route);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(
       true,
@@ -137,12 +147,14 @@ test('mobile navigation and core pages fit the viewport', async ({ page }) => {
 test.describe('standard animation preference', () => {
   test.use({ reducedMotion: 'no-preference' });
   test('GSAP entry and Framer reveal finish and Lenis scroll stays usable', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/recorders');
     await expect(page.locator('.stat-card').first()).toHaveCSS('opacity', '1');
     for (const card of await page.locator('.recorder-grid > div').all()) {
       await card.scrollIntoViewIfNeeded();
       await expect(card).toHaveCSS('opacity', '1');
     }
+    await page.goto('/');
+    await expect(page.locator('.bus-card').first()).toHaveCSS('opacity', '1');
     await page.evaluate(() => scrollTo(0, 0));
   });
 });

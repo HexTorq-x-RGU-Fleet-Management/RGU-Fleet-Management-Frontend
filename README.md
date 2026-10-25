@@ -5,8 +5,15 @@ Repository: https://github.com/HexTorq-x-RGU-Fleet-Management/RGU-Fleet-Manageme
 
 ## Current delivery
 
+Product direction: [bus-first fleet model](docs/FLEET-PRODUCT.md).
+New routes: / (fleet overview), /buses?bus=ID (vehicle), /tracking (GPS/fuel),
+and /recorders (separate hardware library). The mock follows the supplied
+vendor envelope; the SVG route is a coordinate schematic without road tiles.
+Fleet preview settings stay in this browser. Windows fleet API methods exist
+in src/lib/api.ts; authenticated application wiring is still pending.
+
 A complete navigable frontend **preview**, independently buildable for Vercel.
-Backend extraction is the next phase. No real camera account, live video, tenant
+Windows API extraction and fleet persistence exist separately. No real camera account, live video, tenant
 session or production monitoring is connected by this change. The UI permanently
 labels sample recorder panels/statuses and browser-local changes as preview data.
 It does not load the old vanilla application or import sibling source folders.
@@ -36,7 +43,9 @@ No database, Python, SDK DLL or sibling repository is required for the frontend 
 
 ## Screens and working interactions
 
-- Overview: sample recorder availability, search, filters, favourites and recent local activity.
+- Fleet overview: bus setup, registration/driver/route, separate recorder and telemetry mappings, filters and mock readings.
+- Bus details: synchronized GPS/fuel/speed timeline, replay and history windows, working sample cameras and starred default grids.
+- GPS & fuel: mock route exploration; recorder library is a separate hardware screen.
 - Camera workspace: automatic recorder grids, 1/4/9/16 tiles, paging/rotation,
   single-click selection, explicit/double-click focus, zoom/pan/reset, picture fit/fill,
   fullscreen, named persistent layouts and sample quality preferences.

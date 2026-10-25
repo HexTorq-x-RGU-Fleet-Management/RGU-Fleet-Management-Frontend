@@ -8,10 +8,11 @@ import './shell.css';
 import './workspace.css';
 import './controls.css';
 import './responsive.css';
+import './fleet.css';
 export const metadata: Metadata = {
-  title: { default: 'RGU Fleet | Campus in view', template: '%s | RGU Fleet' },
+  title: { default: 'RGU Fleet Management | HexTorq', template: '%s | RGU Fleet' },
   description:
-    'A considered camera workspace for campus transport. Monitor recorders, organize views and manage your team.',
+    'RGU Fleet Management by HexTorq: bus cameras, GPS, fuel telemetry and synchronized journey history for Rathinam Global University, Coimbatore.',
 };
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

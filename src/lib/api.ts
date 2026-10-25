@@ -65,3 +65,26 @@ export const api = {
   changePassword: (currentPassword: string, newPassword: string) =>
     request('/api/auth/password', { currentPassword, newPassword }),
 };
+// Fleet endpoints are available on the Windows backend. The current fleet UI
+// intentionally uses local mock data until authenticated application wiring.
+export const fleetApi = {
+  telemetry: () =>
+    request<import('./fleet').TelemetryEnvelope & { source: 'mock' }>('/api/fleet/telemetry'),
+  buses: () => request<{ buses: import('./fleet').Bus[] }>('/api/fleet/buses'),
+  saveBus: (bus: Omit<import('./fleet').Bus, 'id'> & { id?: string }) =>
+    request<{ bus: import('./fleet').Bus }>('/api/fleet/buses', bus),
+  removeBus: (id: string) => request<{ removed: boolean }>('/api/fleet/buses/remove', { id }),
+  pollMock: () =>
+    request<import('./fleet').TelemetryEnvelope & { source: 'mock' }>('/api/fleet/mock/poll', {}),
+  history: (busId: string, from: number, to: number) =>
+    request<{
+      bus: import('./fleet').Bus;
+      samples: {
+        vehicle: import('./fleet').Vehicle;
+        source: 'mock' | 'vendor';
+        receivedAt: string;
+      }[];
+      from: number;
+      to: number;
+    }>('/api/fleet/history?' + new URLSearchParams({ busId, from: String(from), to: String(to) })),
+};

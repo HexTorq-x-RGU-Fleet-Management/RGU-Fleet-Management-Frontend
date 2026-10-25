@@ -46,7 +46,7 @@ export const recorders: Recorder[] = [
   {
     id: 'kpm-3',
     name: 'KPM 3',
-    location: 'Main campus',
+    location: 'Onboard bus recorder',
     online: true,
     channels: 8,
     vehicle: 'Campus shuttle',
@@ -54,7 +54,7 @@ export const recorders: Recorder[] = [
   {
     id: 'kpm-5',
     name: 'KPM 5',
-    location: 'North entrance',
+    location: 'Onboard bus recorder',
     online: true,
     channels: 8,
     vehicle: 'Transport depot',
@@ -62,7 +62,7 @@ export const recorders: Recorder[] = [
   {
     id: 'kpm-1',
     name: 'KPM 1',
-    location: 'Academic block',
+    location: 'Onboard bus recorder',
     online: true,
     channels: 8,
     vehicle: 'Campus shuttle',
@@ -70,7 +70,7 @@ export const recorders: Recorder[] = [
   {
     id: 'kpm-2',
     name: 'KPM 2',
-    location: 'South campus',
+    location: 'Onboard bus recorder',
     online: true,
     channels: 16,
     vehicle: 'Campus shuttle',
@@ -78,7 +78,7 @@ export const recorders: Recorder[] = [
   {
     id: 'kpm-4',
     name: 'KPM Bus 4',
-    location: 'Service route',
+    location: 'Onboard bus recorder',
     online: false,
     channels: 8,
     vehicle: 'Route shuttle',

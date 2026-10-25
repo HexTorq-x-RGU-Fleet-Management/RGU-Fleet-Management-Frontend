@@ -1,25 +1,24 @@
-# Frontend verification - 25 October 2026
+# Frontend verification — 25 October 2026
 
-- Node 24.21.0; npm lockfile records the exact dependency tree.
-- TypeScript checks pass.
-- 11 unit checks pass: preview role policies, grid/display helpers, safe API
-  boundaries, credentialed POST requests, missing backend and error handling.
-- Production `next build` passes; App Router pages are prerendered for Vercel.
-- 9 actual Chrome browser tests pass: overview/search, grid and selection/focus,
-  zoom and persisted layouts, sample team dialogs/suspension, theme/reduced motion,
-  role navigation/approvals, login error feedback, real labelled preview snapshot/
-  MediaRecorder clip capture with IndexedDB persistence/download/deletion, mobile
-  navigation/viewport fit and normal-motion GSAP/Framer/Lenis behavior.
-- Desktop/mobile layout and 390px viewport checks pass. No image generation was used. Stock photos were removed at the user request; the final UI uses CSS/Lucide panels.
-- No browser-native alert/confirm/prompt calls are used in application source.
-- Dependency audit reported no vulnerabilities after installation.
+Node 24.21.0, locked dependencies. TypeScript and Next production build pass.
+15 unit tests and 12 actual Chrome browser tests pass.
 
-The first browser attempt reused an unrelated server on 3000 and was discarded.
-The corrected configuration uses a dedicated 3107 server and refuses reuse.
-The passing results above refer to the correct production app on that port.
+Fleet coverage: bus create/edit mapping fields, browser persistence and confirmed
+deletion; synchronized GPS/fuel timeline and location cursor; star filtering in
+the bus camera grid; offline/unmapped states; exact provider-format data and
+device-ID correlation; stale samples and unavailable channel exclusion.
 
-No real provider account, camera stream, backend database, tenant credentials,
-server-side recording policy or actual health service was exercised. All sample
-camera states are explicitly labelled. Backend/VPS repositories were unchanged.
-No Vercel deployment URL is claimed: production build/configuration were verified,
-and repository publication is separate from importing it into Vercel.
+Retained coverage: camera grid/focus/zoom/layouts, React team/approval dialogs,
+role navigation, login error feedback, theme/reduced motion, real labelled
+Canvas/MediaRecorder preview capture with IndexedDB/download/deletion, mobile
+390px viewport fit, and standard-motion rendering.
+
+Browser tests own a production server on 3117 and refuse to reuse an unrelated
+server. The developer preview remains on 3107. No image generation was used.
+No JavaScript-native dialogs or stock photo dependencies are introduced.
+
+This verifies the frontend mock preview. It does not verify actual GPS/fuel,
+road map data, real camera video/audio, backend-authenticated bus operations,
+production monitoring, Linux or deployment. Windows API behavior is tested in
+its own repository; typed adapter methods are ready but not wired into the
+preview screens. See FLEET-PRODUCT.md for boundaries and future integration.

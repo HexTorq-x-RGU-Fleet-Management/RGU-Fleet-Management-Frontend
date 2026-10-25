@@ -1,6 +1,7 @@
 'use client';
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
 import { toast } from 'sonner';
+import { sampleBuses, type Bus } from '@/lib/fleet';
 import {
   type Role,
   type Clip,
@@ -11,6 +12,7 @@ import {
   sampleMembers,
 } from '@/lib/model';
 type State = {
+  buses: Bus[];
   role: Role;
   favorites: string[];
   members: Member[];
@@ -22,6 +24,7 @@ type State = {
   approved: string[];
 };
 const initial: State = {
+  buses: sampleBuses,
   role: 'admin',
   favorites: ['kpm-3', 'kpm-5'],
   members: sampleMembers,
@@ -58,6 +61,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         setState({
           ...initial,
           ...saved,
+          buses: Array.isArray(saved.buses) ? saved.buses : sampleBuses,
           role: ['admin', 'member', 'superadmin'].includes(saved.role) ? saved.role : 'admin',
           settings: { ...initial.settings, ...saved.settings },
         });

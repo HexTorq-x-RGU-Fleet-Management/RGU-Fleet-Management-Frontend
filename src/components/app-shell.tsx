@@ -5,6 +5,8 @@ import { useEffect, useState } from 'react';
 import * as Dropdown from '@radix-ui/react-dropdown-menu';
 import {
   LayoutDashboard,
+  BusFront,
+  MapPinned,
   Cctv,
   Clapperboard,
   Users,
@@ -34,7 +36,10 @@ import { useWorkspace } from './workspace-provider';
 import { Button, Modal, IconButton, Badge, SearchInput } from './ui';
 import { canAccess, recorders, type Role } from '@/lib/model';
 const links = [
-  { href: '/', label: 'Overview', icon: LayoutDashboard },
+  { href: '/', label: 'Fleet overview', icon: LayoutDashboard },
+  { href: '/buses', label: 'Buses', icon: BusFront },
+  { href: '/tracking', label: 'GPS & fuel', icon: MapPinned },
+  { href: '/recorders', label: 'Recorder library', icon: Cctv },
   { href: '/cameras', label: 'Camera workspace', icon: Cctv },
   { href: '/recordings', label: 'Recordings', icon: Clapperboard },
   { href: '/team', label: 'Team & access', icon: Users, area: 'team' },
@@ -108,8 +113,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="workspace-switch">
           <span className="workspace-monogram">R</span>
           <div>
-            <strong>Rathinam campus</strong>
-            <small>Campus Fleet Operations</small>
+            <strong>RGU Fleet Operations</strong>
+            <small>Rathinam · Coimbatore</small>
           </div>
           <ChevronDown size={14} />
         </div>
@@ -188,9 +193,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     onSelect={() => {
                       patch({ role });
                       if (!canAccess(role, path.slice(1))) router.push('/');
-                      toast.info(
-                        `Active role: ${role === 'superadmin' ? 'platform owner' : role}`,
-                      );
+                      toast.info(`Active role: ${role === 'superadmin' ? 'platform owner' : role}`);
                     }}
                   >
                     {state.role === role ? <Check size={15} /> : <Users size={15} />}{' '}
@@ -250,7 +253,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <span className="naac-badge">NAAC A++</span>
             <span className="live-status-pill">
               <span className="live-dot" />
-              <span>System Active</span>
+              <span>Fleet preview</span>
             </span>
             <IconButton label="Notifications" onClick={() => setNotifications(true)}>
               <Bell size={18} />
@@ -263,10 +266,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </main>
         <footer className="app-footer">
           <span>
-            RGU Fleet Management <i /> Rathinam Global University Surveillance
+            RGU Fleet Management <i /> By HexTorq for Rathinam Global University
           </span>
           <span>
-            Operational Status: Active <span className="footer-dot" />
+            Mock data / Preview <span className="footer-dot" />
           </span>
         </footer>
       </div>
@@ -284,6 +287,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="command-results">
           {[
             ...links.map((l) => ({ title: l.label, subtitle: 'Workspace page', href: l.href })),
+            ...state.buses.map((b) => ({
+              title: b.busNumber,
+              subtitle: b.registration + ' · ' + b.driverName,
+              href: '/buses?bus=' + b.id,
+            })),
             ...recorders.map((r) => ({
               title: r.name,
               subtitle: r.location,

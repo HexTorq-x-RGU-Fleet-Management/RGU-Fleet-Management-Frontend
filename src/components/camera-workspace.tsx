@@ -28,6 +28,7 @@ import { useWorkspace } from './workspace-provider';
 import { Button, IconButton, Badge, Modal, Field } from './ui';
 import { recorders, channelName, gridFor, safeFilename } from '@/lib/model';
 import { putClip, downloadBlob } from '@/lib/clips';
+import { workingChannels, cameraChannels } from '@/lib/fleet';
 export function CameraWorkspace() {
   const query = useSearchParams();
   const { state, patch, log, ready } = useWorkspace();
@@ -52,16 +53,20 @@ export function CameraWorkspace() {
   const recorder = useRef<MediaRecorder | null>(null);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
   const frame = useRef<number>(0);
+  const captureTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const timeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const drag = useRef<{ x: number; y: number; px: number; py: number } | null>(null);
   const d = recorders.find((r) => r.id === device) || recorders[0];
-  const pages = Math.max(1, Math.ceil(d.channels / grid));
-  const slots = focused
-    ? [selected]
-    : Array.from({ length: grid }, (_, i) => page * grid + i + 1).filter((i) => i <= d.channels);
-  const activeCount = d.online
-    ? Array.from({ length: d.channels }, (_, i) => i + 1).filter((i) => !paused.includes(i)).length
-    : 0;
+  const bus = state.buses.find((b) => b.id === query.get('bus'));
+  const channels = bus && bus.recorderId === d.id ? cameraChannels(bus) : workingChannels(d.id);
+  const pages = Math.max(1, Math.ceil(channels.length / grid));
+  const slots = focused ? [selected] : channels.slice(page * grid, (page + 1) * grid);
+  const activeCount = d.online ? channels.filter((i) => !paused.includes(i)).length : 0;
+  useEffect(() => {
+    if (!channels.includes(selected)) setSelected(channels[0] ?? 1);
+    setPage(0);
+    setFocused(false);
+  }, [device, channels.join(',')]);
   useEffect(() => {
     if (ready) {
       setFit(state.settings.fit);
@@ -73,7 +78,7 @@ export function CameraWorkspace() {
     if (id && recorders.some((r) => r.id === id)) {
       setDevice(id);
       const r = recorders.find((r) => r.id === id)!;
-      setGrid(gridFor(r.channels));
+      setGrid(gridFor(workingChannels(r.id).length));
       setPage(0);
       setSelected(1);
       setFocused(false);
@@ -88,12 +93,17 @@ export function CameraWorkspace() {
     () => () => {
       recorder.current?.stop();
       cancelAnimationFrame(frame.current);
+      if (captureTimer.current) clearInterval(captureTimer.current);
       if (timer.current) clearInterval(timer.current);
       if (timeout.current) clearTimeout(timeout.current);
     },
     [],
   );
   function choose(id: string) {
+    if (bus && id !== bus.recorderId) {
+      toast.info('Return to the fleet to choose a different bus recorder.');
+      return;
+    }
     if (recording) {
       toast.info('Stop the preview recording before switching recorders.');
       return;
@@ -148,7 +158,7 @@ export function CameraWorkspace() {
     surface.fillText('RATHINAM GLOBAL UNIVERSITY', 640, 390);
     surface.fillStyle = '#8e9fa8';
     surface.font = '18px sans-serif';
-    surface.fillText('FLEET SURVEILLANCE · LIVE FEED', 640, 425);
+    surface.fillText('CODE-RENDERED PREVIEW - NOT CAMERA FOOTAGE', 640, 425);
     const canvas = document.createElement('canvas');
     canvas.width = 1280;
     canvas.height = 720;
@@ -163,11 +173,11 @@ export function CameraWorkspace() {
       ctx.fillRect(0, 670, 1280, 50);
       ctx.fillStyle = 'white';
       ctx.font = '18px sans-serif';
-      ctx.fillText(`RGU FLEET / ${d.name} / ${channelName(selected)} / LIVE SNAPSHOT`, 24, 703);
+      ctx.fillText(`RGU PREVIEW / ${d.name} / ${channelName(selected)} / SAMPLE SNAPSHOT`, 24, 703);
       canvas.toBlob(
         (blob) => {
           if (blob) {
-            downloadBlob(blob, safeFilename(d.name + '-' + selected + '-snapshot') + '.jpg');
+            downloadBlob(blob, safeFilename(d.name + '-' + selected + '-preview-snapshot') + '.jpg');
             toast.success('Snapshot captured and downloaded.');
           }
         },
@@ -205,14 +215,14 @@ export function CameraWorkspace() {
         ctx.fillStyle = 'white';
         ctx.font = '18px sans-serif';
         ctx.fillText(
-          `RATHINAM GLOBAL UNIVERSITY / ${d.name} / ${channelName(selected)} / REC`,
+          `RGU PREVIEW / ${d.name} / ${channelName(selected)} / NOT CAMERA FOOTAGE`,
           24,
           678,
         );
         ctx.fillText(new Date().toLocaleTimeString(), 24, 705);
-        frame.current = requestAnimationFrame(draw);
+        const track = stream.getVideoTracks()[0] as CanvasCaptureMediaStreamTrack;
+        track.requestFrame?.();
       };
-      draw();
       media.ondataavailable = (e) => {
         if (e.data.size) {
           chunks.push(e.data);
@@ -222,16 +232,20 @@ export function CameraWorkspace() {
       };
       media.onstop = async () => {
         cancelAnimationFrame(frame.current);
+        if (captureTimer.current) clearInterval(captureTimer.current);
         stream.getTracks().forEach((t) => t.stop());
         if (timer.current) clearInterval(timer.current);
         if (timeout.current) clearTimeout(timeout.current);
         setRecording(false);
         const blob = new Blob(chunks, { type: 'video/webm' });
-        if (!blob.size) return;
+        if (!blob.size) {
+          toast.error('No preview frames were captured. Start a new clip and try again.');
+          return;
+        }
         const id = crypto.randomUUID();
         const clip = {
           id,
-          name: `${d.name} - ${channelName(selected)} clip`,
+          name: `${d.name} - ${channelName(selected)} preview`,
           camera: `${d.name} / Camera ${String(selected).padStart(2, '0')}`,
           created: new Date().toISOString(),
           bytes: blob.size,
@@ -240,14 +254,16 @@ export function CameraWorkspace() {
         try {
           await putClip(id, blob);
           patch({ clips: [clip, ...state.clips] });
-          log('Security clip recorded', clip.camera, 'recording');
-          toast.success('Security clip saved in Recordings.');
+          log('Preview clip recorded', clip.camera, 'recording');
+          toast.success('Preview clip saved in Recordings.');
         } catch {
           downloadBlob(blob, 'rgu-recording.webm');
           toast.warning('Browser storage full. Recording downloaded to device.');
         }
       };
       media.start(1000);
+      draw();
+      captureTimer.current = setInterval(draw, 1000 / 15);
       setRecording(true);
       setSeconds(0);
       timer.current = setInterval(() => setSeconds(++elapsed), 1000);
@@ -275,7 +291,7 @@ export function CameraWorkspace() {
       <div className="camera-page-heading">
         <div>
           <p className="eyebrow">CAMERA WORKSPACE</p>
-          <h1>Your campus. Every angle.</h1>
+          <h1>{bus ? bus.busNumber + ' · Onboard cameras' : 'Your fleet. Every angle.'}</h1>
           <p className="page-description">
             Select a tile to control it. Double-click or use expand to focus.
           </p>
@@ -285,19 +301,30 @@ export function CameraWorkspace() {
           Layouts
         </Button>
       </div>
-      <div className="recorder-tabs" aria-label="Select recorder">
-        {recorders.map((r) => (
-          <button
-            key={r.id}
-            className={d.id === r.id ? 'selected' : ''}
-            onClick={() => choose(r.id)}
-          >
-            <span className={`status-dot ${r.online ? '' : 'offline'}`} />
-            {r.name}
-            <span>{r.channels}</span>
-          </button>
-        ))}
-      </div>
+      {bus && (
+        <a className="btn btn-ghost fleet-back" href={'/buses?bus=' + bus.id}>
+          <ArrowLeft size={15} />
+          Back to {bus.busNumber}
+        </a>
+      )}
+      <p className="fleet-source">
+        Camera preview · simulated per-channel availability · no live media connected
+      </p>
+      {!bus && (
+        <div className="recorder-tabs" aria-label="Select recorder">
+          {recorders.map((r) => (
+            <button
+              key={r.id}
+              className={d.id === r.id ? 'selected' : ''}
+              onClick={() => choose(r.id)}
+            >
+              <span className={`status-dot ${r.online ? '' : 'offline'}`} />
+              {r.name}
+              <span>{r.channels}</span>
+            </button>
+          ))}
+        </div>
+      )}
       <section className="monitor-panel">
         <div className="monitor-header">
           <div className="monitor-title">
@@ -399,6 +426,13 @@ export function CameraWorkspace() {
           </div>
         </div>
         <div ref={stage} className="camera-stage">
+          {!channels.length && (
+            <div className="fleet-no-data">
+              <Cctv size={30} />
+              <h3>No available cameras in this view</h3>
+              <p>Choose working channels and star them in bus settings.</p>
+            </div>
+          )}
           {focused && (
             <button
               className="back-to-grid"
@@ -484,12 +518,12 @@ export function CameraWorkspace() {
                       }}
                     >
                       <Cctv size={32} strokeWidth={1} />
-                      <span>LIVE 1080P FEED</span>
+                      <span>CAMERA PREVIEW</span>
                     </div>
                     <span className="tile-vignette" />
                     <span className="tile-live-badge">
                       <span className="live-dot" />
-                      LIVE
+                      PREVIEW
                     </span>
                   </>
                 ) : (
@@ -498,8 +532,8 @@ export function CameraWorkspace() {
                     <strong>{d.online ? 'Feed Standby' : 'Recorder Offline'}</strong>
                     <small>
                       {d.online
-                        ? 'Click play to activate this live camera stream.'
-                        : 'Node disconnected or undergoing scheduled maintenance.'}
+                        ? 'Click play to activate this sample tile.'
+                        : 'Sample recorder is offline.'}
                     </small>
                   </div>
                 )}
@@ -544,7 +578,7 @@ export function CameraWorkspace() {
                         REC
                       </>
                     ) : d.online && !paused.includes(channel) ? (
-                      'Live'
+                      'Preview'
                     ) : (
                       'Stopped'
                     )}
@@ -580,102 +614,107 @@ export function CameraWorkspace() {
           </div>
         </div>
       </section>
-      <div className="selected-controls">
-        <div className="selected-label">
-          <Cctv size={17} />
-          <span>
-            <strong>
-              {d.name} / Camera {String(selected).padStart(2, '0')}
-            </strong>
-            <small>{channelName(selected)}</small>
-          </span>
-        </div>
-        <div className="control-group">
-          <span className="muted small">Playback</span>
-          <select
-            aria-label="Playback preference"
-            value={playback}
-            onChange={(event) => {
-              setPlayback(event.target.value);
-              toast.info(`Playback mode: ${event.target.value}`);
-            }}
-          >
-            <option value="smooth">Smooth</option>
-            <option value="compatibility">Compatibility</option>
-          </select>
-        </div>
-        <div className="control-group">
-          <span className="muted small">Quality</span>
-          <select
-            aria-label="Selected camera quality"
-            value={quality}
-            onChange={(e) => {
-              setQuality(e.target.value);
-              toast.info(`Stream quality: ${e.target.value.toUpperCase()}`);
-            }}
-          >
-            <option value="auto">Adaptive</option>
-            <option value="hd">HD / Main</option>
-            <option value="sd">SD / Substream</option>
-          </select>
-        </div>
-        <div className="zoom-controls">
-          <IconButton label="Zoom out" onClick={() => setZoom((z) => Math.max(1, z - 0.25))}>
-            <ZoomOut size={16} />
-          </IconButton>
-          <span>{zoom.toFixed(2)}x</span>
-          <IconButton label="Zoom in" onClick={() => setZoom((z) => Math.min(4, z + 0.25))}>
-            <ZoomIn size={16} />
-          </IconButton>
-          <IconButton
-            label="Reset zoom"
-            onClick={() => {
-              setZoom(1);
-              setPan({ x: 0, y: 0 });
-            }}
-          >
-            <RotateCcw size={15} />
-          </IconButton>
-        </div>
-        <div className="control-actions">
-          <Button onClick={() => void snapshot()} disabled={!d.online || paused.includes(selected)}>
-            <Camera size={15} />
-            Snapshot
-          </Button>
-          {state.role !== 'member' && (
-            <Button
-              variant={recording ? 'danger' : 'secondary'}
-              loading={busy}
-              onClick={() => void startRecording()}
-              disabled={!d.online}
+      {channels.length > 0 && (
+        <div className="selected-controls">
+          <div className="selected-label">
+            <Cctv size={17} />
+            <span>
+              <strong>
+                {d.name} / Camera {String(selected).padStart(2, '0')}
+              </strong>
+              <small>{channelName(selected)}</small>
+            </span>
+          </div>
+          <div className="control-group">
+            <span className="muted small">Playback</span>
+            <select
+              aria-label="Playback preference"
+              value={playback}
+              onChange={(event) => {
+                setPlayback(event.target.value);
+                toast.info(`Playback mode: ${event.target.value}`);
+              }}
             >
-              {recording ? <Square size={14} /> : <Clapperboard size={15} />}{' '}
-              {recording
-                ? `Stop ${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
-                : 'Record stream'}
+              <option value="smooth">Smooth</option>
+              <option value="compatibility">Compatibility</option>
+            </select>
+          </div>
+          <div className="control-group">
+            <span className="muted small">Quality</span>
+            <select
+              aria-label="Selected camera quality"
+              value={quality}
+              onChange={(e) => {
+                setQuality(e.target.value);
+                toast.info(`Stream quality: ${e.target.value.toUpperCase()}`);
+              }}
+            >
+              <option value="auto">Adaptive</option>
+              <option value="hd">HD / Main</option>
+              <option value="sd">SD / Substream</option>
+            </select>
+          </div>
+          <div className="zoom-controls">
+            <IconButton label="Zoom out" onClick={() => setZoom((z) => Math.max(1, z - 0.25))}>
+              <ZoomOut size={16} />
+            </IconButton>
+            <span>{zoom.toFixed(2)}x</span>
+            <IconButton label="Zoom in" onClick={() => setZoom((z) => Math.min(4, z + 0.25))}>
+              <ZoomIn size={16} />
+            </IconButton>
+            <IconButton
+              label="Reset zoom"
+              onClick={() => {
+                setZoom(1);
+                setPan({ x: 0, y: 0 });
+              }}
+            >
+              <RotateCcw size={15} />
+            </IconButton>
+          </div>
+          <div className="control-actions">
+            <Button
+              onClick={() => void snapshot()}
+              disabled={!d.online || paused.includes(selected)}
+            >
+              <Camera size={15} />
+              Snapshot
             </Button>
-          )}
-          <IconButton
-            label="Mute / Unmute audio"
-            onClick={() => toast.info('Camera audio channel is currently muted.')}
-          >
-            <VolumeX size={17} />
-          </IconButton>
-          <input
-            className="preview-volume"
-            type="range"
-            min="0"
-            max="100"
-            value="0"
-            disabled
-            aria-label="Audio channel muted"
-            title="Audio channel muted"
-          />
-          <IconButton label="Push-to-talk channel standby" disabled>
-            <MicOff size={16} />
-          </IconButton>
+            {state.role !== 'member' && (
+              <Button
+                variant={recording ? 'danger' : 'secondary'}
+                loading={busy}
+                onClick={() => void startRecording()}
+                disabled={!d.online}
+              >
+                {recording ? <Square size={14} /> : <Clapperboard size={15} />}{' '}
+                {recording
+                  ? `Stop ${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
+                  : 'Record preview'}
+              </Button>
+            )}
+            <IconButton
+              label="Mute / Unmute audio"
+              onClick={() => toast.info('Camera audio is not connected in this preview.')}
+            >
+              <VolumeX size={17} />
+            </IconButton>
+            <input
+              className="preview-volume"
+              type="range"
+              min="0"
+              max="100"
+              value="0"
+              disabled
+              aria-label="Audio channel muted"
+              title="Audio channel muted"
+            />
+            <IconButton label="Push-to-talk channel standby" disabled>
+              <MicOff size={16} />
+            </IconButton>
+          </div>
         </div>
-      </div>
+      )}
       <div className="workspace-footnote">
         <Move size={13} />
         <span>

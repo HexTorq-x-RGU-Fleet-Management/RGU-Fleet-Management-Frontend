@@ -1,5 +1,9 @@
 # Frontend development rules
 
+- This is a bus-first fleet product: read docs/FLEET-PRODUCT.md for its core model.
+  Each recorder belongs to one bus; one vendor device supplies GPS and fuel.
+  Preserve source/freshness labels and distinguish mock data from live integration.
+
 - This is the independent RGU React/Next.js frontend. Work inside this repository
   unless the user explicitly includes other projects. Never import sibling source.
 - Use React, Next.js, Tailwind, Framer Motion, GSAP, Lenis and Lucide React as the

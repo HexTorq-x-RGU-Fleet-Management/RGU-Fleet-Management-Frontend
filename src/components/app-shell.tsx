@@ -6,7 +6,6 @@ import * as Dropdown from '@radix-ui/react-dropdown-menu';
 import {
   LayoutDashboard,
   BusFront,
-  MapPinned,
   Cctv,
   Clapperboard,
   Users,
@@ -30,6 +29,7 @@ import {
   Info,
   ArrowRight,
   PanelLeftClose,
+  PanelLeftOpen,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useWorkspace } from './workspace-provider';
@@ -38,8 +38,6 @@ import { canAccess, recorders, type Role } from '@/lib/model';
 const links = [
   { href: '/', label: 'Fleet overview', icon: LayoutDashboard },
   { href: '/buses', label: 'Buses', icon: BusFront },
-  { href: '/tracking', label: 'GPS & fuel', icon: MapPinned },
-  { href: '/recorders', label: 'Recorder library', icon: Cctv },
   { href: '/cameras', label: 'Camera workspace', icon: Cctv },
   { href: '/recordings', label: 'Recordings', icon: Clapperboard },
   { href: '/team', label: 'Team & access', icon: Users, area: 'team' },
@@ -50,11 +48,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { state, patch } = useWorkspace();
   const [mobile, setMobile] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+  useEffect(() => {
+    try {
+      setCollapsed(localStorage.getItem('rgu-sidebar-collapsed') === 'true');
+    } catch {}
+  }, []);
+  function toggleSidebar() {
+    const next = !collapsed;
+    setCollapsed(next);
+    try {
+      localStorage.setItem('rgu-sidebar-collapsed', String(next));
+    } catch {}
+  }
   const [search, setSearch] = useState(false);
   const [query, setQuery] = useState('');
   const [notifications, setNotifications] = useState(false);
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMobile(false);
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
         setSearch((s) => !s);
@@ -84,7 +96,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     router.push(href);
   }
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${collapsed ? 'sidebar-collapsed' : ''}`}>
       <a href="#main-content" className="skip-link">
         Skip to content
       </a>
@@ -95,7 +107,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           onClick={() => setMobile(false)}
         />
       )}
-      <aside className={`sidebar ${mobile ? 'sidebar-open' : ''}`}>
+      <aside
+        id="workspace-sidebar"
+        aria-label="Workspace sidebar"
+        data-lenis-prevent
+        className={`sidebar ${mobile ? 'sidebar-open' : ''}`}
+      >
+        <IconButton
+          label="Close navigation"
+          className="mobile-sidebar-close"
+          onClick={() => setMobile(false)}
+        >
+          <X size={18} />
+        </IconButton>
         <Link href="/" className="brand" onClick={() => setMobile(false)}>
           <span className="brand-symbol">
             <Route size={22} strokeWidth={2.5} />
@@ -110,14 +134,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <small>RATHINAM GLOBAL UNIVERSITY</small>
           </span>
         </Link>
-        <div className="workspace-switch">
-          <span className="workspace-monogram">R</span>
-          <div>
-            <strong>RGU Fleet Operations</strong>
-            <small>Rathinam · Coimbatore</small>
-          </div>
-          <ChevronDown size={14} />
-        </div>
         <p className="nav-caption">WORKSPACE</p>
         <nav aria-label="Main navigation">
           {links
@@ -129,6 +145,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 onClick={() => setMobile(false)}
                 className={`nav-link ${path === l.href ? 'active' : ''}`}
                 aria-current={path === l.href ? 'page' : undefined}
+                aria-label={l.label}
+                title={l.label}
               >
                 <l.icon size={18} />
                 <span>{l.label}</span>
@@ -146,31 +164,41 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <Link
                 className={`nav-link ${path === '/platform' ? 'active' : ''}`}
                 href="/platform"
+                aria-label="Approvals"
+                title="Approvals"
                 onClick={() => setMobile(false)}
               >
                 <ShieldCheck size={18} />
-                Approvals
+                <span>Approvals</span>
               </Link>
               <Link
                 className={`nav-link ${path === '/health' ? 'active' : ''}`}
                 href="/health"
+                aria-label="System health"
+                title="System health"
                 onClick={() => setMobile(false)}
               >
                 <Activity size={18} />
-                System health
+                <span>System health</span>
               </Link>
             </>
           )}
           <Link
             className={`nav-link ${path === '/settings' ? 'active' : ''}`}
             href="/settings"
+            aria-label="Settings"
+            title="Settings"
             onClick={() => setMobile(false)}
           >
             <Settings size={18} />
-            Settings
+            <span>Settings</span>
           </Link>
           <Dropdown.Root>
-            <Dropdown.Trigger className="profile-button">
+            <Dropdown.Trigger
+              className="profile-button"
+              aria-label="Account menu"
+              title="Account menu"
+            >
               <span className="avatar">AM</span>
               <span>
                 <strong>Alex Morgan</strong>
@@ -228,12 +256,23 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </Dropdown.Root>
         </div>
       </aside>
+      <IconButton
+        label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        className="sidebar-toggle sidebar-edge-toggle"
+        aria-expanded={!collapsed}
+        aria-controls="workspace-sidebar"
+        onClick={toggleSidebar}
+      >
+        {collapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
+      </IconButton>
       <div className="main-shell">
         <header className="topbar">
           <div className="topbar-location">
             <IconButton
               label="Open navigation"
               className="mobile-menu"
+              aria-expanded={mobile}
+              aria-controls="workspace-sidebar"
               onClick={() => setMobile(true)}
             >
               <Menu size={20} />

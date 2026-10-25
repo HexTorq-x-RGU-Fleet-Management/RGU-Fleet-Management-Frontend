@@ -1,4 +1,4 @@
-import { RecorderLibrary } from '@/components/dashboard';
+import { redirect } from 'next/navigation';
 export default function Page() {
-  return <RecorderLibrary />;
+  redirect('/cameras?view=recorders');
 }

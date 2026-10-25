@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
@@ -25,6 +25,7 @@ import {
   Pause,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { JourneyMap } from './journey-map';
 import { useWorkspace } from './workspace-provider';
 import { Badge, Button, Confirm, Field, Modal, PageHeading, SearchInput, Reveal } from './ui';
 import { recorders, channelName } from '@/lib/model';
@@ -83,8 +84,7 @@ function FuelMeter({ value }: { value: number }) {
   );
 }
 function RouteMap({ samples, index }: { samples: Vehicle[]; index: number }) {
-  const current = samples[index];
-  if (!current)
+  if (!samples[index])
     return (
       <div className="fleet-no-data">
         <Unplug size={30} />
@@ -92,97 +92,40 @@ function RouteMap({ samples, index }: { samples: Vehicle[]; index: number }) {
         <p>Map a GPS/fuel device in bus settings to explore this route.</p>
       </div>
     );
-  const bounds = {
-    minLat: Math.min(...samples.map((v) => v.location.latitude)),
-    maxLat: Math.max(...samples.map((v) => v.location.latitude)),
-    minLon: Math.min(...samples.map((v) => v.location.longitude)),
-    maxLon: Math.max(...samples.map((v) => v.location.longitude)),
-  };
-  const point = (v: Vehicle) => ({
-    x:
-      60 +
-      ((v.location.longitude - bounds.minLon) / Math.max(0.001, bounds.maxLon - bounds.minLon)) *
-        600,
-    y:
-      285 -
-      ((v.location.latitude - bounds.minLat) / Math.max(0.001, bounds.maxLat - bounds.minLat)) *
-        230,
-  });
-  const path = samples
-    .map((v, i) => {
-      const p = point(v);
-      return (i ? 'L' : 'M') + p.x + ',' + p.y;
-    })
-    .join(' ');
-  const p = point(current);
+  return <JourneyMap samples={samples} index={index} />;
+}
+function FleetHeading({
+  compact,
+  count,
+  eyebrow,
+  title,
+  description,
+  children,
+}: {
+  compact: boolean;
+  count: number;
+  eyebrow: string;
+  title: string;
+  description: string;
+  children: ReactNode;
+}) {
+  if (compact)
+    return (
+      <div className="bus-directory-heading">
+        <div>
+          <h1>Buses</h1>
+          <span className="count-chip">{count}</span>
+        </div>
+        <div className="bus-directory-actions">{children}</div>
+      </div>
+    );
   return (
-    <div className="fleet-map">
-      <div className="map-topline">
-        <span>
-          <Route size={14} /> COIMBATORE / SIMULATED ROUTE
-        </span>
-        <Badge tone="amber">Mock GPS</Badge>
-      </div>
-      <svg
-        viewBox="0 0 720 340"
-        role="img"
-        aria-label={
-          'Schematic GPS route with selected bus at ' +
-          current.location.latitude +
-          ', ' +
-          current.location.longitude
-        }
-      >
-        <defs>
-          <pattern id="fleet-grid" width="36" height="34" patternUnits="userSpaceOnUse">
-            <path d="M36 0H0V34" fill="none" stroke="currentColor" opacity=".12" />
-          </pattern>
-        </defs>
-        <rect width="720" height="340" fill="url(#fleet-grid)" />
-        <path
-          d={path}
-          fill="none"
-          stroke="var(--rgu-cyan)"
-          strokeWidth="4"
-          opacity=".35"
-          strokeDasharray="7 7"
-        />
-        <path
-          d={samples
-            .slice(0, index + 1)
-            .map((v, i) => {
-              const p = point(v);
-              return (i ? 'L' : 'M') + p.x + ',' + p.y;
-            })
-            .join(' ')}
-          fill="none"
-          stroke="var(--rgu-cyan)"
-          strokeWidth="4"
-        />
-        <circle cx={p.x} cy={p.y} r="24" fill="var(--rgu-cyan)" opacity=".15" />
-        <circle
-          cx={p.x}
-          cy={p.y}
-          r="9"
-          fill="var(--rgu-cyan)"
-          stroke="var(--panel)"
-          strokeWidth="4"
-        />
-        <text x="24" y="323" fill="currentColor" fontSize="12">
-          N ↑ · Coordinates projected to route bounds · No road basemap
-        </text>
-      </svg>
-      <div className="map-coordinate">
-        <MapPin size={15} />
-        <strong>
-          {current.location.latitude.toFixed(5)}, {current.location.longitude.toFixed(5)}
-        </strong>
-        <span>{timeLabel(current.gpsTime)} IST</span>
-      </div>
-    </div>
+    <PageHeading eyebrow={eyebrow} title={title} description={description}>
+      {children}
+    </PageHeading>
   );
 }
-export function FleetWorkspace({ tracking = false }: { tracking?: boolean }) {
+export function FleetWorkspace({ busesOnly = false }: { busesOnly?: boolean }) {
   const { state, ready } = useWorkspace(),
     query = useSearchParams();
   const [search, setSearch] = useState(''),
@@ -215,15 +158,21 @@ export function FleetWorkspace({ tracking = false }: { tracking?: boolean }) {
       );
     });
   return (
-    <div className="fleet-workspace">
+    <div className={`fleet-workspace ${busesOnly && !detail ? 'bus-directory' : ''}`}>
       {detail ? (
         <BusDetail bus={detail} now={now} onEdit={() => setEditor(detail)} />
       ) : (
         <>
-          <PageHeading
-            eyebrow="RGU FLEET MANAGEMENT"
-            title={tracking ? 'Routes, fuel and time.' : 'One fleet. Every perspective.'}
-            description="Bus cameras, GPS and fuel intelligence — connected around the vehicle."
+          <FleetHeading
+            compact={busesOnly}
+            count={state.buses.length}
+            eyebrow={busesOnly ? 'VEHICLE DIRECTORY' : 'RGU FLEET MANAGEMENT'}
+            title={busesOnly ? 'Buses' : 'One fleet. Every perspective.'}
+            description={
+              busesOnly
+                ? 'Manage vehicles, drivers and connected devices.'
+                : 'Bus cameras, GPS and fuel intelligence — connected around the vehicle.'
+            }
           >
             <Button onClick={refresh}>
               <RefreshCw size={15} />
@@ -250,72 +199,80 @@ export function FleetWorkspace({ tracking = false }: { tracking?: boolean }) {
                 Add bus
               </Button>
             )}
-          </PageHeading>
-          <div className="fleet-source">
-            <Radio size={15} />
-            <strong>Mock provider</strong>
-            <span>
-              Vendor-format GPS + fuel · polled every 10 seconds · simulated samples at 1-minute
-              intervals
-            </span>
-            <time>Checked {timeLabel(now)} IST</time>
-          </div>
-          <div className="stats-grid">
-            <Metric
-              icon={BusFront}
-              label="Fleet size"
-              value={String(state.buses.length).padStart(2, '0')}
-              note="Individually mapped buses"
-            />
-            <Metric
-              icon={Navigation}
-              label="Moving"
-              value={String(
-                envelope.data.vehicles.filter((v) => v.status === 'MOVING').length,
-              ).padStart(2, '0')}
-              note="Simulated ignition and speed"
-            />
-            <Metric
-              icon={Fuel}
-              label="Fuel monitored"
-              value={String(envelope.data.vehicles.length).padStart(2, '0')}
-              note="GPS and fuel from one device"
-            />
-            <Metric
-              icon={Cctv}
-              label="Available camera channels"
-              value={String(
-                state.buses.reduce((n, b) => n + workingChannels(b.recorderId).length, 0),
-              ).padStart(2, '0')}
-              note="Sample per-channel availability"
-            />
-          </div>
-          <div className="fleet-toolbar">
-            <div>
-              <h2>Your buses</h2>
-              <p className="muted">Choose a vehicle to explore its complete journey.</p>
+          </FleetHeading>
+          {!busesOnly && (
+            <>
+              <div className="fleet-source">
+                <Radio size={15} />
+                <strong>Mock provider</strong>
+                <span>
+                  Vendor-format GPS + fuel · polled every 10 seconds · simulated samples at 1-minute
+                  intervals
+                </span>
+                <time>Checked {timeLabel(now)} IST</time>
+              </div>
+              <div className="stats-grid">
+                <Metric
+                  icon={BusFront}
+                  label="Fleet size"
+                  value={String(state.buses.length).padStart(2, '0')}
+                  note="Individually mapped buses"
+                />
+                <Metric
+                  icon={Navigation}
+                  label="Moving"
+                  value={String(
+                    envelope.data.vehicles.filter((v) => v.status === 'MOVING').length,
+                  ).padStart(2, '0')}
+                  note="Simulated ignition and speed"
+                />
+                <Metric
+                  icon={Fuel}
+                  label="Fuel monitored"
+                  value={String(envelope.data.vehicles.length).padStart(2, '0')}
+                  note="GPS and fuel from one device"
+                />
+                <Metric
+                  icon={Cctv}
+                  label="Available camera channels"
+                  value={String(
+                    state.buses.reduce((n, b) => n + workingChannels(b.recorderId).length, 0),
+                  ).padStart(2, '0')}
+                  note="Sample per-channel availability"
+                />
+              </div>
+            </>
+          )}
+          <div className={busesOnly ? 'bus-directory-tools' : ''}>
+            <div className="fleet-toolbar">
+              {!busesOnly && (
+                <div>
+                  <h2>{busesOnly ? state.buses.length + ' vehicles' : 'Your buses'}</h2>
+                  <p className="muted">Choose a vehicle to explore its complete journey.</p>
+                </div>
+              )}
+              <SearchInput
+                value={search}
+                onChange={setSearch}
+                placeholder="Search buses, drivers or routes"
+              />
             </div>
-            <SearchInput
-              value={search}
-              onChange={setSearch}
-              placeholder="Search buses, drivers or routes"
-            />
-          </div>
-          <div className="segmented fleet-filters" aria-label="Bus filter">
-            {[
-              ['all', 'All buses'],
-              ['moving', 'Moving'],
-              ['unmapped', 'Needs mapping'],
-            ].map(([id, label]) => (
-              <button
-                key={id}
-                aria-pressed={filter === id}
-                className={filter === id ? 'selected' : ''}
-                onClick={() => setFilter(id)}
-              >
-                {label}
-              </button>
-            ))}
+            <div className="segmented fleet-filters" aria-label="Bus filter">
+              {[
+                ['all', 'All buses'],
+                ['moving', 'Moving'],
+                ['unmapped', 'Needs mapping'],
+              ].map(([id, label]) => (
+                <button
+                  key={id}
+                  aria-pressed={filter === id}
+                  className={filter === id ? 'selected' : ''}
+                  onClick={() => setFilter(id)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
           {list.length === 0 ? (
             <div className="fleet-no-data">
@@ -387,15 +344,6 @@ export function FleetWorkspace({ tracking = false }: { tracking?: boolean }) {
                 );
               })}
             </div>
-          )}
-          {tracking && state.buses[0] && (
-            <section className="fleet-section">
-              <h2>Journey explorer</h2>
-              <p className="muted">
-                Open any bus above for its synchronized route and fuel timeline.
-              </p>
-              <Journey bus={state.buses[0]} now={now} />
-            </section>
           )}
         </>
       )}

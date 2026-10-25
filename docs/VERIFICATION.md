@@ -1,7 +1,7 @@
 # Frontend verification — 25 October 2026
 
 Node 24.21.0, locked dependencies. TypeScript and Next production build pass.
-15 unit tests and 12 actual Chrome browser tests pass.
+16 unit tests and 16 actual Chrome browser tests pass.
 
 Fleet coverage: bus create/edit mapping fields, browser persistence and confirmed
 deletion; synchronized GPS/fuel timeline and location cursor; star filtering in
@@ -17,8 +17,14 @@ Browser tests own a production server on 3117 and refuse to reuse an unrelated
 server. The developer preview remains on 3107. No image generation was used.
 No JavaScript-native dialogs or stock photo dependencies are introduced.
 
-This verifies the frontend mock preview. It does not verify actual GPS/fuel,
-road map data, real camera video/audio, backend-authenticated bus operations,
+Navigation/map coverage: circular sidebar toggle geometry/persistence, compact
+bus directory, camera tools consolidation, smooth-scroll isolation on a short
+viewport, Leaflet initialization, history marker updates and tile failure.
+Preview recording is decoded in the browser after IndexedDB persistence.
+Routine tests use stub tiles; a separate Chrome smoke check loaded real OSM tiles.
+
+This verifies the frontend mock preview and real road-map loading. It does not verify actual GPS/fuel,
+real camera video/audio, backend-authenticated bus operations,
 production monitoring, Linux or deployment. Windows API behavior is tested in
 its own repository; typed adapter methods are ready but not wired into the
 preview screens. See FLEET-PRODUCT.md for boundaries and future integration.

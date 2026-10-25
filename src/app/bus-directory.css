@@ -1,0 +1,73 @@
+.bus-directory-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+.bus-directory-heading > div:first-child {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.bus-directory-heading h1 {
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.5px;
+}
+.bus-directory-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.bus-directory .btn {
+  min-height: 34px;
+  padding: 8px 12px;
+  font-size: 12px;
+}
+.bus-directory-tools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.bus-directory-tools .fleet-toolbar {
+  display: contents;
+}
+.bus-directory-tools .search-input {
+  order: 2;
+  width: min(340px, 100%);
+}
+.bus-directory-tools .fleet-filters {
+  order: 1;
+  margin: 0;
+}
+@media (max-width: 640px) {
+  .bus-directory-heading {
+    margin-bottom: 12px;
+  }
+  .bus-directory-heading h1 {
+    font-size: 22px;
+  }
+  .bus-directory-actions {
+    gap: 4px;
+  }
+  .bus-directory-actions .btn {
+    font-size: 11px;
+    padding: 8px;
+  }
+  .bus-directory-tools {
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .bus-directory-tools .search-input {
+    width: 100%;
+    order: 1;
+  }
+  .bus-directory-tools .fleet-filters {
+    order: 2;
+  }
+}

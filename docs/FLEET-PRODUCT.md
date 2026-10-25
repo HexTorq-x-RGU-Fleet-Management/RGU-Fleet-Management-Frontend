@@ -32,8 +32,9 @@ before replacing the mock. Vendor credentials remain on the backend.
 
 Current UI: explicit local mock preview, browser-persisted buses/stars, a
 10-second mock refresh with minute-spaced samples, 30-minute/2-hour/6-hour mock
-history, synchronized SVG coordinate route plot. This is not a road basemap or
-a real location feed. No generated/stock imagery.
+history, synchronized Leaflet/OpenStreetMap road view focused on Tamil Nadu.
+GPS/fuel remain simulated. Viewing bounds are a rectangle, not an exact state
+boundary mask. No generated/stock imagery. See MAPS.md for external tile usage.
 
 Current Windows API: PostgreSQL bus persistence, forced RLS, authenticated CRUD,
 mock snapshot polling and stored telemetry/history. The frontend typed adapter

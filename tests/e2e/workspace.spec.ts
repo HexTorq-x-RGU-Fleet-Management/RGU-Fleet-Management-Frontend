@@ -1,4 +1,6 @@
 import { test, expect } from '@playwright/test';
+import { stubMapTiles } from './map-fixture';
+test.beforeEach(async ({ page }) => stubMapTiles(page));
 test('overview and search have no hydration or browser errors', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
@@ -114,6 +116,15 @@ test('snapshot and actual preview recording persist and can be deleted', async (
   await expect(page.locator('.clip-card')).toHaveCount(1);
   await page.reload();
   await expect(page.locator('.clip-card')).toHaveCount(1);
+  await page.getByRole('button', { name: /^Play KPM/ }).click();
+  await expect
+    .poll(() =>
+      page
+        .locator('video.clip-video')
+        .evaluate((video: HTMLVideoElement) => video.readyState >= 2 && video.videoWidth > 0),
+    )
+    .toBe(true);
+  await page.getByRole('button', { name: 'Close dialog', exact: true }).click();
   const download = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Download', exact: true }).click();
   expect((await download).suggestedFilename()).toContain('.webm');

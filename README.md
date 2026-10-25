@@ -6,9 +6,13 @@ Repository: https://github.com/HexTorq-x-RGU-Fleet-Management/RGU-Fleet-Manageme
 ## Current delivery
 
 Product direction: [bus-first fleet model](docs/FLEET-PRODUCT.md).
-New routes: / (fleet overview), /buses?bus=ID (vehicle), /tracking (GPS/fuel),
-and /recorders (separate hardware library). The mock follows the supplied
-vendor envelope; the SVG route is a coordinate schematic without road tiles.
+Routes: / (fleet overview), /buses (compact directory), /buses?bus=ID (vehicle),
+/cameras (all camera tools, including the recorder library) and /recordings.
+Legacy /tracking redirects to /buses; /recorders redirects into Camera workspace.
+The mock follows the supplied vendor envelope. Leaflet/OpenStreetMap now supplies
+real road tiles focused on Tamil Nadu; bus positions/fuel remain simulated.
+See [map setup and attribution](docs/MAPS.md). Sidebar collapse is browser-persisted,
+with an edge-centred circular toggle and independent native scrolling.
 Fleet preview settings stay in this browser. Windows fleet API methods exist
 in src/lib/api.ts; authenticated application wiring is still pending.
 

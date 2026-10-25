@@ -1,4 +1,6 @@
 import { test, expect } from '@playwright/test';
+import { stubMapTiles } from './map-fixture';
+test.beforeEach(async ({ page }) => stubMapTiles(page));
 test('bus creation, unique mapping feedback, persistence and removal', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Add bus', exact: true }).click();

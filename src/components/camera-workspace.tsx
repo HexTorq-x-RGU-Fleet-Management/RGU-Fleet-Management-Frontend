@@ -177,7 +177,10 @@ export function CameraWorkspace() {
       canvas.toBlob(
         (blob) => {
           if (blob) {
-            downloadBlob(blob, safeFilename(d.name + '-' + selected + '-preview-snapshot') + '.jpg');
+            downloadBlob(
+              blob,
+              safeFilename(d.name + '-' + selected + '-preview-snapshot') + '.jpg',
+            );
             toast.success('Snapshot captured and downloaded.');
           }
         },
@@ -197,8 +200,15 @@ export function CameraWorkspace() {
     setBusy(true);
     try {
       const { image, canvas, ctx } = await imageCanvas();
-      const stream = canvas.captureStream(15);
-      const mime = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'].find((t) =>
+      let stream = canvas.captureStream(0);
+      if (
+        typeof (stream.getVideoTracks()[0] as CanvasCaptureMediaStreamTrack).requestFrame !==
+        'function'
+      ) {
+        stream.getTracks().forEach((track) => track.stop());
+        stream = canvas.captureStream(15);
+      }
+      const mime = ['video/webm;codecs=vp8', 'video/webm;codecs=vp9', 'video/webm'].find((t) =>
         MediaRecorder.isTypeSupported(t),
       );
       if (!mime) throw Error('WebM recording is unavailable in this browser.');
@@ -219,7 +229,11 @@ export function CameraWorkspace() {
           24,
           678,
         );
-        ctx.fillText(new Date().toLocaleTimeString(), 24, 705);
+        ctx.fillText(
+          new Date().toLocaleTimeString() + '.' + String(Date.now() % 1000).padStart(3, '0'),
+          24,
+          705,
+        );
         const track = stream.getVideoTracks()[0] as CanvasCaptureMediaStreamTrack;
         track.requestFrame?.();
       };

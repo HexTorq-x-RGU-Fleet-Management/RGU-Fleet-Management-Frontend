@@ -1,9 +1,4 @@
-import { Suspense } from 'react';
-import { FleetWorkspace } from '@/components/fleet-workspace';
+import { redirect } from 'next/navigation';
 export default function Page() {
-  return (
-    <Suspense fallback={<div className="skeleton h-96" />}>
-      <FleetWorkspace tracking />
-    </Suspense>
-  );
+  redirect('/buses');
 }

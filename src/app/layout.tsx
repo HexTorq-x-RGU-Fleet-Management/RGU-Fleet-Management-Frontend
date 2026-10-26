@@ -18,11 +18,27 @@ export const metadata: Metadata = {
   title: { default: 'RGU Fleet Management | HexTorq', template: '%s | RGU Fleet' },
   description:
     'RGU Fleet Management by HexTorq: bus cameras, GPS, fuel telemetry and synchronized journey history for Rathinam Global University, Coimbatore.',
+  icons: {
+    icon: '/rathinam-logo.svg',
+    apple: '/rathinam-logo.svg',
+  },
 };
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+          rel="stylesheet"
+        />
+      </head>
       <body>
+        <div className="bg-blob blob-1" aria-hidden="true" />
+        <div className="bg-blob blob-2" aria-hidden="true" />
+        <div className="bg-blob blob-3" aria-hidden="true" />
+        <div className="bg-blob blob-4" aria-hidden="true" />
         <WorkspaceProvider>
           <MotionProvider>
             {children}

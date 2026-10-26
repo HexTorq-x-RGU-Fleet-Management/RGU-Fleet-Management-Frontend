@@ -113,7 +113,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </IconButton>
         <Link href="/" className="brand" onClick={() => setMobile(false)}>
           <span className="brand-symbol">
-            <Route size={22} />
+            <img src="/rathinam-logo.svg" alt="Rathinam Logo" width={34} height={34} />
           </span>
           <span>
             <span className="brand-logo-rgu">

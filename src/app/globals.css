@@ -9,15 +9,22 @@
 }
 
 :root {
-  --font-stack-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-stack-sans: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-stack-mono: ui-monospace, 'SF Mono', 'Cascadia Code', 'Segoe UI Mono', monospace;
 
-  /* Rathinam Global University Official Brand System */
-  --rgu-purple: #852482;
+  /* Official Rathinam University Brand System (from rguedu.in) */
+  --color-brand-purple: #71307e;
+  --color-brand-blue: #2096db;
+  --color-brand-green: #a5cb3a;
+  --color-brand-orange: #f29a33;
+  --color-brand-gray: rgba(68, 68, 68, 0.81);
+  --color-brand-red: #ef4444;
+
+  --rgu-purple: #71307e;
   --rgu-purple-bright: #c44ec0;
-  --rgu-cyan: #00a3e0;
+  --rgu-cyan: #2096db;
   --rgu-cyan-bright: #00b4f0;
-  --rgu-green: #84bd00;
+  --rgu-green: #a5cb3a;
   --rgu-green-bright: #8ed100;
 
   /* Deep Executive Operations Dark Theme */
@@ -47,6 +54,26 @@
   --shadow: 0 24px 70px -10px rgba(0, 0, 0, 0.8), 0 0 1px 1px rgba(255, 255, 255, 0.05);
   --shadow-lg: 0 32px 90px -15px rgba(0, 0, 0, 0.9), 0 0 1px 1px rgba(255, 255, 255, 0.08);
   --bevel: inset 0 1px 0 0 rgba(255, 255, 255, 0.07);
+
+  /* World-Class Motion Glassmorphism System Tokens */
+  --glass-bg: rgba(15, 20, 27, 0.62);
+  --glass-bg-card: rgba(17, 23, 31, 0.58);
+  --glass-bg-subtle: rgba(255, 255, 255, 0.035);
+  --glass-bg-elevated: rgba(24, 33, 45, 0.75);
+  --glass-bg-hover: rgba(28, 38, 52, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.09);
+  --glass-border-subtle: rgba(255, 255, 255, 0.05);
+  --glass-border-strong: rgba(196, 78, 192, 0.42);
+  --glass-blur: blur(20px) saturate(190%);
+  --glass-blur-heavy: blur(32px) saturate(210%);
+  --glass-specular: inset 0 1px 1px 0 rgba(255, 255, 255, 0.16);
+  --glass-shadow: 0 20px 48px -12px rgba(0, 0, 0, 0.65), inset 0 1px 1px 0 rgba(255, 255, 255, 0.1);
+  --glass-shadow-hover: 0 26px 60px -10px rgba(0, 0, 0, 0.82), 0 0 32px -4px var(--accent-glow), inset 0 1px 1px 0 rgba(255, 255, 255, 0.2);
+
+  /* Smooth Dynamic Curves */
+  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-smooth: cubic-bezier(0.22, 1, 0.36, 1);
   color-scheme: dark;
 }
 
@@ -77,6 +104,21 @@
   --shadow: 0 20px 60px -10px rgba(19, 23, 32, 0.08), 0 1px 3px rgba(19, 23, 32, 0.04);
   --shadow-lg: 0 28px 80px -15px rgba(19, 23, 32, 0.12), 0 1px 4px rgba(19, 23, 32, 0.06);
   --bevel: inset 0 1px 0 0 rgba(255, 255, 255, 0.95);
+
+  /* Glassmorphism System Tokens (Light Mode) */
+  --glass-bg: rgba(255, 255, 255, 0.72);
+  --glass-bg-card: rgba(255, 255, 255, 0.78);
+  --glass-bg-subtle: rgba(0, 0, 0, 0.025);
+  --glass-bg-elevated: rgba(255, 255, 255, 0.9);
+  --glass-bg-hover: rgba(255, 255, 255, 0.96);
+  --glass-border: rgba(0, 0, 0, 0.08);
+  --glass-border-subtle: rgba(0, 0, 0, 0.04);
+  --glass-border-strong: rgba(133, 36, 130, 0.3);
+  --glass-blur: blur(20px) saturate(160%);
+  --glass-blur-heavy: blur(32px) saturate(180%);
+  --glass-specular: inset 0 1px 1px 0 rgba(255, 255, 255, 0.95);
+  --glass-shadow: 0 20px 48px -12px rgba(19, 23, 32, 0.08), inset 0 1px 1px 0 rgba(255, 255, 255, 0.85);
+  --glass-shadow-glow: 0 24px 60px -10px rgba(19, 23, 32, 0.12), 0 0 28px -4px rgba(133, 36, 130, 0.2), inset 0 1px 1px 0 rgba(255, 255, 255, 0.95);
   color-scheme: light;
 }
 
@@ -88,8 +130,9 @@ body {
   margin: 0;
   background-color: var(--bg);
   background-image:
-    radial-gradient(ellipse 90% 45% at 50% -10%, rgba(133, 36, 130, 0.05), transparent 70%),
-    radial-gradient(circle at 100% 0%, rgba(0, 163, 224, 0.03), transparent 45%);
+    radial-gradient(ellipse 90% 50% at 50% -15%, rgba(133, 36, 130, 0.12), transparent 70%),
+    radial-gradient(circle 800px at 90% 10%, rgba(0, 163, 224, 0.08), transparent 60%),
+    radial-gradient(circle 700px at 10% 85%, rgba(132, 189, 0, 0.06), transparent 60%);
   background-attachment: fixed;
   color: var(--text);
   font-family: var(--font-stack-sans);
@@ -98,6 +141,102 @@ body {
   letter-spacing: -0.011em;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* ------------------------------------------------------------- */
+/* Rathinam Portal Colorful Background Blobs (Reference: rguedu.in) */
+/* ------------------------------------------------------------- */
+.bg-blob {
+  position: fixed;
+  filter: blur(100px);
+  z-index: 0;
+  opacity: 0.32;
+  animation: float-blob 14s ease-in-out infinite alternate;
+  border-radius: 50%;
+  pointer-events: none;
+  will-change: transform;
+}
+
+:root[data-theme='light'] .bg-blob {
+  opacity: 0.52;
+}
+
+.blob-1 {
+  background-color: var(--color-brand-purple);
+  width: 520px;
+  height: 520px;
+  top: -100px;
+  left: -100px;
+}
+
+.blob-2 {
+  background-color: var(--color-brand-blue);
+  width: 480px;
+  height: 480px;
+  bottom: -100px;
+  right: -50px;
+  animation-delay: -3.5s;
+}
+
+.blob-3 {
+  background-color: var(--color-brand-green);
+  width: 420px;
+  height: 420px;
+  top: 40%;
+  left: 20%;
+  animation-delay: -7s;
+}
+
+.blob-4 {
+  background-color: var(--color-brand-orange);
+  width: 380px;
+  height: 380px;
+  top: 15%;
+  right: 15%;
+  animation-delay: -10s;
+}
+
+@keyframes float-blob {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  100% {
+    transform: translate(40px, 60px) scale(1.1);
+  }
+}
+
+/* RGU Portal Gradient Text */
+.rgu-gradient-text {
+  background: linear-gradient(135deg, #c44ec0 0%, #2096db 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+:root[data-theme='light'] .rgu-gradient-text {
+  background: linear-gradient(135deg, #71307e 0%, #2096db 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* RGU Hover Lift Interaction */
+.hover-lift {
+  transition:
+    transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+    border-color 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 15px 35px rgba(31, 38, 135, 0.2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bg-blob {
+    animation: none;
+  }
 }
 
 button,
@@ -161,23 +300,31 @@ img {
 
 select,
 input {
-  background: var(--bg);
-  border: 1px solid var(--line);
-  border-radius: 8px;
+  background: var(--glass-bg-subtle);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: 9px;
   color: var(--text);
   padding: 10px 13px;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    border-color 0.22s var(--ease-spring),
+    box-shadow 0.22s var(--ease-spring),
+    background 0.22s ease,
+    transform 0.18s var(--ease-spring);
 }
 
 select:hover,
 input:hover {
-  border-color: var(--line-strong);
+  border-color: var(--glass-border-strong);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 select:focus,
 input:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-glow);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 0 3px var(--accent-glow), var(--glass-specular);
   outline: none;
 }
 
@@ -273,7 +420,7 @@ h3 {
   transform: none;
 }
 
-/* Rathinam University Button Architecture */
+/* Motion Glassmorphic Button Architecture */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -281,50 +428,59 @@ h3 {
   gap: 8px;
   font-size: 12px;
   font-weight: 600;
-  padding: 9px 15px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
+  padding: 9px 16px;
+  border: 1px solid var(--glass-border);
+  border-radius: 9px;
   transition:
-    background 0.18s cubic-bezier(0.16, 1, 0.3, 1),
-    border-color 0.18s ease,
-    transform 0.18s ease,
-    box-shadow 0.18s ease;
+    background 0.22s var(--ease-spring),
+    border-color 0.22s ease,
+    transform 0.18s var(--ease-spring),
+    box-shadow 0.22s var(--ease-spring);
   white-space: nowrap;
   min-height: 38px;
   user-select: none;
+  position: relative;
+  overflow: hidden;
 }
 
 .btn:hover:not(:disabled) {
-  transform: translateY(-1px);
+  transform: translateY(-2px);
 }
 
 .btn:active:not(:disabled) {
-  transform: translateY(0);
+  transform: translateY(0) scale(0.97);
 }
 
-/* Signature Rathinam Royal Purple Action Button */
+/* Signature Rathinam Royal Purple Action Button with Luminous Glass */
 .btn-primary {
-  background: linear-gradient(135deg, #a835a4 0%, #7d1f7c 100%);
+  background: linear-gradient(135deg, rgba(168, 53, 164, 0.92) 0%, rgba(125, 31, 124, 0.94) 100%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   color: #ffffff;
   border-color: rgba(255, 255, 255, 0.25);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25), 0 0 18px -2px var(--accent-glow);
+  box-shadow: 0 4px 18px -2px var(--accent-glow), inset 0 1px 1px 0 rgba(255, 255, 255, 0.3);
   font-weight: 600;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: linear-gradient(135deg, #bc3ec8 0%, #8c238b 100%);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), 0 0 24px 0 var(--accent-glow);
+  background: linear-gradient(135deg, rgba(188, 62, 200, 0.98) 0%, rgba(140, 35, 139, 0.98) 100%);
+  border-color: rgba(255, 255, 255, 0.38);
+  box-shadow: 0 6px 26px 0 var(--accent-glow), inset 0 1px 1px 0 rgba(255, 255, 255, 0.45);
 }
 
 .btn-secondary {
-  background: var(--panel-hover);
-  border-color: var(--line);
-  box-shadow: var(--bevel);
+  background: var(--glass-bg-card);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-color: var(--glass-border);
+  box-shadow: var(--glass-specular);
+  color: var(--text);
 }
 
-.btn-secondary:hover {
-  background: var(--panel-elevated);
-  border-color: var(--line-strong);
+.btn-secondary:hover:not(:disabled) {
+  background: var(--glass-bg-hover);
+  border-color: var(--glass-border-strong);
+  box-shadow: 0 6px 22px -4px rgba(0, 0, 0, 0.5), var(--glass-specular);
 }
 
 .btn-ghost {
@@ -333,21 +489,25 @@ h3 {
   color: var(--muted);
 }
 
-.btn-ghost:hover {
+.btn-ghost:hover:not(:disabled) {
   color: var(--text);
-  background: var(--panel-hover);
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(8px);
 }
 
 .btn-danger {
-  background: rgba(248, 113, 113, 0.1);
-  border-color: rgba(248, 113, 113, 0.25);
+  background: rgba(248, 113, 113, 0.12);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-color: rgba(248, 113, 113, 0.28);
   color: var(--danger);
+  box-shadow: inset 0 1px 1px 0 rgba(248, 113, 113, 0.2);
 }
 
-.btn-danger:hover {
-  background: rgba(248, 113, 113, 0.18);
-  border-color: rgba(248, 113, 113, 0.45);
-  box-shadow: 0 0 14px -2px var(--danger-glow);
+.btn-danger:hover:not(:disabled) {
+  background: rgba(248, 113, 113, 0.22);
+  border-color: rgba(248, 113, 113, 0.5);
+  box-shadow: 0 4px 18px -2px var(--danger-glow), inset 0 1px 1px 0 rgba(258, 113, 113, 0.3);
 }
 
 .icon-button {

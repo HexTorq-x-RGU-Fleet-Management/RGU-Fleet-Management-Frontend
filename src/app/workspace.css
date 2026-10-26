@@ -21,28 +21,32 @@
   align-items: center;
   gap: 8px;
   white-space: nowrap;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 9px;
-  padding: 10px 14px;
+  background: var(--glass-bg-subtle);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  padding: 10px 15px;
   font-size: 11px;
   font-weight: 550;
   color: var(--muted);
-  box-shadow: var(--bevel);
-  transition: all 0.15s ease;
+  box-shadow: var(--glass-specular);
+  transition: all 0.22s var(--ease-spring);
 }
 
 .recorder-tabs button:hover {
-  background: var(--panel-hover);
+  background: rgba(255, 255, 255, 0.07);
   color: var(--text);
-  border-color: var(--line-strong);
+  border-color: var(--glass-border-strong);
+  transform: translateY(-1px);
 }
 
 .recorder-tabs button.selected {
-  border-color: rgba(196, 78, 192, 0.5);
-  background: rgba(133, 36, 130, 0.12);
-  color: var(--text);
-  box-shadow: 0 0 16px -4px var(--accent-glow);
+  border-color: rgba(196, 78, 192, 0.55);
+  background: rgba(133, 36, 130, 0.22);
+  backdrop-filter: blur(16px);
+  color: #ffffff;
+  box-shadow: 0 0 20px -3px var(--accent-glow), var(--glass-specular);
 }
 
 .recorder-tabs button > span:last-child {
@@ -61,13 +65,15 @@
   color: var(--accent);
 }
 
-/* Monitor Panel */
 .monitor-panel {
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: var(--panel);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  background: var(--glass-bg-card);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   overflow: hidden;
-  box-shadow: var(--shadow-sm), var(--bevel);
+  box-shadow: var(--glass-shadow);
+  transition: border-color 0.24s ease, box-shadow 0.24s ease;
 }
 
 .monitor-header {
@@ -135,10 +141,12 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-top: 1px solid var(--line);
-  padding: 8px 16px;
+  border-top: 1px solid var(--glass-border);
+  padding: 9px 18px;
   gap: 12px;
-  background: rgba(9, 12, 16, 0.55);
+  background: rgba(9, 12, 16, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .monitor-subbar > div {
@@ -180,22 +188,29 @@
   gap: 8px;
 }
 
-/* Tactical HUD Camera Tile with RGU Corner Brackets */
 .camera-tile {
   position: relative;
   aspect-ratio: 16/10;
-  border-radius: 8px;
+  border-radius: 10px;
   overflow: hidden;
-  background: #080b0f;
-  border: 1px solid #1a202a;
+  background: rgba(8, 11, 15, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--glass-border);
   cursor: pointer;
   color: #edf2f6;
   min-width: 0;
   isolation: isolate;
   transition:
-    border-color 0.18s ease,
-    box-shadow 0.18s ease,
-    transform 0.15s ease;
+    border-color 0.22s var(--ease-spring),
+    box-shadow 0.22s var(--ease-spring),
+    transform 0.22s var(--ease-spring);
+}
+
+.camera-tile:hover {
+  transform: translateY(-2px) scale(1.008);
+  border-color: rgba(0, 180, 240, 0.5);
+  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.6), 0 0 16px -2px rgba(0, 180, 240, 0.25);
 }
 
 .camera-grid.focused .camera-tile {

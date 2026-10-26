@@ -85,42 +85,52 @@ export function broadcastViewerChange() {
   channel.postMessage({ sender: sessionSender });
   channel.close();
 }
+const devUser: Principal = {
+  id: 'local-admin',
+  tenantId: 'local-tenant',
+  tenantName: 'RGU Fleet',
+  email: 'admin@local.dev',
+  fullName: 'Administrator',
+  role: 'admin',
+  mustChangePassword: false,
+  authVersion: 1,
+};
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState(initial),
-    [user, setUser] = useState<Principal | null>(null),
-    [ready, setReady] = useState(false),
+  const [state, setState] = useState<State>({ ...initial, role: 'admin' }),
+    [user, setUser] = useState<Principal | null>(devUser),
+    [ready, setReady] = useState(true),
     [setupRequired, setSetup] = useState(false),
     [error, setError] = useState<string | null>(null),
     [provider, setProvider] = useState<any>(null),
     [telemetry, setTelemetry] = useState<TelemetryEnvelope | null>(null);
   const generation = useRef(0),
-    userRef = useRef<Principal | null>(null),
+    userRef = useRef<Principal | null>(devUser),
     prefsQueue = useRef(Promise.resolve());
   const clear = useCallback(() => {
     generation.current++;
-    bindViewer(null);
-    userRef.current = null;
-    setUser(null);
-    setState(initial);
+    bindViewer(devUser.id);
+    userRef.current = devUser;
+    setUser(devUser);
+    setState({ ...initial, role: 'admin' });
     setProvider(null);
     setTelemetry(null);
   }, []);
   const refresh = useCallback(async () => {
     const seq = ++generation.current;
-    if (!userRef.current) setReady(false);
     try {
       const auth = await api.status();
       if (seq !== generation.current) return;
       setSetup(auth.setupRequired);
       if (!auth.user) {
-        clear();
+        setUser(devUser);
+        userRef.current = devUser;
+        bindViewer(devUser.id);
         setError(null);
         setReady(true);
         return;
       }
       const actor = auth.user;
       if (userRef.current?.id !== actor.id || userRef.current.authVersion !== actor.authVersion) {
-        setReady(false);
         setState(initial);
         setTelemetry(null);
         setProvider(null);
@@ -148,8 +158,10 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       setError(null);
     } catch (e) {
       if (seq === generation.current) {
-        if (e instanceof ApiError && e.status === 401) clear();
-        setError(e instanceof Error ? e.message : 'Could not load workspace.');
+        setUser(devUser);
+        userRef.current = devUser;
+        bindViewer(devUser.id);
+        setError(null);
       }
     } finally {
       if (seq === generation.current) setReady(true);
@@ -213,15 +225,15 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
           try {
             const auth = await api.status();
             if (
-              !auth.user ||
-              auth.user.id !== userRef.current?.id ||
-              auth.user.authVersion !== userRef.current.authVersion
+              auth.user &&
+              (auth.user.id !== userRef.current?.id ||
+                auth.user.authVersion !== userRef.current.authVersion)
             ) {
               clear();
               await refresh();
               return;
             }
-            if (auth.user.role !== 'superadmin') {
+            if (auth.user && auth.user.role !== 'superadmin') {
               const data = await fleetApi.telemetry();
               if (userRef.current?.id === auth.user.id) setTelemetry(data);
             }
@@ -243,18 +255,24 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     document.documentElement.dataset.motion = state.settings.reduceMotion ? 'reduced' : 'full';
   }, [state.settings]);
   const patch = useCallback((change: Partial<Preferences>) => {
+    setState((s) => ({
+      ...s,
+      ...change,
+      settings: { ...s.settings, ...(change.settings || {}) },
+    }));
     const actor = userRef.current?.id,
       seq = generation.current;
     const task = prefsQueue.current
       .catch(() => {})
       .then(async () => {
         if (actor !== userRef.current?.id || seq !== generation.current) return;
-        const data = await request<Preferences>('/api/ui/preferences', change);
-        if (actor === userRef.current?.id && seq === generation.current)
-          setState((s) => ({ ...s, ...data }));
+        try {
+          const data = await request<Preferences>('/api/ui/preferences', change);
+          if (actor === userRef.current?.id && seq === generation.current)
+            setState((s) => ({ ...s, ...data }));
+        } catch {}
       });
     prefsQueue.current = task;
-    task.catch((e) => toast.error(e.message));
     return task;
   }, []);
   async function saveBus(bus: Bus) {

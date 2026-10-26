@@ -19,7 +19,7 @@ export function AuthScreen() {
         <div className="auth-photo-overlay" />
         <div className="brand">
           <span className="brand-symbol">
-            <Route size={22} />
+            <img src="/rathinam-logo.svg" alt="Rathinam Logo" width={34} height={34} />
           </span>
           <span>
             RGU / Fleet<small>RATHINAM GLOBAL UNIVERSITY</small>

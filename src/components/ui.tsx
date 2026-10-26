@@ -142,10 +142,10 @@ export function Reveal({
   return (
     <motion.div
       className={className}
-      initial={reduced ? false : { opacity: 0, y: 14 }}
-      whileInView={{ opacity: 1, y: 0 }}
+      initial={reduced ? false : { opacity: 0, y: 16, filter: 'blur(4px)' }}
+      whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
       viewport={{ once: true, amount: 0.06 }}
-      transition={{ duration: 0.42, delay, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 0.5, delay, ease: [0.16, 1, 0.3, 1] }}
     >
       {children}
     </motion.div>
@@ -166,7 +166,7 @@ export function PageHeading({
     <div className="page-heading">
       <div>
         <p className="eyebrow">{eyebrow}</p>
-        <h1>{title}</h1>
+        <h1 className="rgu-gradient-text">{title}</h1>
         <p className="page-description">{description}</p>
       </div>
       <div className="heading-actions">{children}</div>

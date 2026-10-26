@@ -203,15 +203,26 @@ export function SearchInput({
   placeholder?: string;
 }) {
   return (
-    <label className="search-input">
-      <Search size={16} />
+    <div className="search-input">
+      <Search size={16} className="search-icon" aria-hidden="true" />
       <input
+        className="search-input-field"
         aria-label={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
       />
-    </label>
+      {value ? (
+        <button
+          type="button"
+          className="search-clear-btn"
+          aria-label="Clear search input"
+          onClick={() => onChange('')}
+        >
+          <X size={13} />
+        </button>
+      ) : null}
+    </div>
   );
 }
 export function Field({

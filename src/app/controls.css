@@ -635,7 +635,7 @@
   backdrop-filter: blur(12px);
 }
 
-:root[data-theme='light'] input:not([type='checkbox']):not([type='radio']),
+:root[data-theme='light'] input:not([type='checkbox']):not([type='radio']):not(.search-input-field),
 :root[data-theme='light'] select,
 :root[data-theme='light'] textarea {
   background: #ffffff;
@@ -643,7 +643,7 @@
   color: #0f172a;
 }
 
-:root[data-theme='light'] input:focus,
+:root[data-theme='light'] input:not(.search-input-field):focus,
 :root[data-theme='light'] select:focus,
 :root[data-theme='light'] textarea:focus {
   background: #ffffff;

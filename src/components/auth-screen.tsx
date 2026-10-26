@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Route, ArrowRight, ShieldCheck, KeyRound } from 'lucide-react';
+import { Route, ArrowRight, ShieldCheck, KeyRound, Cctv } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button, Field } from './ui';
 import { api } from '@/lib/api';
@@ -14,8 +14,9 @@ export function AuthScreen() {
   const [signup, setSignup] = useState(false),
     [pending, setPending] = useState(false),
     [busy, setBusy] = useState(false),
-    [email, setEmail] = useState('admin@rgu.ac.in'),
-    [password, setPassword] = useState('Rathinam@Admin2026!');
+    [activeRole, setActiveRole] = useState<'user' | 'admin'>('user'),
+    [email, setEmail] = useState('operator@rgu.ac.in'),
+    [password, setPassword] = useState('Rathinam@Operator2026!');
 
   async function signInWithGoogle(credential: string) {
     setBusy(true);
@@ -105,35 +106,81 @@ export function AuthScreen() {
                 </div>
               )}
 
-              {/* Admin Credentials Quick-Fill Card */}
+              {/* Role Toggle & Quick-Fill Credentials Card */}
               {!signup && !setupRequired && (
-                <div className="auth-admin-credentials-card">
-                  <div className="admin-cred-header">
-                    <ShieldCheck size={14} />
-                    <strong>Verified Admin Credentials</strong>
+                <div className="auth-credentials-section">
+                  <div className="auth-cred-role-tabs">
+                    <button
+                      type="button"
+                      className={`auth-cred-role-btn ${activeRole === 'user' ? 'active user' : ''}`}
+                      onClick={() => {
+                        setActiveRole('user');
+                        setEmail('operator@rgu.ac.in');
+                        setPassword('Rathinam@Operator2026!');
+                        toast.success('User Panel credentials loaded');
+                      }}
+                    >
+                      <Cctv size={13} />
+                      User Panel (Fleet)
+                    </button>
+                    <button
+                      type="button"
+                      className={`auth-cred-role-btn ${activeRole === 'admin' ? 'active admin' : ''}`}
+                      onClick={() => {
+                        setActiveRole('admin');
+                        setEmail('admin@rgu.ac.in');
+                        setPassword('Rathinam@Admin2026!');
+                        toast.success('Admin Panel credentials loaded');
+                      }}
+                    >
+                      <ShieldCheck size={13} />
+                      Admin Panel (Owner)
+                    </button>
                   </div>
-                  <div className="admin-cred-body">
-                    <div>
-                      <span>Email: </span>
-                      <code>admin@rgu.ac.in</code>
+
+                  <div className={`auth-admin-credentials-card ${activeRole}`}>
+                    <div className="admin-cred-header">
+                      {activeRole === 'user' ? <Cctv size={14} /> : <ShieldCheck size={14} />}
+                      <strong>
+                        {activeRole === 'user'
+                          ? 'Verified User Panel Credentials'
+                          : 'Verified Admin Credentials'}
+                      </strong>
                     </div>
-                    <div>
-                      <span>Password: </span>
-                      <code>Rathinam@Admin2026!</code>
+                    <p className="admin-cred-desc">
+                      {activeRole === 'user'
+                        ? 'Rathinam Transport Division · Live CCTV Cameras, Bus Fleet GPS Tracking & Recorders'
+                        : 'Platform Owner Deck · Multi-Tenant Governance, Approvals & Node Telemetry'}
+                    </p>
+                    <div className="admin-cred-body">
+                      <div>
+                        <span>Email: </span>
+                        <code>{activeRole === 'user' ? 'operator@rgu.ac.in' : 'admin@rgu.ac.in'}</code>
+                      </div>
+                      <div>
+                        <span>Password: </span>
+                        <code>{activeRole === 'user' ? 'Rathinam@Operator2026!' : 'Rathinam@Admin2026!'}</code>
+                      </div>
                     </div>
+                    <button
+                      type="button"
+                      className={`btn-quick-fill ${activeRole}`}
+                      onClick={() => {
+                        if (activeRole === 'user') {
+                          setEmail('operator@rgu.ac.in');
+                          setPassword('Rathinam@Operator2026!');
+                          toast.success('User Panel credentials populated');
+                        } else {
+                          setEmail('admin@rgu.ac.in');
+                          setPassword('Rathinam@Admin2026!');
+                          toast.success('Admin credentials populated');
+                        }
+                      }}
+                    >
+                      <KeyRound size={13} />
+                      {activeRole === 'user' ? 'Fill User Credentials' : 'Fill Admin Credentials'}
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    className="btn-quick-fill"
-                    onClick={() => {
-                      setEmail('admin@rgu.ac.in');
-                      setPassword('Rathinam@Admin2026!');
-                      toast.success('Admin credentials populated');
-                    }}
-                  >
-                    <KeyRound size={13} />
-                    Fill Admin Credentials
-                  </button>
                 </div>
               )}
 

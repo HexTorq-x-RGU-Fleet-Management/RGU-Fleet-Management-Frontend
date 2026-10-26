@@ -1207,10 +1207,46 @@
   font-size: 11px;
 }
 
+.preview-volume-wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  padding: 4px 10px;
+  height: 32px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+:root[data-theme='light'] .preview-volume-wrapper {
+  background: rgba(241, 245, 249, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
 .preview-volume {
-  width: 56px;
-  padding: 0;
-  opacity: 0.35;
+  width: 95px;
+  height: 6px;
+  opacity: 1;
+  cursor: pointer;
+  accent-color: var(--accent);
+  background: transparent;
+  outline: none;
+}
+
+.volume-percentage {
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  min-width: 32px;
+  text-align: right;
+}
+
+:root[data-theme='light'] .volume-percentage {
+  color: #334155;
 }
 
 /* Tactical HUD Placeholder for Camera Feed */

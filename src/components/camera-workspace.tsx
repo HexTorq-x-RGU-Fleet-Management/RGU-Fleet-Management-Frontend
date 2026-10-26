@@ -1051,15 +1051,22 @@ export function CameraWorkspace() {
             <Button disabled={selectedState?.state !== 'playing'} onClick={() => setMuted(!muted)}>
               {muted ? <VolumeX size={16} /> : <Volume2 size={16} />} {muted ? 'Unmute' : 'Mute'}
             </Button>
-            <input
-              type="range"
-              aria-label="Volume"
-              min={0}
-              max={1}
-              step={0.05}
-              value={volume}
-              onChange={(e) => setVolume(Number(e.target.value))}
-            />
+            <div className="preview-volume-wrapper" title={`Volume: ${Math.round((muted ? 0 : volume) * 100)}%`}>
+              <input
+                type="range"
+                className="preview-volume"
+                aria-label="Volume slider"
+                min={0}
+                max={1}
+                step={0.05}
+                value={muted ? 0 : volume}
+                onChange={(e) => {
+                  if (muted) setMuted(false);
+                  setVolume(Number(e.target.value));
+                }}
+              />
+              <span className="volume-percentage">{muted ? '0%' : `${Math.round(volume * 100)}%`}</span>
+            </div>
             <IconButton label="Push-to-talk unavailable in this backend" disabled>
               <MicOff size={16} />
             </IconButton>

@@ -30,17 +30,33 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 16px;
   flex-wrap: wrap;
-  margin-bottom: 20px;
+  margin-bottom: 22px;
+  padding: 14px 20px;
+  background: var(--glass-bg-card);
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
 }
+
+:root[data-theme='light'] .bus-directory-tools {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05);
+}
+
 .bus-directory-tools .fleet-toolbar {
   display: contents;
 }
+
 .bus-directory-tools .search-input {
   order: 2;
   width: min(340px, 100%);
 }
+
 .bus-directory-tools .fleet-filters {
   order: 1;
   margin: 0;

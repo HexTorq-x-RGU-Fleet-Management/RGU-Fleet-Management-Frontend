@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { History, RefreshCw, ShieldCheck, Activity, Search, Clock, User, HardDrive } from 'lucide-react';
+import { History, RefreshCw, ShieldCheck, Activity, Search, Clock, ArrowDown, Filter } from 'lucide-react';
 import { PageHeading, Button, SearchInput, Badge } from './ui';
 import { request } from '@/lib/api';
 import { useWorkspace } from './workspace-provider';
@@ -11,7 +11,8 @@ export function ActivityLog() {
     [query, setQuery] = useState(''),
     [error, setError] = useState(''),
     [loading, setLoading] = useState(true),
-    [next, setNext] = useState<string | null>(null);
+    [next, setNext] = useState<string | null>(null),
+    [categoryFilter, setCategoryFilter] = useState<'all' | 'security' | 'approval' | 'system'>('all');
 
   async function load(before?: string) {
     setLoading(true);
@@ -32,6 +33,41 @@ export function ActivityLog() {
   useEffect(() => {
     void load();
   }, [user?.id]);
+
+  function getEventCategory(action: string): 'security' | 'approval' | 'system' {
+    const a = (action || '').toLowerCase();
+    if (
+      a.includes('password') ||
+      a.includes('suspend') ||
+      a.includes('reject') ||
+      a.includes('auth') ||
+      a.includes('login') ||
+      a.includes('session')
+    ) {
+      return 'security';
+    }
+    if (
+      a.includes('approve') ||
+      a.includes('create') ||
+      a.includes('grant') ||
+      a.includes('workspace')
+    ) {
+      return 'approval';
+    }
+    return 'system';
+  }
+
+  const counts = {
+    all: events.length,
+    security: events.filter((e) => getEventCategory(e.action) === 'security').length,
+    approval: events.filter((e) => getEventCategory(e.action) === 'approval').length,
+    system: events.filter((e) => getEventCategory(e.action) === 'system').length,
+  };
+
+  const filteredEvents = events.filter((e) => {
+    if (categoryFilter === 'all') return true;
+    return getEventCategory(e.action) === categoryFilter;
+  });
 
   if (user?.role === 'member')
     return (
@@ -119,7 +155,7 @@ export function ActivityLog() {
           void load();
         }}
       >
-        <div style={{ minWidth: 320 }}>
+        <div style={{ flex: '1 1 320px', maxWidth: 460 }}>
           <SearchInput value={query} onChange={setQuery} placeholder="Search activity by action, actor, or target…" />
         </div>
         <div className="admin-toolbar-actions">
@@ -136,17 +172,39 @@ export function ActivityLog() {
                 setTimeout(() => void load(), 0);
               }}
             >
-              Clear filter
+              Clear search
             </Button>
           )}
         </div>
       </form>
 
+      {/* Quick Category Filter Pills */}
+      <div className="activity-filter-deck">
+        <div className="activity-filter-pills" role="tablist" aria-label="Event category filter">
+          {[
+            { id: 'all', label: 'All Records', count: counts.all },
+            { id: 'security', label: 'Security & Auth', count: counts.security },
+            { id: 'approval', label: 'Approvals & Grants', count: counts.approval },
+            { id: 'system', label: 'System & Operations', count: counts.system },
+          ].map((f) => (
+            <button
+              key={f.id}
+              type="button"
+              className={`activity-filter-pill ${categoryFilter === f.id ? 'active' : ''}`}
+              onClick={() => setCategoryFilter(f.id as any)}
+            >
+              <span>{f.label}</span>
+              <span className="activity-filter-count">{f.count}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
       {error && <p role="alert">{error}</p>}
 
       {/* Glass Data Cards for Audit Log */}
       <div className="admin-card-container">
-        {events.map((e) => {
+        {filteredEvents.map((e, index) => {
           const actionLower = e.action?.toLowerCase() || '';
           const isSecurity =
             actionLower.includes('password') ||
@@ -157,8 +215,13 @@ export function ActivityLog() {
           const pillTone = isSecurity ? 'suspended' : isApproval ? 'active' : 'pending';
 
           return (
-            <div className="admin-workspace-card" key={e.id}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div className="admin-workspace-card activity-log-card" key={e.id}>
+              <div className="activity-card-left">
+                {/* High visibility serial number badge */}
+                <div className="activity-serial-badge" title={`Serial No. #${index + 1}`}>
+                  #{String(index + 1).padStart(2, '0')}
+                </div>
+
                 <div
                   className="rto-badge-icon"
                   style={{
@@ -187,29 +250,32 @@ export function ActivityLog() {
                 >
                   <Activity size={18} />
                 </div>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                    <strong style={{ fontSize: 14, color: '#f8fafc' }}>{e.action}</strong>
-                    <span className={`status-indicator-pill ${pillTone}`} style={{ fontSize: 10, padding: '2px 8px' }}>
+
+                <div className="activity-event-body">
+                  <div className="activity-event-header">
+                    <strong className="activity-action-title">{e.action}</strong>
+                    <span className={`status-indicator-pill ${pillTone}`}>
                       {e.workspace || 'System'}
                     </span>
                   </div>
-                  <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-                    <span>
-                      Actor: <strong style={{ color: '#cbd5e1' }}>{e.actor?.name || 'Automated'}</strong>
+                  <div className="activity-event-meta">
+                    <span className="activity-meta-item">
+                      <span className="activity-meta-label">Actor:</span>{' '}
+                      <strong className="activity-meta-value">{e.actor?.name || 'Automated'}</strong>
                     </span>
                     {e.target && (
-                      <span>
-                        Target: <strong style={{ color: '#cbd5e1' }}>{e.target.name || e.target.id || '—'}</strong>
+                      <span className="activity-meta-item">
+                        <span className="activity-meta-label">Target:</span>{' '}
+                        <strong className="activity-meta-value">{e.target.name || e.target.id || '—'}</strong>
                       </span>
                     )}
                   </div>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span className="hud-clock" style={{ fontSize: 11 }}>
-                  <Clock size={11} style={{ display: 'inline', marginRight: 4 }} />
+              <div className="activity-card-right">
+                <span className="activity-timestamp">
+                  <Clock size={12} />
                   {new Date(e.createdAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}
                 </span>
               </div>
@@ -223,26 +289,46 @@ export function ActivityLog() {
           </div>
         )}
 
-        {!events.length && !loading && (
+        {!filteredEvents.length && !loading && (
           <div className="fleet-no-data" style={{ padding: 48 }}>
             <History size={32} />
             <h3>No audit events found</h3>
             <p>
-              {query
-                ? `No events match "${query}". Try adjusting your keywords.`
+              {query || categoryFilter !== 'all'
+                ? `No events match the active filters. Try clearing your search or category.`
                 : 'All administrator actions and security events will be preserved here.'}
             </p>
           </div>
         )}
       </div>
 
-      {next && (
-        <div style={{ display: 'flex', justifyContent: 'center', marginTop: 16 }}>
-          <Button onClick={() => void load(next)} loading={loading}>
-            Load older events
+      {/* Page Navigation & Pagination Deck */}
+      <div className="activity-pagination-deck">
+        <div className="activity-pagination-status">
+          Showing <strong>{filteredEvents.length}</strong> of <strong>{events.length}</strong> records loaded
+          {next ? ' · Older journal pages available' : ' · End of recorded ledger'}
+        </div>
+        <div className="activity-pagination-controls">
+          {next && (
+            <Button onClick={() => void load(next)} loading={loading} variant="primary">
+              <ArrowDown size={14} />
+              Load older events
+            </Button>
+          )}
+          <Button
+            onClick={() => {
+              setQuery('');
+              setCategoryFilter('all');
+              void load();
+            }}
+            loading={loading}
+            variant="secondary"
+          >
+            <RefreshCw size={14} />
+            Refresh timeline
           </Button>
         </div>
-      )}
+      </div>
     </div>
   );
 }

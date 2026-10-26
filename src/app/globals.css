@@ -300,7 +300,6 @@ img {
   max-width: 100%;
 }
 
-select,
 input {
   background: var(--glass-bg-subtle);
   backdrop-filter: blur(12px);
@@ -316,13 +315,11 @@ input {
     transform 0.18s var(--ease-spring);
 }
 
-select:hover,
 input:hover {
   border-color: var(--glass-border-strong);
   background: rgba(255, 255, 255, 0.06);
 }
 
-select:focus,
 input:focus {
   border-color: var(--accent);
   background: rgba(255, 255, 255, 0.08);
@@ -330,9 +327,75 @@ input:focus {
   outline: none;
 }
 
+/* ==========================================================================
+   GLOBAL DROPDOWN & SELECT DARK MODE ENFORCEMENT
+   ========================================================================== */
 select {
-  cursor: pointer;
+  color-scheme: dark;
+  background-color: #0f172a;
+  color: #f8fafc;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 9px;
+  padding: 10px 36px 10px 13px;
   font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 11px center;
+  transition:
+    border-color 0.22s var(--ease-spring),
+    box-shadow 0.22s var(--ease-spring),
+    background-color 0.22s ease;
+}
+
+select:hover {
+  border-color: rgba(196, 78, 192, 0.45);
+  background-color: #172033;
+}
+
+select:focus {
+  border-color: var(--accent);
+  background-color: #172033;
+  box-shadow: 0 0 0 3px var(--accent-glow);
+  outline: none;
+}
+
+option,
+optgroup {
+  color-scheme: dark !important;
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+  padding: 10px 14px;
+}
+
+:root[data-theme='light'] select {
+  color-scheme: light;
+  background-color: #ffffff;
+  color: #0f172a;
+  border-color: #cbd5e1;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+
+:root[data-theme='light'] select:hover {
+  background-color: #f8fafc;
+  border-color: rgba(113, 48, 126, 0.35);
+}
+
+:root[data-theme='light'] select:focus {
+  background-color: #ffffff;
+  border-color: #71307e;
+  box-shadow: 0 0 0 3px rgba(113, 48, 126, 0.15);
+}
+
+:root[data-theme='light'] option,
+:root[data-theme='light'] optgroup {
+  color-scheme: light !important;
+  background-color: #ffffff !important;
+  color: #0f172a !important;
 }
 
 input::placeholder {

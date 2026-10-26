@@ -14,11 +14,12 @@ export function ActivityLog() {
     [next, setNext] = useState<string | null>(null),
     [categoryFilter, setCategoryFilter] = useState<'all' | 'security' | 'approval' | 'system'>('all');
 
-  async function load(before?: string) {
+  async function load(before?: string, searchStr?: string) {
     setLoading(true);
     try {
+      const qVal = searchStr !== undefined ? searchStr : query;
       const d = await request(
-        '/api/audit?' + new URLSearchParams({ q: query, ...(before ? { before } : {}) }),
+        '/api/audit?' + new URLSearchParams({ q: qVal, ...(before ? { before } : {}) }),
       );
       setEvents((e) => (before ? [...e, ...d.events] : d.events));
       setNext(d.nextCursor);
@@ -30,9 +31,14 @@ export function ActivityLog() {
     }
   }
 
+  // Live debounced search effect for audit search panel
   useEffect(() => {
-    void load();
-  }, [user?.id]);
+    if (!user?.id) return;
+    const timer = setTimeout(() => {
+      void load(undefined, query);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [query, user?.id]);
 
   function getEventCategory(action: string): 'security' | 'approval' | 'system' {
     const a = (action || '').toLowerCase();
@@ -169,7 +175,6 @@ export function ActivityLog() {
               variant="secondary"
               onClick={() => {
                 setQuery('');
-                setTimeout(() => void load(), 0);
               }}
             >
               Clear search

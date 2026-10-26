@@ -1,6 +1,15 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { Link2, Settings as SettingsIcon, HardDrive, RefreshCw, LogOut } from 'lucide-react';
+import {
+  Link2,
+  Settings as SettingsIcon,
+  HardDrive,
+  RefreshCw,
+  LogOut,
+  SlidersHorizontal,
+  ShieldCheck,
+  ChevronRight,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { useWorkspace } from './workspace-provider';
 import { PageHeading, Button, Modal, Field, Badge, Confirm } from './ui';
@@ -46,17 +55,27 @@ export function Settings() {
         description="Manage provider access and your saved viewing preferences."
       />
       <div className="settings-layout">
-        <nav className="settings-nav" aria-label="Settings sections">
+        <nav className="settings-tabs" aria-label="Settings sections">
           {[
-            ['account', 'Hik-Connect account'],
-            ['viewing', 'Viewing preferences'],
-            ['storage', 'Recording storage'],
-            ['security', 'Viewer password'],
+            ['account', 'Hik-Connect account', 'Provider access', Link2],
+            ['viewing', 'Viewing preferences', 'Appearance and playback', SlidersHorizontal],
+            ['storage', 'Recording storage', 'Retention and capacity', HardDrive],
+            ['security', 'Viewer password', 'Access protection', ShieldCheck],
           ]
-            .filter(([id]) => user?.role !== 'superadmin' || ['viewing', 'security'].includes(id))
-            .map(([id, label]) => (
-              <button key={id} className={tab === id ? 'active' : ''} onClick={() => setTab(id)}>
-                {label}
+            .filter(([id]) => user?.role !== 'superadmin' || ['viewing', 'security'].includes(String(id)))
+            .map(([id, label, description, Icon]) => (
+              <button
+                key={String(id)}
+                className={tab === id ? 'active' : ''}
+                aria-current={tab === id ? 'page' : undefined}
+                onClick={() => setTab(String(id))}
+              >
+                <Icon size={17} aria-hidden="true" />
+                <span className="settings-tab-copy">
+                  <strong>{String(label)}</strong>
+                  <small>{String(description)}</small>
+                </span>
+                <ChevronRight size={15} className="settings-tab-arrow" aria-hidden="true" />
               </button>
             ))}
         </nav>

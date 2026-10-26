@@ -1038,6 +1038,46 @@ td strong {
   color: var(--muted);
 }
 
+.navigation-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.navigation-loader-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 3px;
+  width: 38%;
+  background: linear-gradient(90deg, var(--accent), #8be9ff, var(--accent));
+  box-shadow: 0 0 16px var(--accent);
+  animation: navigation-progress 1.1s ease-in-out infinite;
+}
+
+.navigation-loader-label {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 11px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--panel) 92%, transparent);
+  color: var(--text);
+  font-size: 12px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 18%);
+}
+
+@keyframes navigation-progress {
+  0% { transform: translateX(-120%); }
+  100% { transform: translateX(330%); }
+}
+
 .skeleton {
   border-radius: 8px;
   background: linear-gradient(90deg, var(--panel), var(--panel-hover), var(--panel));

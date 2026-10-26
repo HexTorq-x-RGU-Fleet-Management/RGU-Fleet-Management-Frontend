@@ -800,6 +800,38 @@
   transition: all 0.15s ease;
 }
 
+.settings-tab-copy {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+  flex: 1;
+}
+
+.settings-tab-copy strong {
+  color: inherit;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.settings-tab-copy small {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.settings-tab-arrow {
+  margin-left: auto;
+  opacity: 0.35;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.settings-tabs button:hover .settings-tab-arrow,
+.settings-tabs button.active .settings-tab-arrow {
+  opacity: 1;
+  transform: translateX(2px);
+}
+
 .settings-tabs button:hover {
   background: var(--panel-hover);
   color: var(--text);
@@ -810,6 +842,15 @@
   background: var(--panel-hover);
   border-color: var(--line);
   font-weight: 600;
+}
+
+.settings-tabs button.active::before {
+  content: '';
+  width: 3px;
+  align-self: stretch;
+  margin: -12px 1px -12px -14px;
+  border-radius: 999px;
+  background: var(--accent);
 }
 
 .settings-tabs button.active svg {

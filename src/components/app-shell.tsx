@@ -31,6 +31,7 @@ import { toast } from 'sonner';
 import { useWorkspace } from './workspace-provider';
 import { Button, Modal, IconButton, SearchInput, Badge } from './ui';
 import { canAccess } from '@/lib/model';
+import { NavigationLoader } from './navigation-loader';
 const links = [
   { href: '/', label: 'Fleet overview', icon: LayoutDashboard },
   { href: '/buses', label: 'Buses', icon: BusFront },
@@ -88,6 +89,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
   return (
     <div className={`app-shell ${collapsed ? 'sidebar-collapsed' : ''}`}>
+      <NavigationLoader />
       <a href="#main-content" className="skip-link">
         Skip to content
       </a>

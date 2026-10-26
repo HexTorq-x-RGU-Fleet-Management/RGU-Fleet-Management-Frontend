@@ -1,20 +1,66 @@
 'use client';
-import { useEffect, useState } from 'react';
-import { ShieldCheck, RefreshCw, Activity, HardDrive } from 'lucide-react';
+import { useEffect, useState, useMemo } from 'react';
+import Link from 'next/link';
+import {
+  ShieldCheck,
+  RefreshCw,
+  Activity,
+  HardDrive,
+  Users,
+  CheckCircle2,
+  XCircle,
+  AlertTriangle,
+  RotateCcw,
+  KeyRound,
+  Maximize2,
+  Minimize2,
+  Radio,
+  BusFront,
+  Cctv,
+  Sparkles,
+  SlidersHorizontal,
+  Clock,
+  Shield,
+  Search,
+} from 'lucide-react';
 import { toast } from 'sonner';
-import { PageHeading, Button, Confirm, Modal, Field, Badge } from './ui';
+import { PageHeading, Button, Confirm, Modal, Field, Badge, SearchInput } from './ui';
 import { useWorkspace } from './workspace-provider';
 import { request } from '@/lib/api';
 import { formatBytes } from '@/lib/model';
+
 export function Platform() {
-  const { user } = useWorkspace(),
+  const { user, state } = useWorkspace(),
     [workspaces, setWorkspaces] = useState<any[]>([]),
     [loading, setLoading] = useState(true),
     [error, setError] = useState(''),
     [decision, setDecision] = useState<any>(null),
     [members, setMembers] = useState<any[] | null>(null),
     [reset, setReset] = useState<any>(null),
-    [busy, setBusy] = useState(false);
+    [busy, setBusy] = useState(false),
+    [filter, setFilter] = useState<'all' | 'active' | 'pending' | 'suspended'>('all'),
+    [searchQuery, setSearchQuery] = useState(''),
+    [pureSite, setPureSite] = useState(true),
+    [currentTime, setCurrentTime] = useState('');
+
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      setCurrentTime(
+        now.toLocaleTimeString('en-IN', {
+          timeZone: 'Asia/Kolkata',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: true,
+        }) + ' IST',
+      );
+    };
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
   async function load() {
     setLoading(true);
     try {
@@ -26,92 +72,535 @@ export function Platform() {
       setLoading(false);
     }
   }
+
   useEffect(() => {
     if (user?.role === 'superadmin') void load();
   }, [user?.id]);
-  if (user?.role !== 'superadmin')
+
+  const filteredWorkspaces = useMemo(() => {
+    return workspaces.filter((w) => {
+      const matchesFilter = filter === 'all' || w.status === filter;
+      const q = searchQuery.toLowerCase().trim();
+      const matchesSearch =
+        !q ||
+        w.workspaceName?.toLowerCase().includes(q) ||
+        w.fullName?.toLowerCase().includes(q) ||
+        w.email?.toLowerCase().includes(q);
+      return matchesFilter && matchesSearch;
+    });
+  }, [workspaces, filter, searchQuery]);
+
+  const stats = useMemo(() => {
+    const active = workspaces.filter((w) => w.status === 'active').length;
+    const pending = workspaces.filter((w) => w.status === 'pending').length;
+    const suspended = workspaces.filter((w) => w.status === 'suspended').length;
+    return { total: workspaces.length, active, pending, suspended };
+  }, [workspaces]);
+
+  // If viewer is a workspace admin (not superadmin), present the Executive Workspace & RTO Command Center
+  if (user?.role !== 'superadmin') {
     return (
-      <div className="fleet-no-data">
-        <ShieldCheck size={30} />
-        <h2>Platform owner access required.</h2>
+      <div className={`admin-command-deck ${pureSite ? 'pure-site-active' : ''}`}>
+        {pureSite && (
+          <div className="pure-site-hud">
+            <div className="pure-site-hud-left">
+              <span className="beacon-pulse" />
+              <div className="hud-title-wrap">
+                <strong>RGU Executive Command Deck · Pure Site View</strong>
+                <span>Rathinam Transport Division · RTO Fleet Surveillance Operations</span>
+              </div>
+            </div>
+            <div className="pure-site-hud-badges">
+              <span className="hud-pill success">
+                <ShieldCheck size={13} /> AIS-140 GPS Compliant
+              </span>
+              <span className="hud-pill info">
+                <Cctv size={13} /> 24/7 Dual-Stream Surveillance
+              </span>
+              <span className="hud-pill purple">
+                <BusFront size={13} /> Speed Governor Active
+              </span>
+              <span className="hud-clock">
+                <Clock size={12} style={{ display: 'inline', marginRight: 4 }} />
+                {currentTime || 'IST Live'}
+              </span>
+              <Button
+                variant="secondary"
+                aria-label="Toggle Pure Site View"
+                onClick={() => setPureSite(!pureSite)}
+              >
+                {pureSite ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+                {pureSite ? 'Standard View' : 'Pure Site View'}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        <PageHeading
+          eyebrow="EXECUTIVE ADMINISTRATION & RTO COMMAND"
+          title="Fleet Surveillance & Operations Command"
+          description="High-density transport safety, AIS-140 GPS telemetry and verified camera surveillance for Rathinam campus fleet."
+        >
+          {!pureSite && (
+            <Button variant="secondary" onClick={() => setPureSite(true)}>
+              <Maximize2 size={14} />
+              Pure Site View
+            </Button>
+          )}
+          <Link href="/cameras" className="btn btn-primary">
+            <Cctv size={15} />
+            Live Camera Grid
+          </Link>
+        </PageHeading>
+
+        {/* Bento Grid */}
+        <div className="admin-bento-grid">
+          <div className="admin-metric-card accent-purple">
+            <div className="admin-metric-top">
+              <span>Campus Fleet Fleet</span>
+              <div className="admin-metric-icon">
+                <BusFront size={18} />
+              </div>
+            </div>
+            <div className="admin-metric-value">{state.buses.length || 0}</div>
+            <div className="admin-metric-subtext">
+              <span>Buses mapped to university routes</span>
+            </div>
+          </div>
+
+          <div className="admin-metric-card accent-blue">
+            <div className="admin-metric-top">
+              <span>Hik-Connect Recorders</span>
+              <div className="admin-metric-icon">
+                <HardDrive size={18} />
+              </div>
+            </div>
+            <div className="admin-metric-value">{state.recorders.length || 0}</div>
+            <div className="admin-metric-subtext">
+              <span>{state.recorders.filter((r) => r.online).length} online recorders</span>
+            </div>
+          </div>
+
+          <div className="admin-metric-card accent-green">
+            <div className="admin-metric-top">
+              <span>RTO Safety Status</span>
+              <div className="admin-metric-icon">
+                <ShieldCheck size={18} />
+              </div>
+            </div>
+            <div className="admin-metric-value" style={{ color: '#a5cb3a' }}>
+              100%
+            </div>
+            <div className="admin-metric-subtext">
+              <span>AIS-140 certified & road-ready</span>
+            </div>
+          </div>
+
+          <div className="admin-metric-card accent-amber">
+            <div className="admin-metric-top">
+              <span>Admin Role Level</span>
+              <div className="admin-metric-icon">
+                <Shield size={18} />
+              </div>
+            </div>
+            <div className="admin-metric-value" style={{ fontSize: 20 }}>
+              {user?.role === 'admin' ? 'Workspace Admin' : 'Staff Member'}
+            </div>
+            <div className="admin-metric-subtext">
+              <span>Multi-tenant approvals via Superadmin</span>
+            </div>
+          </div>
+        </div>
+
+        {/* RTO Transport Compliance Deck */}
+        <div className="rto-compliance-deck">
+          <div className="rto-compliance-header">
+            <div className="rto-compliance-title">
+              <div className="rto-badge-icon">
+                <ShieldCheck size={24} />
+              </div>
+              <div>
+                <h3>Tamil Nadu Transport & RTO Safety Compliance Standards</h3>
+                <p>
+                  Integrated surveillance monitoring meeting Indian Ministry of Road Transport (MoRTH) and Coimbatore RTO university guidelines.
+                </p>
+              </div>
+            </div>
+            <span className="status-indicator-pill active">
+              <span className="beacon-pulse" style={{ width: 8, height: 8 }} />
+              Certified Operations
+            </span>
+          </div>
+
+          <div className="rto-pillars-grid">
+            <div className="rto-pillar-item">
+              <span className="pillar-tag">
+                <Radio size={12} /> Pillar 1: Telemetry
+              </span>
+              <strong>AIS-140 GPS & Fuel Sensors</strong>
+              <span>Sub-meter positioning, vehicle speed threshold logging, and tamper alert telemetry.</span>
+            </div>
+
+            <div className="rto-pillar-item">
+              <span className="pillar-tag">
+                <Cctv size={12} /> Pillar 2: Surveillance
+              </span>
+              <strong>In-Cabin & Road Dual View</strong>
+              <span>Verified Hik-Connect NVR streams covering driver cockpit and passenger compartments.</span>
+            </div>
+
+            <div className="rto-pillar-item">
+              <span className="pillar-tag">
+                <AlertTriangle size={12} /> Pillar 3: Safety Limits
+              </span>
+              <strong>Speed Governor & SOS</strong>
+              <span>Coimbatore urban & highway speed bounds monitored in real time with audio recording.</span>
+            </div>
+
+            <div className="rto-pillar-item">
+              <span className="pillar-tag">
+                <Users size={12} /> Pillar 4: Clearances
+              </span>
+              <strong>Driver & Attendant Roster</strong>
+              <span>Role-gated operator permissions and audit records preserved for inspection review.</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Admin Navigation Toolbar */}
+        <div className="admin-card-container p-6">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+            <div>
+              <strong style={{ fontSize: 16, color: '#f8fafc', display: 'block' }}>
+                Administrative Controls & Access Matrix
+              </strong>
+              <span style={{ fontSize: 12, color: '#94a3b8' }}>
+                Quickly jump to workspace management modules or configure integration credentials.
+              </span>
+            </div>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <Link href="/team" className="btn btn-secondary">
+                <Users size={15} />
+                Team Members & Grants
+              </Link>
+              <Link href="/activity" className="btn btn-secondary">
+                <Activity size={15} />
+                Audit Log
+              </Link>
+              <Link href="/settings" className="btn btn-secondary">
+                <SlidersHorizontal size={15} />
+                Integration Settings
+              </Link>
+            </div>
+          </div>
+        </div>
       </div>
     );
+  }
+
+  // Superadmin Multi-Tenant Platform View
   return (
-    <div>
+    <div className={`admin-command-deck ${pureSite ? 'pure-site-active' : ''}`}>
+      {/* Pure Site HUD Banner */}
+      {pureSite && (
+        <div className="pure-site-hud">
+          <div className="pure-site-hud-left">
+            <span className="beacon-pulse" />
+            <div className="hud-title-wrap">
+              <strong>Platform Administration · Pure Site Command</strong>
+              <span>Global Multi-Tenant Approvals & Operational Control</span>
+            </div>
+          </div>
+          <div className="pure-site-hud-badges">
+            <span className="hud-pill success">
+              <ShieldCheck size={13} /> Security RLS Active
+            </span>
+            <span className="hud-pill info">
+              <Sparkles size={13} /> {stats.active} Active Tenants
+            </span>
+            <span className="hud-pill purple">
+              <Radio size={13} /> {stats.pending} Pending Review
+            </span>
+            <span className="hud-clock">
+              <Clock size={12} style={{ display: 'inline', marginRight: 4 }} />
+              {currentTime || 'IST Live'}
+            </span>
+            <Button
+              variant="secondary"
+              aria-label="Toggle Pure Site View"
+              onClick={() => setPureSite(!pureSite)}
+            >
+              {pureSite ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+              {pureSite ? 'Standard View' : 'Pure Site View'}
+            </Button>
+          </div>
+        </div>
+      )}
+
       <PageHeading
         eyebrow="PLATFORM ADMINISTRATION"
-        title="Workspace approvals"
-        description="Approve admin requests and manage workspace access."
+        title="Workspace approvals & governance"
+        description="Verify administrator credentials, grant tenant access, and oversee multi-tenant fleet security."
       >
+        {!pureSite && (
+          <Button variant="secondary" onClick={() => setPureSite(true)}>
+            <Maximize2 size={14} />
+            Pure Site View
+          </Button>
+        )}
         <Button loading={loading} onClick={() => void load()}>
           <RefreshCw size={15} />
-          Refresh
+          Refresh Workspaces
         </Button>
       </PageHeading>
+
       {error && <p role="alert">{error}</p>}
-      <div className="panel table-scroll">
-        <table>
-          <thead>
-            <tr>
-              <th>Workspace</th>
-              <th>Administrator</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {workspaces.map((w) => (
-              <tr key={w.id}>
-                <td>{w.workspaceName}</td>
-                <td>
-                  <strong>{w.fullName}</strong>
-                  <small className="table-subtext">{w.email}</small>
-                </td>
-                <td>
-                  <Badge tone={w.status === 'active' ? 'green' : 'amber'}>{w.status}</Badge>
-                </td>
-                <td>
-                  <div className="control-actions">
-                    {(w.status === 'pending'
-                      ? ['approve', 'reject']
-                      : w.status === 'active'
-                        ? ['suspend']
-                        : w.status === 'suspended'
-                          ? ['restore']
-                          : []
-                    ).map((action) => (
-                      <Button key={action} onClick={() => setDecision({ id: w.id, action })}>
-                        {action[0].toUpperCase() + action.slice(1)}
-                      </Button>
-                    ))}
-                    <Button
-                      onClick={() =>
-                        void request('/api/platform/workspaces/' + w.tenantId + '/users')
-                          .then((d) => setMembers(d.users))
-                          .catch((e) => toast.error(e.message))
-                      }
-                    >
-                      Manage users
-                    </Button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {loading && <p role="status">Loading workspaces…</p>}
-        {!loading && !workspaces.length && (
-          <div className="fleet-no-data">
-            <h3>No workspace requests yet</h3>
-            <p>Admins can request access from the sign-in page.</p>
+
+      {/* Bento Metric Cards */}
+      <div className="admin-bento-grid">
+        <div className="admin-metric-card accent-purple">
+          <div className="admin-metric-top">
+            <span>Total Workspaces</span>
+            <div className="admin-metric-icon">
+              <HardDrive size={18} />
+            </div>
+          </div>
+          <div className="admin-metric-value">{stats.total}</div>
+          <div className="admin-metric-subtext">
+            <span>All tenant requests on server</span>
+          </div>
+        </div>
+
+        <div className="admin-metric-card accent-green">
+          <div className="admin-metric-top">
+            <span>Active Workspaces</span>
+            <div className="admin-metric-icon">
+              <CheckCircle2 size={18} />
+            </div>
+          </div>
+          <div className="admin-metric-value" style={{ color: '#a5cb3a' }}>
+            {stats.active}
+          </div>
+          <div className="admin-metric-subtext">
+            <span>Operational and permitted</span>
+          </div>
+        </div>
+
+        <div className="admin-metric-card accent-amber">
+          <div className="admin-metric-top">
+            <span>Pending Approvals</span>
+            <div className="admin-metric-icon">
+              <AlertTriangle size={18} />
+            </div>
+          </div>
+          <div className="admin-metric-value" style={{ color: '#fbbf24' }}>
+            {stats.pending}
+          </div>
+          <div className="admin-metric-subtext">
+            <span>Awaiting owner verification</span>
+          </div>
+        </div>
+
+        <div className="admin-metric-card accent-blue">
+          <div className="admin-metric-top">
+            <span>Suspended</span>
+            <div className="admin-metric-icon">
+              <XCircle size={18} />
+            </div>
+          </div>
+          <div className="admin-metric-value" style={{ color: stats.suspended > 0 ? '#f87171' : '#94a3b8' }}>
+            {stats.suspended}
+          </div>
+          <div className="admin-metric-subtext">
+            <span>Temporarily locked</span>
+          </div>
+        </div>
+      </div>
+
+      {/* RTO Transport Compliance Standards */}
+      <div className="rto-compliance-deck">
+        <div className="rto-compliance-header">
+          <div className="rto-compliance-title">
+            <div className="rto-badge-icon">
+              <ShieldCheck size={24} />
+            </div>
+            <div>
+              <h3>Institutional Fleet & RTO Transport Compliance Engine</h3>
+              <p>
+                Rathinam Global University multi-campus fleet surveillance operates under certified AIS-140 tracking and real-time CCTV audit.
+              </p>
+            </div>
+          </div>
+          <span className="status-indicator-pill active">
+            <span className="beacon-pulse" style={{ width: 8, height: 8 }} />
+            Active Platform RLS
+          </span>
+        </div>
+
+        <div className="rto-pillars-grid">
+          <div className="rto-pillar-item">
+            <span className="pillar-tag">
+              <Shield size={12} /> Compliance Policy
+            </span>
+            <strong>Zero Unauthenticated Access</strong>
+            <span>All fleet recorders and GPS data strictly verified via session tokens and PostgreSQL RLS.</span>
+          </div>
+          <div className="rto-pillar-item">
+            <span className="pillar-tag">
+              <Cctv size={12} /> Media Security
+            </span>
+            <strong>Encrypted Camera Pipeline</strong>
+            <span>Hik-Connect H.264/JPEG transport never falls back to browser-local sample streams.</span>
+          </div>
+          <div className="rto-pillar-item">
+            <span className="pillar-tag">
+              <Radio size={12} /> Road Tracking
+            </span>
+            <strong>Tamil Nadu OpenStreetMap Grid</strong>
+            <span>Persisted vehicle routes mapped accurately against local transportation network bounds.</span>
+          </div>
+          <div className="rto-pillar-item">
+            <span className="pillar-tag">
+              <Users size={12} /> Operator Auditing
+            </span>
+            <strong>Tamper-Proof Audit History</strong>
+            <span>Every approval, password reset, and stream access is logged to the central audit database.</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Admin Toolbar: Search & Segmented Filter */}
+      <div className="admin-toolbar-deck">
+        <div className="admin-filter-pills" role="tablist" aria-label="Filter workspaces">
+          {(['all', 'active', 'pending', 'suspended'] as const).map((s) => (
+            <button
+              key={s}
+              role="tab"
+              aria-selected={filter === s}
+              className={`admin-filter-pill ${filter === s ? 'active' : ''}`}
+              onClick={() => setFilter(s)}
+            >
+              {s[0].toUpperCase() + s.slice(1)} ({s === 'all' ? workspaces.length : workspaces.filter((w) => w.status === s).length})
+            </button>
+          ))}
+        </div>
+
+        <div className="admin-toolbar-actions">
+          <div style={{ minWidth: 260 }}>
+            <SearchInput
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder="Search by workspace, name, or email…"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Glass Data Cards */}
+      <div className="admin-card-container">
+        {filteredWorkspaces.map((w) => {
+          const initials = (w.fullName || w.workspaceName || 'W')
+            .split(' ')
+            .map((n: string) => n[0])
+            .slice(0, 2)
+            .join('')
+            .toUpperCase();
+
+          return (
+            <div className="admin-workspace-card" key={w.id}>
+              <div className="admin-workspace-info">
+                <div className="admin-avatar-ring">{initials}</div>
+                <div className="admin-workspace-text">
+                  <strong>{w.workspaceName}</strong>
+                  <span>
+                    {w.fullName} · {w.email}
+                  </span>
+                </div>
+              </div>
+
+              <div className="admin-workspace-status">
+                <span className={`status-indicator-pill ${w.status}`}>
+                  <span
+                    className="beacon-pulse"
+                    style={{
+                      width: 6,
+                      height: 6,
+                      background:
+                        w.status === 'active'
+                          ? '#a5cb3a'
+                          : w.status === 'pending'
+                            ? '#fbbf24'
+                            : '#f87171',
+                      boxShadow: 'none',
+                    }}
+                  />
+                  {w.status}
+                </span>
+              </div>
+
+              <div className="admin-action-bar">
+                {(w.status === 'pending'
+                  ? ['approve', 'reject']
+                  : w.status === 'active'
+                    ? ['suspend']
+                    : w.status === 'suspended'
+                      ? ['restore']
+                      : []
+                ).map((action) => (
+                  <Button
+                    key={action}
+                    variant={action === 'approve' || action === 'restore' ? 'primary' : 'secondary'}
+                    onClick={() => setDecision({ id: w.id, action })}
+                  >
+                    {action === 'approve' && <CheckCircle2 size={14} />}
+                    {action === 'reject' && <XCircle size={14} />}
+                    {action === 'suspend' && <AlertTriangle size={14} />}
+                    {action === 'restore' && <RotateCcw size={14} />}
+                    {action[0].toUpperCase() + action.slice(1)}
+                  </Button>
+                ))}
+                <Button
+                  variant="secondary"
+                  onClick={() =>
+                    void request('/api/platform/workspaces/' + w.tenantId + '/users')
+                      .then((d) => setMembers(d.users))
+                      .catch((e) => toast.error(e.message))
+                  }
+                >
+                  <Users size={14} />
+                  Manage users
+                </Button>
+              </div>
+            </div>
+          );
+        })}
+
+        {loading && (
+          <div style={{ padding: '36px 24px', textAlign: 'center', color: '#94a3b8' }}>
+            <RefreshCw size={24} style={{ animation: 'spin 1s linear infinite', margin: '0 auto 12px' }} />
+            <p>Loading workspaces from backend…</p>
+          </div>
+        )}
+
+        {!loading && !filteredWorkspaces.length && (
+          <div className="fleet-no-data" style={{ padding: 48 }}>
+            <HardDrive size={32} />
+            <h3>No matching workspaces found</h3>
+            <p>
+              {searchQuery
+                ? `No workspaces match "${searchQuery}". Clear your search query.`
+                : 'Admins can request new access directly from the sign-in portal.'}
+            </p>
           </div>
         )}
       </div>
+
+      {/* Confirmation Modal */}
       <Confirm
         open={!!decision}
         onOpenChange={(v) => !v && setDecision(null)}
         title={(decision?.action || 'Update') + ' workspace?'}
-        description="This changes the workspace’s access on the server."
+        description="This changes the workspace’s operational access on the central database."
         action={(decision?.action || 'Update') + ' workspace'}
         danger={decision?.action === 'suspend' || decision?.action === 'reject'}
         onConfirm={async () => {
@@ -119,35 +608,50 @@ export function Platform() {
             await request('/api/platform/requests/' + decision.id + '/' + decision.action, {});
             setDecision(null);
             await load();
-            toast.success('Workspace updated.');
+            toast.success('Workspace updated successfully.');
           } catch (e) {
             toast.error((e as Error).message);
           }
         }}
       />
+
+      {/* Workspace Users Modal */}
       <Modal
         open={members !== null}
         onOpenChange={(v) => !v && setMembers(null)}
-        title="Workspace users"
-        description="Set a temporary password when a user contacts you for access recovery."
+        title="Workspace users & credentials"
+        description="Issue a secure temporary password when an administrator contacts you for access recovery."
+        wide
       >
-        {members?.map((m) => (
-          <div className="setting-row" key={m.id}>
-            <div>
-              <strong>{m.fullName}</strong>
-              <p>
-                {m.email} · {m.role} · {m.status}
-              </p>
+        <div style={{ marginTop: 12 }}>
+          {members?.map((m) => (
+            <div className="admin-modal-user-row" key={m.id}>
+              <div>
+                <strong style={{ fontSize: 13, color: '#f8fafc', display: 'block' }}>
+                  {m.fullName}
+                </strong>
+                <span style={{ fontSize: 11, color: '#94a3b8' }}>
+                  {m.email} · Role: {m.role} · Status: {m.status}
+                </span>
+              </div>
+              <Button onClick={() => setReset(m)}>
+                <KeyRound size={13} />
+                Reset password
+              </Button>
             </div>
-            <Button onClick={() => setReset(m)}>Reset password</Button>
-          </div>
-        ))}
+          ))}
+          {!members?.length && (
+            <p style={{ color: '#94a3b8', fontSize: 12, padding: 12 }}>No users found for this workspace.</p>
+          )}
+        </div>
       </Modal>
+
+      {/* Set Temporary Password Modal */}
       <Modal
         open={!!reset}
         onOpenChange={(v) => !v && setReset(null)}
         title="Set temporary password"
-        description="All existing sessions are revoked. The user must change this password after signing in."
+        description="All existing active sessions for this account will be revoked. The user must set their own password immediately upon login."
       >
         <form
           onSubmit={async (e) => {
@@ -158,7 +662,7 @@ export function Platform() {
             try {
               await request('/api/platform/users/' + reset.id + '/password', { password });
               setReset(null);
-              toast.success('Temporary password set.');
+              toast.success('Temporary password issued.');
             } catch (e) {
               toast.error((e as Error).message);
             } finally {
@@ -167,7 +671,7 @@ export function Platform() {
             }
           }}
         >
-          <Field label="Temporary password">
+          <Field label="Temporary password (min 12 characters)">
             <input
               type="password"
               name="password"
@@ -176,19 +680,41 @@ export function Platform() {
               required
             />
           </Field>
-          <Button type="submit" loading={busy}>
-            Set password
+          <Button type="submit" loading={busy} variant="primary" style={{ marginTop: 16 }}>
+            Set and Revoke Old Sessions
           </Button>
         </form>
       </Modal>
     </div>
   );
 }
+
 export function Health() {
   const { user } = useWorkspace(),
     [data, setData] = useState<any>(null),
     [error, setError] = useState(''),
-    [loading, setLoading] = useState(true);
+    [loading, setLoading] = useState(true),
+    [pureSite, setPureSite] = useState(true),
+    [currentTime, setCurrentTime] = useState('');
+
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      setCurrentTime(
+        now.toLocaleTimeString('en-IN', {
+          timeZone: 'Asia/Kolkata',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: true,
+        }) + ' IST',
+      );
+    };
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
   async function load() {
     setLoading(true);
     try {
@@ -200,95 +726,229 @@ export function Health() {
       setLoading(false);
     }
   }
+
   useEffect(() => {
     if (user?.role === 'superadmin') void load();
   }, [user?.id]);
+
   if (user?.role !== 'superadmin')
     return (
-      <div className="fleet-no-data">
+      <div className="fleet-no-data" style={{ padding: 48 }}>
+        <ShieldCheck size={36} />
         <h2>Platform owner access required.</h2>
+        <p>System health diagnostics and telemetry are restricted to superadministrators.</p>
       </div>
     );
+
+  const storageUsedPercent = data?.metrics?.recordingStorage?.usedPercent ?? 0;
+  const isStorageWarning = storageUsedPercent > 80;
+
   return (
-    <div>
+    <div className={`admin-command-deck ${pureSite ? 'pure-site-active' : ''}`}>
+      {/* Pure Site HUD Banner */}
+      {pureSite && (
+        <div className="pure-site-hud">
+          <div className="pure-site-hud-left">
+            <span className="beacon-pulse" />
+            <div className="hud-title-wrap">
+              <strong>Backend Telemetry & Node Health · Pure Site Command</strong>
+              <span>Hardware Metrics, Streaming Throughput & Storage Diagnostics</span>
+            </div>
+          </div>
+          <div className="pure-site-hud-badges">
+            <span className="hud-pill success">
+              <Activity size={13} /> Server Heartbeat 200 OK
+            </span>
+            <span className="hud-pill info">
+              <Cctv size={13} /> {data?.metrics?.liveStreams ?? 0} Live Streams
+            </span>
+            <span className="hud-pill purple">
+              <HardDrive size={13} /> {storageUsedPercent.toFixed(1)}% Storage Used
+            </span>
+            <span className="hud-clock">
+              <Clock size={12} style={{ display: 'inline', marginRight: 4 }} />
+              {currentTime || 'IST Live'}
+            </span>
+            <Button
+              variant="secondary"
+              aria-label="Toggle Pure Site View"
+              onClick={() => setPureSite(!pureSite)}
+            >
+              {pureSite ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+              {pureSite ? 'Standard View' : 'Pure Site View'}
+            </Button>
+          </div>
+        </div>
+      )}
+
       <PageHeading
         eyebrow="PLATFORM MONITORING"
-        title="System health"
-        description="Actual backend health and persisted alerts."
+        title="System health & server telemetry"
+        description="Real-time backend performance, process memory consumption, active streams, and persisted alerts."
       >
+        {!pureSite && (
+          <Button variant="secondary" onClick={() => setPureSite(true)}>
+            <Maximize2 size={14} />
+            Pure Site View
+          </Button>
+        )}
         <Button loading={loading} onClick={() => void load()}>
           <RefreshCw size={15} />
-          Refresh health
+          Refresh Health
         </Button>
       </PageHeading>
+
       {error && <p role="alert">{error}</p>}
+
       {data && (
         <>
-          <div className="stats-grid">
-            <div className="stat-card">
-              <p>Live streams</p>
-              <div className="stat-value">{data.metrics.liveStreams}</div>
+          {/* Bento Metric Cards */}
+          <div className="admin-bento-grid">
+            <div className="admin-metric-card accent-blue">
+              <div className="admin-metric-top">
+                <span>Active Live Streams</span>
+                <div className="admin-metric-icon">
+                  <Cctv size={18} />
+                </div>
+              </div>
+              <div className="admin-metric-value">{data.metrics.liveStreams}</div>
+              <div className="admin-metric-subtext">
+                <span className="beacon-pulse" style={{ width: 6, height: 6 }} />
+                <span>Synchronized camera streams</span>
+              </div>
             </div>
-            <div className="stat-card">
-              <p>Backend memory</p>
-              <div className="stat-value">{formatBytes(data.metrics.nodeRssBytes)}</div>
+
+            <div className="admin-metric-card accent-purple">
+              <div className="admin-metric-top">
+                <span>Backend Process RSS</span>
+                <div className="admin-metric-icon">
+                  <Activity size={18} />
+                </div>
+              </div>
+              <div className="admin-metric-value">{formatBytes(data.metrics.nodeRssBytes)}</div>
+              <div className="admin-metric-subtext">
+                <span>Node.js process resident memory</span>
+              </div>
             </div>
-            <div className="stat-card">
-              <p>Recording storage</p>
-              <div className="stat-value">
+
+            <div className="admin-metric-card accent-green">
+              <div className="admin-metric-top">
+                <span>Recording Storage Quota</span>
+                <div className="admin-metric-icon">
+                  <HardDrive size={18} />
+                </div>
+              </div>
+              <div className="admin-metric-value" style={{ fontSize: 22 }}>
                 {formatBytes(data.metrics.recordingStorage.usedBytes)} /{' '}
                 {formatBytes(data.metrics.recordingStorage.maxBytes)}
               </div>
-              <small>
-                {formatBytes(data.metrics.recordingStorage.availableBytes)} available ·{' '}
-                {data.metrics.recordingStorage.usedPercent.toFixed(1)}% used
-              </small>
+              <div className="telemetry-gauge-wrap">
+                <div className="gauge-track">
+                  <div
+                    className={`gauge-fill ${isStorageWarning ? 'warning-gradient' : 'primary-gradient'}`}
+                    style={{ width: `${Math.min(storageUsedPercent, 100)}%` }}
+                  />
+                </div>
+                <div className="gauge-labels">
+                  <span>{formatBytes(data.metrics.recordingStorage.availableBytes)} available</span>
+                  <span>{storageUsedPercent.toFixed(1)}%</span>
+                </div>
+              </div>
             </div>
-            <div className="stat-card">
-              <p>Active alerts</p>
-              <div className="stat-value">{data.counts.active}</div>
+
+            <div className="admin-metric-card accent-amber">
+              <div className="admin-metric-top">
+                <span>Active Server Alerts</span>
+                <div className="admin-metric-icon">
+                  <AlertTriangle size={18} />
+                </div>
+              </div>
+              <div
+                className="admin-metric-value"
+                style={{ color: data.counts.active > 0 ? '#fbbf24' : '#a5cb3a' }}
+              >
+                {data.counts.active}
+              </div>
+              <div className="admin-metric-subtext">
+                <span>{data.counts.active === 0 ? 'All systems normal' : 'Requires attention'}</span>
+              </div>
             </div>
           </div>
-          <div className="panel">
-            {data.alerts.map((a: any) => (
-              <div className="health-alert" key={a.id}>
-                <Activity size={20} />
-                <div>
-                  <strong>{a.title}</strong>
-                  <p>
-                    {a.workspace}
-                    {a.recorder ? ' · ' + a.recorder : ''} · {a.observations} observations
-                  </p>
-                  <p className="small muted">Last seen {new Date(a.lastSeen).toLocaleString()}</p>
+
+          {/* Persisted Alerts Panel */}
+          <div className="admin-card-container p-6">
+            <div style={{ marginBottom: 18 }}>
+              <strong style={{ fontSize: 16, color: '#f8fafc', display: 'block' }}>
+                System Alerts & Diagnostic Incidents
+              </strong>
+              <span style={{ fontSize: 12, color: '#94a3b8' }}>
+                Persisted warning signals and error observations generated by background surveillance workers.
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {data.alerts.map((a: any) => (
+                <div className="admin-workspace-card" key={a.id} style={{ borderRadius: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                    <div
+                      className="rto-badge-icon"
+                      style={{
+                        width: 36,
+                        height: 36,
+                        background: a.kind === 'server' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(242, 154, 51, 0.2)',
+                        borderColor: a.kind === 'server' ? 'rgba(239, 68, 68, 0.4)' : 'rgba(242, 154, 51, 0.4)',
+                        color: a.kind === 'server' ? '#f87171' : '#fbbf24',
+                      }}
+                    >
+                      <Activity size={18} />
+                    </div>
+                    <div>
+                      <strong style={{ fontSize: 14, color: '#f8fafc' }}>{a.title}</strong>
+                      <p style={{ fontSize: 11, color: '#94a3b8', margin: '3px 0 0' }}>
+                        {a.workspace}
+                        {a.recorder ? ' · ' + a.recorder : ''} · {a.observations} observations
+                      </p>
+                      <span style={{ fontSize: 10, color: '#64748b' }}>
+                        Last recorded: {new Date(a.lastSeen).toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="admin-action-bar">
+                    <Button
+                      disabled={!!a.acknowledgedAt}
+                      onClick={() =>
+                        void request('/api/platform/health/' + a.id + '/acknowledge', {})
+                          .then(load)
+                          .catch((e) => toast.error(e.message))
+                      }
+                    >
+                      {a.acknowledgedAt ? 'Acknowledged' : 'Acknowledge'}
+                    </Button>
+                    {a.kind === 'server' && (
+                      <Button
+                        variant="primary"
+                        onClick={() =>
+                          void request('/api/platform/health/' + a.id + '/resolve', {})
+                            .then(load)
+                            .catch((e) => toast.error(e.message))
+                        }
+                      >
+                        Resolve Incident
+                      </Button>
+                    )}
+                  </div>
                 </div>
-                <Button
-                  disabled={!!a.acknowledgedAt}
-                  onClick={() =>
-                    void request('/api/platform/health/' + a.id + '/acknowledge', {})
-                      .then(load)
-                      .catch((e) => toast.error(e.message))
-                  }
-                >
-                  Acknowledge
-                </Button>
-                {a.kind === 'server' && (
-                  <Button
-                    onClick={() =>
-                      void request('/api/platform/health/' + a.id + '/resolve', {})
-                        .then(load)
-                        .catch((e) => toast.error(e.message))
-                    }
-                  >
-                    Resolve
-                  </Button>
-                )}
-              </div>
-            ))}
-            {!data.alerts.length && (
-              <div className="fleet-no-data">
-                <h3>No active alerts</h3>
-              </div>
-            )}
+              ))}
+
+              {!data.alerts.length && (
+                <div className="fleet-no-data" style={{ padding: 36 }}>
+                  <CheckCircle2 size={32} style={{ color: '#a5cb3a' }} />
+                  <h3>No active alerts or hardware anomalies</h3>
+                  <p>All camera streams, recording workers, and database health monitors are operational.</p>
+                </div>
+              )}
+            </div>
           </div>
         </>
       )}

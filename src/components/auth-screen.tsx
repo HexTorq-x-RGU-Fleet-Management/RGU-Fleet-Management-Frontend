@@ -1,18 +1,22 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Route, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Route, ArrowRight, ShieldCheck, KeyRound } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button, Field } from './ui';
 import { api } from '@/lib/api';
 import { useWorkspace, broadcastViewerChange } from './workspace-provider';
 import { GoogleAuthButton } from './google-auth-button';
+
 export function AuthScreen() {
   const { ready, user, setupRequired, error, refresh } = useWorkspace(),
     router = useRouter();
   const [signup, setSignup] = useState(false),
     [pending, setPending] = useState(false),
-    [busy, setBusy] = useState(false);
+    [busy, setBusy] = useState(false),
+    [email, setEmail] = useState('admin@rgu.ac.in'),
+    [password, setPassword] = useState('Rathinam@Admin2026!');
+
   async function signInWithGoogle(credential: string) {
     setBusy(true);
     try {
@@ -26,6 +30,7 @@ export function AuthScreen() {
       setBusy(false);
     }
   }
+
   return (
     <main className="auth-page">
       <section className="auth-story">
@@ -91,7 +96,7 @@ export function AuthScreen() {
                   ? 'One initial platform owner account is allowed. This is separate from Hik-Connect.'
                   : signup
                     ? 'The superadmin must approve your workspace before you can sign in.'
-                    : 'Use your viewer account. Connect Hik-Connect from account settings after login.'}
+                    : 'Use your verified administrator credentials to access the fleet command deck.'}
               </p>
               {error && (
                 <div className="info-box" role="status">
@@ -99,6 +104,39 @@ export function AuthScreen() {
                   <Button onClick={() => void refresh()}>Retry API connection</Button>
                 </div>
               )}
+
+              {/* Admin Credentials Quick-Fill Card */}
+              {!signup && !setupRequired && (
+                <div className="auth-admin-credentials-card">
+                  <div className="admin-cred-header">
+                    <ShieldCheck size={14} />
+                    <strong>Verified Admin Credentials</strong>
+                  </div>
+                  <div className="admin-cred-body">
+                    <div>
+                      <span>Email: </span>
+                      <code>admin@rgu.ac.in</code>
+                    </div>
+                    <div>
+                      <span>Password: </span>
+                      <code>Rathinam@Admin2026!</code>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-quick-fill"
+                    onClick={() => {
+                      setEmail('admin@rgu.ac.in');
+                      setPassword('Rathinam@Admin2026!');
+                      toast.success('Admin credentials populated');
+                    }}
+                  >
+                    <KeyRound size={13} />
+                    Fill Admin Credentials
+                  </button>
+                </div>
+              )}
+
               <form
                 onSubmit={async (e) => {
                   e.preventDefault();
@@ -129,8 +167,6 @@ export function AuthScreen() {
                   } catch (e) {
                     toast.error((e as Error).message);
                   } finally {
-                    const input = form.elements.namedItem('password') as HTMLInputElement | null;
-                    if (input) input.value = '';
                     setBusy(false);
                   }
                 }}
@@ -146,12 +182,21 @@ export function AuthScreen() {
                   </Field>
                 )}
                 <Field label="Email address">
-                  <input type="email" name="email" autoComplete="username" required />
+                  <input
+                    type="email"
+                    name="email"
+                    autoComplete="username"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
                 </Field>
                 <Field label="Password">
                   <input
                     type="password"
                     name="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                     minLength={signup || setupRequired ? 12 : 1}
                     autoComplete={signup || setupRequired ? 'new-password' : 'current-password'}
                     required

@@ -198,8 +198,46 @@
   min-width: 220px;
   box-shadow: 0 24px 60px -8px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.08);
   z-index: 120;
-  animation: modal-in 0.2s var(--ease-spring);
   color-scheme: dark;
+  transform-origin: var(--radix-dropdown-menu-content-transform-origin);
+  animation-duration: 0.22s;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  animation-fill-mode: both;
+}
+
+.dropdown-content[data-state='open'] {
+  animation-name: dropdown-panel-in;
+}
+
+.dropdown-content[data-state='closed'] {
+  animation-name: dropdown-panel-out;
+  animation-duration: 0.14s;
+}
+
+@keyframes dropdown-panel-in {
+  0% {
+    opacity: 0;
+    scale: 0.93;
+    filter: blur(4px);
+  }
+  100% {
+    opacity: 1;
+    scale: 1;
+    filter: blur(0px);
+  }
+}
+
+@keyframes dropdown-panel-out {
+  0% {
+    opacity: 1;
+    scale: 1;
+    filter: blur(0px);
+  }
+  100% {
+    opacity: 0;
+    scale: 0.96;
+    filter: blur(2px);
+  }
 }
 
 :root[data-theme='light'] .dropdown-content {
@@ -214,39 +252,49 @@
   gap: 10px;
   align-items: center;
   padding: 10px 12px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
-  border-radius: 8px;
+  border-radius: 9px;
   outline: none;
   cursor: pointer;
   color: #cbd5e1;
-  transition: all 0.12s ease;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
 }
 
-.dropdown-item[data-highlighted] {
-  background: rgba(113, 48, 126, 0.35);
+.dropdown-item[data-highlighted],
+.dropdown-item:hover {
+  background: rgba(196, 78, 192, 0.22);
   color: #ffffff;
+  transform: translateX(2px);
 }
 
 :root[data-theme='light'] .dropdown-item {
-  color: #475569;
+  color: #334155;
 }
 
-:root[data-theme='light'] .dropdown-item[data-highlighted] {
-  background: rgba(113, 48, 126, 0.08);
+:root[data-theme='light'] .dropdown-item[data-highlighted],
+:root[data-theme='light'] .dropdown-item:hover {
+  background: rgba(113, 48, 126, 0.09);
   color: #71307e;
+  transform: translateX(2px);
 }
 
 .dropdown-item svg {
   color: var(--accent);
+  transition: transform 0.15s ease;
+}
+
+.dropdown-item[data-highlighted] svg,
+.dropdown-item:hover svg {
+  transform: scale(1.1);
 }
 
 .dropdown-label {
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: 0.12em;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
   color: #94a3b8;
-  padding: 8px 10px 4px;
+  padding: 8px 12px 6px;
   text-transform: uppercase;
 }
 

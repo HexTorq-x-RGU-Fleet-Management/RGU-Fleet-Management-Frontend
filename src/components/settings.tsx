@@ -9,6 +9,7 @@ import {
   SlidersHorizontal,
   ShieldCheck,
   ChevronRight,
+  Route,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useWorkspace } from './workspace-provider';
@@ -60,6 +61,7 @@ export function Settings() {
             ['account', 'Hik-Connect account', 'Provider access', Link2],
             ['viewing', 'Viewing preferences', 'Appearance and playback', SlidersHorizontal],
             ['storage', 'Recording storage', 'Retention and capacity', HardDrive],
+            ['fleet', 'Fleet mock provider', 'GPS and fuel simulator', Route],
             ['security', 'Viewer password', 'Access protection', ShieldCheck],
           ]
             .filter(([id]) => user?.role !== 'superadmin' || ['viewing', 'security'].includes(String(id)))
@@ -261,7 +263,25 @@ export function Settings() {
                       </select>
                     </Field>
                   )}
+                </>
+              ) : (
+                <p>Storage summary unavailable or not permitted.</p>
+              )}
+            </section>
+          )}
+          {tab === 'fleet' && (
+            <section className="panel settings-panel">
+              <div className="settings-section-heading">
+                <Route size={20} />
+                <div>
+                  <h2>Fleet mock provider</h2>
+                  <p>Generate test GPS and fuel observations for mapped buses.</p>
+                </div>
+              </div>
+              {user?.role === 'admin' ? (
+                <>
                   <Button
+                    variant="primary"
                     onClick={() =>
                       void fleetApi
                         .pollMock()
@@ -269,17 +289,16 @@ export function Settings() {
                         .then(() => toast.success('Mock telemetry stored in PostgreSQL.'))
                         .catch((e) => toast.error(e.message))
                     }
-                    disabled={user?.role !== 'admin'}
                   >
-                    Generate backend GPS/fuel samples
+                    Poll mock telemetry
                   </Button>
-                  <p className="small muted">
-                    Optional simulator for mapped telemetry devices only. Real GPS/fuel vendor
-                    integration is phase 2.
+                  <p className="small muted mt-4">
+                    Only buses with a telemetry device ID receive samples. This is test data; the
+                    real GPS/fuel vendor integration will replace it in phase 2.
                   </p>
                 </>
               ) : (
-                <p>Storage summary unavailable or not permitted.</p>
+                <p className="muted">Only workspace admins can run the mock provider.</p>
               )}
             </section>
           )}

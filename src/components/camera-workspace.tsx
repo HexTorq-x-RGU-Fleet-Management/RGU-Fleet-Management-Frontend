@@ -21,6 +21,7 @@ import {
   ChevronLeft,
   ChevronRight,
   MicOff,
+  TriangleAlert,
 } from 'lucide-react';
 import { useWorkspace } from './workspace-provider';
 import { Button, IconButton, Modal, Field, PageHeading } from './ui';
@@ -675,13 +676,21 @@ export function CameraWorkspace() {
         </div>
       )}
       {!provider?.playbackReady && (
-        <div className="info-box">
-          <p>
-            {provider?.connected
-              ? 'Connect iVMS playback authorization in Settings.'
-              : 'Connect Hik-Connect to load cameras and playback access.'}
-          </p>
-          <Link href="/settings">Account settings</Link>
+        <div className="playback-warning" role="alert">
+          <TriangleAlert size={19} aria-hidden="true" />
+          <div>
+            <strong>
+              {provider?.connected ? 'Live playback authorization required' : 'Camera connection required'}
+            </strong>
+            <p>
+              {provider?.connected
+                ? 'Hik-Connect device access is connected, but iVMS playback authorization is still missing.'
+                : 'Connect Hik-Connect before opening live camera playback.'}
+            </p>
+            <Link className="btn btn-ghost playback-warning-link" href="/settings">
+              {provider?.connected ? 'Open playback settings' : 'Open account settings'}
+            </Link>
+          </div>
         </div>
       )}
       <section className="monitor-panel">

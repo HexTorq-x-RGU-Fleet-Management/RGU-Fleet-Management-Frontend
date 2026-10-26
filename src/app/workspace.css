@@ -1049,6 +1049,44 @@
   overflow-wrap: anywhere;
 }
 
+.playback-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+  margin: 0 0 20px;
+  padding: 16px 18px;
+  border: 1px solid rgba(255, 190, 80, 0.42);
+  border-left: 3px solid #ffbe50;
+  border-radius: 10px;
+  background: linear-gradient(100deg, rgba(255, 190, 80, 0.13), rgba(255, 190, 80, 0.04));
+  color: var(--text);
+  box-shadow: 0 8px 24px rgba(255, 190, 80, 0.08);
+}
+
+.playback-warning > svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: #ffbe50;
+}
+
+.playback-warning strong {
+  display: block;
+  font-size: 13px;
+  letter-spacing: -0.01em;
+}
+
+.playback-warning p {
+  margin: 5px 0 11px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.playback-warning-link {
+  display: inline-flex;
+  font-size: 11px;
+}
+
 .storage-figure {
   display: flex;
   align-items: baseline;

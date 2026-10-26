@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { useWorkspace } from './workspace-provider';
 import { PageHeading, Button, Modal, Field, Badge, Confirm } from './ui';
 import { api, request, fleetApi } from '@/lib/api';
+import { GoogleAuthButton } from './google-auth-button';
 import { formatBytes } from '@/lib/model';
 export function Settings() {
   const { state, user, provider, patch, refresh, refreshDevices, signOut } = useWorkspace();
@@ -93,6 +94,10 @@ export function Settings() {
                       ? 'Import playback authorization'
                       : 'Use iVMS playback sign-in'}
                   </Button>
+                  <GoogleAuthButton
+                    text="signin_with"
+                    onCredential={(credential) => void action(() => api.linkGoogle(credential))}
+                  />
                   <Button disabled={!provider?.connected} onClick={() => setDisconnect(true)}>
                     Disconnect Hik-Connect
                   </Button>

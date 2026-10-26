@@ -6,12 +6,26 @@ import { toast } from 'sonner';
 import { Button, Field } from './ui';
 import { api } from '@/lib/api';
 import { useWorkspace, broadcastViewerChange } from './workspace-provider';
+import { GoogleAuthButton } from './google-auth-button';
 export function AuthScreen() {
   const { ready, user, setupRequired, error, refresh } = useWorkspace(),
     router = useRouter();
   const [signup, setSignup] = useState(false),
     [pending, setPending] = useState(false),
     [busy, setBusy] = useState(false);
+  async function signInWithGoogle(credential: string) {
+    setBusy(true);
+    try {
+      const result = await api.googleLogin(credential);
+      await refresh();
+      broadcastViewerChange();
+      router.replace(result.user.role === 'superadmin' ? '/platform' : '/');
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
   return (
     <main className="auth-page">
       <section className="auth-story">
@@ -157,6 +171,12 @@ export function AuthScreen() {
                   <ArrowRight size={16} />
                 </Button>
               </form>
+              {!signup && !setupRequired && (
+                <div className="google-auth-divider">
+                  <span>or continue with</span>
+                  <GoogleAuthButton onCredential={(credential) => void signInWithGoogle(credential)} />
+                </div>
+              )}
               {!setupRequired && (
                 <Button variant="ghost" className="w-full mt-4" onClick={() => setSignup(!signup)}>
                   {signup ? 'Back to sign in' : 'Request a new workspace'}

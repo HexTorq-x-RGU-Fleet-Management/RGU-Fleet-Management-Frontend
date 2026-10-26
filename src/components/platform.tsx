@@ -234,12 +234,15 @@ export function Health() {
               <div className="stat-value">{formatBytes(data.metrics.nodeRssBytes)}</div>
             </div>
             <div className="stat-card">
-              <p>Free disk</p>
+              <p>Recording storage</p>
               <div className="stat-value">
-                {data.metrics.freeDiskBytes === null
-                  ? 'Unavailable'
-                  : formatBytes(data.metrics.freeDiskBytes)}
+                {formatBytes(data.metrics.recordingStorage.usedBytes)} /{' '}
+                {formatBytes(data.metrics.recordingStorage.maxBytes)}
               </div>
+              <small>
+                {formatBytes(data.metrics.recordingStorage.availableBytes)} available ·{' '}
+                {data.metrics.recordingStorage.usedPercent.toFixed(1)}% used
+              </small>
             </div>
             <div className="stat-card">
               <p>Active alerts</p>

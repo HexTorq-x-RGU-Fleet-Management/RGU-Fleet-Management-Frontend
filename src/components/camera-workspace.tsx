@@ -22,6 +22,7 @@ import {
   ChevronRight,
   MicOff,
   TriangleAlert,
+  RefreshCw,
 } from 'lucide-react';
 import { useWorkspace } from './workspace-provider';
 import { Button, IconButton, Modal, Field, PageHeading } from './ui';
@@ -59,6 +60,7 @@ export function CameraWorkspace() {
     [layoutModal, setLayoutModal] = useState(false),
     [layoutName, setLayoutName] = useState(''),
     [probing, setProbing] = useState(false),
+    [refreshing, setRefreshing] = useState(false),
     [muted, setMuted] = useState(true),
     [volume, setVolume] = useState(0.7),
     [recording, setRecording] = useState(false),
@@ -625,6 +627,19 @@ export function CameraWorkspace() {
           </p>
         </div>
         <div className="control-actions">
+          <Button
+            loading={refreshing}
+            onClick={() => {
+              setRefreshing(true);
+              void refreshDevices()
+                .then(() => toast.success('Camera availability refreshed.'))
+                .catch((e) => toast.error(e.message))
+                .finally(() => setRefreshing(false));
+            }}
+          >
+            <RefreshCw size={15} />
+            Refresh cameras
+          </Button>
           <Button onClick={() => setLayoutModal(true)}>
             <FolderOpen size={15} />
             Layouts

@@ -1,7 +1,9 @@
 # Frontend verification — authenticated API integration
 
-Node 24.x, Next 16.4.3. TypeScript and production build pass, along with 14 unit
-tests and all 9 authenticated browser tests. The Windows backend separately
+Node 24.x, Next 16.4.3. TypeScript and production build pass, along with 15 unit
+tests and all 11 authenticated browser tests against the Linux API source on this
+Windows host. Two targeted Windows API browser checks also cover playback settings
+and cross-tab account synchronization. The Windows backend separately
 passes 84 API/PostgreSQL checks and 10 native audio/video tests.
 The old demo-only browser cases were replaced by actual API integration cases.
 
@@ -26,4 +28,6 @@ The normal local API was started and its auth status checked separately. No real
 operator, Hik-Connect grant or sample camera was seeded in its application DB.
 Real cameras were not exercised because the user confirmed all are offline.
 See REAL-CAMERA-ACCEPTANCE.md for the remaining hardware/reliability checks.
-No Linux changes, VPS deployment or provider GPS/fuel vendor integration occurred.
+The local Linux API port and its browser integration were checked in the separate
+backend-linux repository. Actual Linux/Wine runtime, VPS deployment and provider
+GPS/fuel vendor integration were not performed.

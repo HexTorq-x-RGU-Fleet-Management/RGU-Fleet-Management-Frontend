@@ -29,6 +29,24 @@ describe('separate backend boundary', () => {
     });
     expect(fetcher.mock.calls[0][1].body).toContain('viewer@example.test');
   });
+  it('sends the provider origin and durable recovery opt-in using backend field names', async () => {
+    vi.stubEnv('NEXT_PUBLIC_API_BASE_URL', 'https://api.example.test');
+    const fetcher = vi.fn().mockResolvedValue(new Response('{}'));
+    vi.stubGlobal('fetch', fetcher);
+    const { api } = await import('../../src/lib/api');
+    await api.connect(
+      'provider@example.test',
+      'synthetic-only',
+      'https://iindia.hik-connect.com',
+      true,
+    );
+    const input = JSON.parse(fetcher.mock.calls[0][1].body);
+    expect(input).toMatchObject({
+      origin: 'https://iindia.hik-connect.com',
+      automaticReconnect: true,
+    });
+    expect(input).not.toHaveProperty('autoReconnect');
+  });
   it('retains authorization error codes', async () => {
     vi.stubEnv('NEXT_PUBLIC_API_BASE_URL', 'https://api.example.test');
     vi.stubGlobal(

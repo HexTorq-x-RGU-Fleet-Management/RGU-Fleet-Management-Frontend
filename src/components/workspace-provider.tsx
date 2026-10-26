@@ -78,6 +78,13 @@ type Context = {
   signOut: () => Promise<void>;
 };
 const Workspace = createContext<Context | null>(null);
+const sessionSender = typeof window === 'undefined' ? 'server' : crypto.randomUUID();
+export function broadcastViewerChange() {
+  if (typeof BroadcastChannel === 'undefined') return;
+  const channel = new BroadcastChannel('rgu-viewer-session');
+  channel.postMessage({ sender: sessionSender });
+  channel.close();
+}
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState(initial),
     [user, setUser] = useState<Principal | null>(null),
@@ -187,7 +194,10 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     addEventListener('rgu-account-changed', changed);
     const channel =
       typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('rgu-viewer-session') : null;
-    if (channel) channel.onmessage = changed;
+    if (channel)
+      channel.onmessage = (event) => {
+        if (event.data?.sender !== sessionSender) changed();
+      };
     return () => {
       generation.current++;
       removeEventListener('rgu-session-expired', expire);
@@ -258,9 +268,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   async function signOut() {
     await api.logout();
     clear();
-    const c = new BroadcastChannel('rgu-viewer-session');
-    c.postMessage('changed');
-    c.close();
+    broadcastViewerChange();
   }
   return (
     <Workspace.Provider

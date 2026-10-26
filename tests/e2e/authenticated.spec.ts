@@ -2,7 +2,8 @@ import { test, expect, type Page } from '@playwright/test';
 let fixture: any;
 test.beforeAll(async () => {
   const response = await fetch('http://127.0.0.1:8109/__acceptance/config');
-  if (!response.ok) throw Error('Start the isolated acceptance API from backend-windows first.');
+  if (!response.ok)
+    throw Error('Start the isolated acceptance API from the selected backend first.');
   fixture = await response.json();
 });
 test.beforeEach(async () => {

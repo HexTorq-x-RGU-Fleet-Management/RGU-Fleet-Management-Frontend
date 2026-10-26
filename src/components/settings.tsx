@@ -10,6 +10,7 @@ export function Settings() {
   const { state, user, provider, patch, refresh, refreshDevices, signOut } = useWorkspace();
   const [tab, setTab] = useState<string>(user?.role === 'superadmin' ? 'viewing' : 'account'),
     [connection, setConnection] = useState(false),
+    [playbackImport, setPlaybackImport] = useState(false),
     [busy, setBusy] = useState(false),
     [disconnect, setDisconnect] = useState(false),
     [storage, setStorage] = useState<any>(null);
@@ -82,9 +83,15 @@ export function Settings() {
                   </Button>
                   <Button
                     loading={busy}
-                    onClick={() => void action(() => request('/api/connect/desktop', {}))}
+                    onClick={() =>
+                      provider?.playbackRecovery === 'external-authorization'
+                        ? setPlaybackImport(true)
+                        : void action(() => request('/api/connect/desktop', {}))
+                    }
                   >
-                    Use iVMS playback sign-in
+                    {provider?.playbackRecovery === 'external-authorization'
+                      ? 'Import playback authorization'
+                      : 'Use iVMS playback sign-in'}
                   </Button>
                   <Button disabled={!provider?.connected} onClick={() => setDisconnect(true)}>
                     Disconnect Hik-Connect
@@ -289,7 +296,7 @@ export function Settings() {
                 account: String(d.get('account')),
                 password: String(d.get('password')),
                 origin: String(d.get('origin')),
-                autoReconnect: d.get('recover') === 'on',
+                automaticReconnect: d.get('recover') === 'on',
               });
               await refresh();
               await refreshDevices();
@@ -322,6 +329,54 @@ export function Settings() {
           </label>
           <Button variant="primary" loading={busy} type="submit">
             Connect account
+          </Button>
+        </form>
+      </Modal>
+      <Modal
+        open={playbackImport}
+        onOpenChange={setPlaybackImport}
+        title="Import playback authorization"
+        description="Linux cannot read a Windows iVMS session. Import an authorized grant for this account; the backend verifies a shared channel before saving it."
+      >
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            const form = e.currentTarget,
+              file = (form.elements.namedItem('grant') as HTMLInputElement).files?.[0];
+            if (!file || file.size > 4096) {
+              toast.error('Choose a playback JSON file smaller than 4 KB.');
+              return;
+            }
+            setBusy(true);
+            try {
+              const value = JSON.parse(await file.text());
+              if (typeof value.accessToken !== 'string')
+                throw new Error('The file does not contain a playback grant.');
+              await request('/api/connect/playback', {
+                accessToken: value.accessToken,
+                expiresAt: value.expiresAt ?? null,
+              });
+              await refresh();
+              setPlaybackImport(false);
+              toast.success('Playback authorization verified and saved.');
+            } catch (error) {
+              toast.error(
+                error instanceof Error ? error.message : 'Could not import playback authorization.',
+              );
+            } finally {
+              form.reset();
+              setBusy(false);
+            }
+          }}
+        >
+          <Field
+            label="Playback authorization file"
+            hint="Private JSON containing accessToken and optional expiresAt in Unix milliseconds. Never send this file in chat or commit it."
+          >
+            <input name="grant" type="file" accept="application/json,.json" required />
+          </Field>
+          <Button type="submit" variant="primary" loading={busy}>
+            Verify and import
           </Button>
         </form>
       </Modal>

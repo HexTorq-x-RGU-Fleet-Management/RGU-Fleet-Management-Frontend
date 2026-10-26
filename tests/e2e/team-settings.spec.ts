@@ -15,6 +15,46 @@ async function login(page: Page, role = 'admin') {
   await page.getByRole('button', { name: 'Sign in to workspace', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Account menu' })).toBeVisible();
 }
+
+test('playback settings use the selected backend capability and verify Linux grant imports', async ({
+  page,
+}) => {
+  await login(page);
+  await page.goto('/settings');
+  if (fixture.playbackGrant) {
+    await page.getByRole('button', { name: 'Import playback authorization', exact: true }).click();
+    await page.getByLabel('Playback authorization file', { exact: true }).setInputFiles({
+      name: 'playback.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from(JSON.stringify(fixture.playbackGrant)),
+    });
+    await page.getByRole('button', { name: 'Verify and import', exact: true }).click();
+    await expect(page.getByRole('dialog', { name: 'Import playback authorization' })).toBeHidden();
+    await expect(page.getByText('Playback authorization saved.', { exact: true })).toBeVisible();
+  } else
+    await expect(
+      page.getByRole('button', { name: 'Use iVMS playback sign-in', exact: true }),
+    ).toBeVisible();
+});
+test('account broadcasts clear other tabs without clearing the tab that just signed in', async ({
+  page,
+  context,
+}) => {
+  await login(page);
+  const other = await context.newPage();
+  await other.goto('/buses');
+  await expect(other.getByRole('button', { name: 'Account menu' })).toBeVisible();
+  await page.bringToFront();
+  await page.getByRole('button', { name: 'Account menu' }).click();
+  await page.getByRole('menuitem', { name: 'Sign out', exact: true }).click();
+  await other.bringToFront();
+  await expect(other).toHaveURL(/\/login$/);
+  await page.bringToFront();
+  await login(page, 'beta');
+  await expect(page.locator('.bus-card')).toHaveCount(0);
+  await other.close();
+});
+
 test('admin member creation, recorder grants and suspension persist through the API', async ({
   page,
 }) => {

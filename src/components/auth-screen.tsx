@@ -5,7 +5,7 @@ import { Route, ArrowRight, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button, Field } from './ui';
 import { api } from '@/lib/api';
-import { useWorkspace } from './workspace-provider';
+import { useWorkspace, broadcastViewerChange } from './workspace-provider';
 export function AuthScreen() {
   const { ready, user, setupRequired, error, refresh } = useWorkspace(),
     router = useRouter();
@@ -109,9 +109,7 @@ export function AuthScreen() {
                           )
                         : await api.login(String(d.get('email')), String(d.get('password')));
                       await refresh();
-                      const channel = new BroadcastChannel('rgu-viewer-session');
-                      channel.postMessage('changed');
-                      channel.close();
+                      broadcastViewerChange();
                       router.replace(result.user.role === 'superadmin' ? '/platform' : '/');
                     }
                   } catch (e) {

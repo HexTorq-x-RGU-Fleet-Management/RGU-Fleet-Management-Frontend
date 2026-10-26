@@ -60,7 +60,9 @@ export async function request<T = any>(
       signal:
         signal ??
         AbortSignal.timeout(
-          path.includes('/live/start') || path.includes('/previews/') ? 60000 : 20000,
+          path.includes('/live/start') || path.includes('/previews/') || path.includes('/connect/')
+            ? 60000
+            : 20000,
         ),
     });
   } catch (error) {
@@ -92,8 +94,13 @@ export const api = {
   signup: (fullName: string, email: string, password: string, workspaceName: string) =>
     request('/api/auth/signup', { fullName, email, password, workspaceName }),
   logout: () => request('/api/auth/logout', {}),
-  connect: (account: string, password: string, region: string, autoReconnect: boolean) =>
-    request('/api/connect/personal', { account, password, region, autoReconnect }),
+  connect: (account: string, password: string, origin: string, autoReconnect: boolean) =>
+    request('/api/connect/personal', {
+      account,
+      password,
+      origin,
+      automaticReconnect: autoReconnect,
+    }),
   changePassword: (currentPassword: string, newPassword: string) =>
     request('/api/auth/password', { currentPassword, newPassword }),
 };

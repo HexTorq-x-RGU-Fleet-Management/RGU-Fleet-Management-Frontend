@@ -1,7 +1,7 @@
 # RGU Fleet Management Frontend
 
 React/Next.js frontend for HexTorq’s RGU bus fleet system. It uses the separate
-Windows API for authentication, fleet configuration, real Hik-Connect cameras,
+Windows or Linux API for authentication, fleet configuration, real Hik-Connect cameras,
 team permissions, recordings, audit and platform health.
 
 No sample business data or role-switching preview is bundled in the frontend.
@@ -27,6 +27,9 @@ For a fresh database: create the single platform owner, request an admin workspa
 from the sign-in screen, approve it as the owner, then sign in as that admin.
 Connect Hik-Connect under Settings and authorize playback using the installed
 iVMS sign-in when required. Import/refresh recorders, create a bus, and map it.
+The Linux backend instead exposes a verified playback-authorization file import
+in Settings; it cannot read a Windows iVMS installation. See the Linux repository's
+docs/PRODUCTION-MIGRATION.md for moving the database, recordings and encryption key.
 Check channel availability when the recorder is online; star the working channels.
 
 ## Data and security

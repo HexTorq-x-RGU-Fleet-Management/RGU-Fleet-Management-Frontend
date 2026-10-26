@@ -14,12 +14,17 @@ export function Settings() {
     [playbackImport, setPlaybackImport] = useState(false),
     [busy, setBusy] = useState(false),
     [disconnect, setDisconnect] = useState(false),
+    [googleLinked, setGoogleLinked] = useState(false),
     [storage, setStorage] = useState<any>(null);
   useEffect(() => {
     if (tab === 'storage' && user?.role !== 'superadmin')
       void request('/api/recordings/storage')
         .then((d) => setStorage(d.storage))
         .catch((e) => toast.error(e.message));
+  }, [tab, user?.id]);
+  useEffect(() => {
+    if (tab === 'account' && user?.role === 'admin')
+      void api.googleStatus().then((result) => setGoogleLinked(result.linked)).catch(() => undefined);
   }, [tab, user?.id]);
   async function action(work: () => Promise<unknown>) {
     setBusy(true);
@@ -69,6 +74,7 @@ export function Settings() {
                     ? 'Workspace camera connection active'
                     : 'No provider account connected')}
               </p>
+              {googleLinked && <Badge tone="green">Google sign-in linked</Badge>}
               <p className="muted">
                 {provider?.playbackReady
                   ? 'Playback authorization saved.'
@@ -94,10 +100,29 @@ export function Settings() {
                       ? 'Import playback authorization'
                       : 'Use iVMS playback sign-in'}
                   </Button>
-                  <GoogleAuthButton
-                    text="signin_with"
-                    onCredential={(credential) => void action(() => api.linkGoogle(credential))}
-                  />
+                  {googleLinked ? (
+                    <Button
+                      loading={busy}
+                      onClick={() =>
+                        void action(async () => {
+                          await api.unlinkGoogle();
+                          setGoogleLinked(false);
+                        })
+                      }
+                    >
+                      Disconnect Google sign-in
+                    </Button>
+                  ) : (
+                    <GoogleAuthButton
+                      text="signin_with"
+                      onCredential={(credential) =>
+                        void action(async () => {
+                          await api.linkGoogle(credential);
+                          setGoogleLinked(true);
+                        })
+                      }
+                    />
+                  )}
                   <Button disabled={!provider?.connected} onClick={() => setDisconnect(true)}>
                     Disconnect Hik-Connect
                   </Button>

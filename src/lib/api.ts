@@ -91,6 +91,8 @@ export const api = {
   login: (email: string, password: string) => request('/api/auth/login', { email, password }),
   googleLogin: (credential: string) => request('/api/auth/google/login', { credential }),
   linkGoogle: (credential: string) => request('/api/auth/google/link', { credential }),
+  googleStatus: () => request<{ linked: boolean }>('/api/auth/google/status'),
+  unlinkGoogle: () => request('/api/auth/google/unlink', {}),
   setup: (fullName: string, email: string, password: string) =>
     request('/api/auth/setup', { fullName, email, password }),
   signup: (fullName: string, email: string, password: string, workspaceName: string) =>

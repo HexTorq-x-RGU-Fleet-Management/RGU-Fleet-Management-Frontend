@@ -5,6 +5,8 @@ type GoogleCredential = { credential: string };
 type GoogleButtonProps = { onCredential: (credential: string) => void; text?: 'signin_with' | 'signup_with' };
 
 let googleScript: Promise<void> | null = null;
+let initializedClientId = '';
+let activeCredentialHandler: ((credential: string) => void) | null = null;
 function loadGoogleScript() {
   if (googleScript) return googleScript;
   googleScript = new Promise((resolve, reject) => {
@@ -33,16 +35,22 @@ export function GoogleAuthButton({ onCredential, text = 'signin_with' }: GoogleB
   useEffect(() => {
     if (!clientId || !target.current) return;
     let active = true;
+    activeCredentialHandler = (credential) => {
+      if (active) onCredential(credential);
+    };
     void loadGoogleScript()
       .then(() => {
         if (!active || !target.current || !(window as any).google?.accounts?.id) return;
         const google = (window as any).google;
-        google.accounts.id.initialize({
-          client_id: clientId,
-          callback: (response: GoogleCredential) => {
-            if (response?.credential) onCredential(response.credential);
-          },
-        });
+        if (initializedClientId !== clientId) {
+          google.accounts.id.initialize({
+            client_id: clientId,
+            callback: (response: GoogleCredential) => {
+              if (response?.credential) activeCredentialHandler?.(response.credential);
+            },
+          });
+          initializedClientId = clientId;
+        }
         target.current.replaceChildren();
         google.accounts.id.renderButton(target.current, {
           type: 'standard',
@@ -56,8 +64,9 @@ export function GoogleAuthButton({ onCredential, text = 'signin_with' }: GoogleB
       .catch(() => undefined);
     return () => {
       active = false;
+      activeCredentialHandler = null;
     };
-  }, [clientId, onCredential, text]);
+  }, [clientId, text]);
   if (!clientId) return null;
   return <div ref={target} className="google-auth-button" aria-label="Google sign-in" />;
 }

@@ -42,6 +42,11 @@ export async function request<T = any>(
   data?: unknown,
   signal?: AbortSignal,
 ): Promise<T> {
+  const timeoutMs = path.includes('/live/start') || path.includes('/previews/') || path.includes('/connect/')
+    ? 60000
+    : path === '/api/auth/status' || path === '/api/health'
+      ? 5000
+      : 10000;
   let response: Response;
   try {
     response = await fetch(apiUrl(path), {
@@ -59,11 +64,7 @@ export async function request<T = any>(
       ...(data === undefined ? {} : { body: JSON.stringify(data) }),
       signal:
         signal ??
-        AbortSignal.timeout(
-          path.includes('/live/start') || path.includes('/previews/') || path.includes('/connect/')
-            ? 60000
-            : 20000,
-        ),
+        AbortSignal.timeout(timeoutMs),
     });
   } catch (error) {
     if (error instanceof ApiError || (error instanceof Error && error.name === 'AbortError'))

@@ -86,7 +86,7 @@ export function broadcastViewerChange() {
   channel.close();
 }
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState(initial),
+  const [state, setState] = useState<State>(initial),
     [user, setUser] = useState<Principal | null>(null),
     [ready, setReady] = useState(false),
     [setupRequired, setSetup] = useState(false),
@@ -148,8 +148,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       setError(null);
     } catch (e) {
       if (seq === generation.current) {
-        if (e instanceof ApiError && e.status === 401) clear();
-        setError(e instanceof Error ? e.message : 'Could not load workspace.');
+        clear();
+        setError(e instanceof ApiError && e.status === 401 ? null : (e as Error).message);
       }
     } finally {
       if (seq === generation.current) setReady(true);
@@ -272,9 +272,12 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     await refresh();
   }
   async function signOut() {
-    await api.logout();
-    clear();
-    broadcastViewerChange();
+    try {
+      await api.logout();
+    } finally {
+      clear();
+      broadcastViewerChange();
+    }
   }
   return (
     <Workspace.Provider

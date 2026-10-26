@@ -1,41 +1,35 @@
 'use client';
 import { useEffect, useState, type ReactNode } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
-import { Button, Field } from './ui';
+import { usePathname, useRouter } from 'next/navigation';
+import { AuthScreen } from './auth-screen';
 import { useWorkspace } from './workspace-provider';
+import { Button, Field } from './ui';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
 
 export function SessionGate({ children }: { children: ReactNode }) {
-  const { user, ready, error, refresh, signOut } = useWorkspace(),
-    router = useRouter(),
-    path = usePathname();
+  const { user, ready, error, refresh, signOut } = useWorkspace();
+  const router = useRouter();
+  const path = usePathname();
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (ready && !user) router.replace('/login');
+    if (ready && !user && path !== '/login') router.replace('/login');
     else if (
       user?.role === 'superadmin' &&
       ['/', '/buses', '/cameras', '/recordings'].includes(path)
     )
       router.replace('/platform');
-  }, [ready, user, path, router]);
+  }, [path, ready, router, user]);
 
   if (!ready)
     return (
       <div className="fleet-no-data" role="status">
-        Checking your viewer session…
+        Checking account session…
       </div>
     );
 
-  if (!user)
-    return (
-      <div className="fleet-no-data">
-        <h2>Sign in required</h2>
-        {error && <p>{error}</p>}
-        <Button onClick={() => router.replace('/login')}>Sign in</Button>
-      </div>
-    );
+  if (!user) return <AuthScreen />;
 
   if (user.mustChangePassword)
     return (
@@ -92,5 +86,5 @@ export function SessionGate({ children }: { children: ReactNode }) {
       </main>
     );
 
-  return children;
+  return <>{children}</>;
 }

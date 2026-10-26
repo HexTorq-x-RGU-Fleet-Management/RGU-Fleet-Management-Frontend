@@ -54,8 +54,26 @@
 }
 .fleet-bus-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--bus-columns, 3), minmax(0, 1fr));
   gap: 20px;
+}
+.bus-density-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.bus-density-control input {
+  width: 92px;
+  accent-color: var(--accent);
+}
+.bus-density-control strong {
+  min-width: 18px;
+  color: var(--text);
+  text-align: center;
 }
 .bus-card {
   border: 1px solid var(--glass-border);
@@ -487,12 +505,12 @@
 }
 @media (min-width: 1700px) {
   .fleet-bus-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 22px;
   }
 }
 @media (max-width: 1200px) {
   .fleet-bus-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    --bus-columns: 2;
   }
   .journey-grid {
     grid-template-columns: minmax(0, 1fr);
@@ -518,6 +536,11 @@
   }
   .fleet-toolbar .search-input {
     width: 100%;
+  }
+  .bus-density-control {
+    width: 100%;
+    margin-left: 0;
+    justify-content: space-between;
   }
   .fleet-section,
   .journey {

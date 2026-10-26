@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useMemo, type ReactNode } from 'react';
+import { useState, useEffect, useMemo, type ReactNode, type CSSProperties } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
@@ -111,6 +111,7 @@ export function FleetWorkspace({ busesOnly = false }: { busesOnly?: boolean }) {
     now = useClock();
   const [search, setSearch] = useState(''),
     [filter, setFilter] = useState('all'),
+    [busColumns, setBusColumns] = useState(3),
     [editor, setEditor] = useState<Bus | null>(null),
     [busy, setBusy] = useState(false);
   const recorders = state.recorders,
@@ -253,6 +254,19 @@ export function FleetWorkspace({ busesOnly = false }: { busesOnly?: boolean }) {
                 onChange={setSearch}
                 placeholder="Search buses, drivers or routes"
               />
+              <label className="bus-density-control">
+                <span>Buses per row</span>
+                <input
+                  type="range"
+                  min="1"
+                  max="6"
+                  step="1"
+                  value={busColumns}
+                  aria-label="Buses per row"
+                  onChange={(e) => setBusColumns(Number(e.target.value))}
+                />
+                <strong>{busColumns}</strong>
+              </label>
             </div>
             <div className="segmented fleet-filters" aria-label="Bus filter">
               {[
@@ -282,7 +296,10 @@ export function FleetWorkspace({ busesOnly = false }: { busesOnly?: boolean }) {
               </p>
             </div>
           ) : (
-            <div className="fleet-bus-grid">
+            <div
+              className="fleet-bus-grid"
+              style={{ '--bus-columns': busColumns } as CSSProperties}
+            >
               {list.map((bus, i) => {
                 const v = reading(bus),
                   r = recorders.find((r) => r.id === bus.recorderId),

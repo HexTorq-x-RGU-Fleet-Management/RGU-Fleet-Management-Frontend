@@ -1,19 +1,25 @@
 /* World-Class Camera Workspace with Official RGU Operations Aesthetic */
 
+.camera-workspace-container {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
 .camera-page-heading {
   display: flex;
   justify-content: space-between;
   gap: 20px;
   align-items: flex-end;
-  margin-bottom: 24px;
+  margin-bottom: 0;
 }
 
 .recorder-tabs {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   overflow-x: auto;
-  margin-bottom: 22px;
-  padding-bottom: 4px;
+  margin-bottom: 0;
+  padding-bottom: 6px;
 }
 
 .recorder-tabs button {
@@ -196,7 +202,7 @@
 /* Surveillance Camera Stage */
 .camera-stage {
   background: #06090d;
-  padding: 10px;
+  padding: 16px 18px;
   position: relative;
 }
 
@@ -204,7 +210,7 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 16px;
+  padding: 18px;
   background: #000;
   overflow: auto;
 }
@@ -212,7 +218,7 @@
 .camera-grid {
   display: grid;
   grid-template-columns: repeat(var(--grid-columns), minmax(0, 1fr));
-  gap: 8px;
+  gap: 16px;
 }
 
 .camera-tile {
@@ -455,41 +461,74 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 18px;
-  font-size: 10px;
+  padding: 14px 22px;
+  font-size: 11px;
   font-weight: 500;
   color: var(--muted);
   border-top: 1px solid var(--line);
   background: rgba(9, 12, 17, 0.45);
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
 .camera-pagination > span {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  color: #94a3b8;
 }
 
-.camera-pagination > div {
+.camera-pagination-controls {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   font-family: var(--font-stack-mono);
 }
 
 .camera-pagination .icon-button {
-  height: 26px;
-  width: 26px;
+  height: 32px;
+  width: 32px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #edf2f6;
+  display: grid;
+  place-items: center;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.camera-pagination .icon-button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.camera-pagination .icon-button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.pagination-page-indicator {
+  padding: 4px 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #f8fafc;
+  letter-spacing: 0.04em;
 }
 
 /* Selected Channel Controls */
 .selected-controls {
-  margin-top: 18px;
-  padding: 14px 18px;
+  margin-top: 0;
+  padding: 16px 22px;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 20px;
   background: var(--panel);
   box-shadow: var(--shadow-sm), var(--bevel);
   flex-wrap: wrap;
@@ -1288,3 +1327,34 @@
 :root[data-theme='light'] .health-alert p {
   color: #475569;
 }
+
+:root[data-theme='light'] .camera-pagination {
+  background: rgba(248, 250, 252, 0.9);
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  color: #64748b;
+}
+
+:root[data-theme='light'] .camera-pagination > span {
+  color: #475569;
+}
+
+:root[data-theme='light'] .camera-pagination .icon-button {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  color: #0f172a;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+:root[data-theme='light'] .camera-pagination .icon-button:hover:not(:disabled) {
+  background: #f1f5f9;
+  border-color: rgba(0, 0, 0, 0.18);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+:root[data-theme='light'] .pagination-page-indicator {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  color: #0f172a;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+

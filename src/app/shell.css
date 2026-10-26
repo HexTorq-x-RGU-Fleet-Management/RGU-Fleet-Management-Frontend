@@ -769,7 +769,7 @@
 .recorder-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px;
+  gap: 20px;
 }
 
 /* World-Class CCTV Recorder Cards with RGU Cyan Radar */

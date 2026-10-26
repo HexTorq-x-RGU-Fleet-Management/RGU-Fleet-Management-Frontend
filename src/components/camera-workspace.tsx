@@ -611,7 +611,7 @@ export function CameraWorkspace() {
       </div>
     );
   return (
-    <div>
+    <div className="camera-workspace-container">
       {bus && (
         <Link className="btn btn-ghost fleet-back" href={'/buses?bus=' + bus.id}>
           <ArrowLeft size={15} />
@@ -953,7 +953,7 @@ export function CameraWorkspace() {
             {delivery === 'smooth' ? 'H264 Smooth' : 'JPEG Compatibility'} · sound muted until
             enabled
           </span>
-          <div>
+          <div className="camera-pagination-controls">
             <IconButton
               label="Previous camera page"
               disabled={page === 0 || focused || recording}
@@ -961,7 +961,7 @@ export function CameraWorkspace() {
             >
               <ChevronLeft size={16} />
             </IconButton>
-            <span>
+            <span className="pagination-page-indicator">
               {page + 1} / {pages}
             </span>
             <IconButton

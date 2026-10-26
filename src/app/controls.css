@@ -589,3 +589,71 @@
   background-size: 100% 100%, 50px 50px, 50px 50px;
   transform: perspective(700px) rotateY(-8deg) scale(1.15);
 }
+
+/* ==========================================================================
+   LIGHT MODE CONTROLS & DIALOGS THEME POLISH
+   ========================================================================== */
+:root[data-theme='light'] .modal {
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 24px 70px -15px rgba(15, 23, 42, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  color: #0f172a;
+}
+
+:root[data-theme='light'] .modal-title {
+  color: #0f172a;
+}
+
+:root[data-theme='light'] .modal-description {
+  color: #475569;
+}
+
+:root[data-theme='light'] .modal-overlay {
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(12px);
+}
+
+:root[data-theme='light'] input:not([type='checkbox']):not([type='radio']),
+:root[data-theme='light'] select,
+:root[data-theme='light'] textarea {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #0f172a;
+}
+
+:root[data-theme='light'] input:focus,
+:root[data-theme='light'] select:focus,
+:root[data-theme='light'] textarea:focus {
+  background: #ffffff;
+  border-color: #71307e;
+  box-shadow: 0 0 0 3px rgba(113, 48, 126, 0.15);
+}
+
+:root[data-theme='light'] .field > span:first-child:not(.password-input) {
+  color: #1e293b;
+}
+
+:root[data-theme='light'] .permission-recorders label {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  color: #1e293b;
+}
+
+:root[data-theme='light'] .permission-recorders label:hover {
+  background: #f8fafc;
+  border-color: rgba(113, 48, 126, 0.3);
+}
+
+:root[data-theme='light'] .auth-form-card {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 20px 60px -10px rgba(15, 23, 42, 0.12);
+}
+
+:root[data-theme='light'] .auth-form-card h2 {
+  color: #0f172a;
+}
+
+:root[data-theme='light'] .auth-form-card p {
+  color: #475569;
+}

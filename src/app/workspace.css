@@ -1136,3 +1136,90 @@
   letter-spacing: 0.16em;
   color: #8f9ea9;
 }
+
+/* ==========================================================================
+   LIGHT MODE WORKSPACE THEME POLISH
+   ========================================================================== */
+:root[data-theme='light'] .monitor-panel {
+  background: rgba(255, 255, 255, 0.94);
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 0 8px 32px -4px rgba(15, 23, 42, 0.06);
+}
+
+:root[data-theme='light'] .recorder-tabs button {
+  background: rgba(241, 245, 249, 0.85);
+  border-color: rgba(0, 0, 0, 0.08);
+  color: #475569;
+}
+
+:root[data-theme='light'] .recorder-tabs button:hover {
+  background: #ffffff;
+  color: #0f172a;
+}
+
+:root[data-theme='light'] .recorder-tabs button.selected {
+  background: #ffffff;
+  border-color: #71307e;
+  color: #71307e;
+  box-shadow: 0 2px 10px rgba(113, 48, 126, 0.18);
+}
+
+:root[data-theme='light'] .recorder-card {
+  background: rgba(255, 255, 255, 0.94);
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05);
+}
+
+:root[data-theme='light'] .recorder-card:hover {
+  background: #ffffff;
+  border-color: rgba(113, 48, 126, 0.3);
+  box-shadow: 0 12px 32px -4px rgba(15, 23, 42, 0.1);
+}
+
+:root[data-theme='light'] .bus-card {
+  background: rgba(255, 255, 255, 0.94);
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05);
+}
+
+:root[data-theme='light'] .bus-card:hover {
+  background: #ffffff;
+  border-color: rgba(113, 48, 126, 0.3);
+  box-shadow: 0 12px 32px -4px rgba(15, 23, 42, 0.1);
+}
+
+:root[data-theme='light'] .settings-panel {
+  background: rgba(255, 255, 255, 0.94);
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 0 8px 32px -4px rgba(15, 23, 42, 0.06);
+}
+
+:root[data-theme='light'] .settings-tabs button {
+  background: rgba(241, 245, 249, 0.85);
+  border-color: rgba(0, 0, 0, 0.08);
+  color: #475569;
+}
+
+:root[data-theme='light'] .settings-tabs button.active {
+  background: #ffffff;
+  color: #71307e;
+  border-color: #71307e;
+  box-shadow: 0 2px 10px rgba(113, 48, 126, 0.15);
+}
+
+:root[data-theme='light'] .health-alert {
+  background: rgba(255, 255, 255, 0.92);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+:root[data-theme='light'] .health-alert:hover {
+  background: rgba(241, 245, 249, 0.6);
+}
+
+:root[data-theme='light'] .health-alert h3 {
+  color: #0f172a;
+}
+
+:root[data-theme='light'] .health-alert p {
+  color: #475569;
+}

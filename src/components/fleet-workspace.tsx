@@ -117,6 +117,7 @@ export function FleetWorkspace({ busesOnly = false }: { busesOnly?: boolean }) {
   const recorders = state.recorders,
     vehicles = telemetry?.data.vehicles ?? [],
     detail = state.buses.find((b) => b.id === query.get('bus'));
+  const busCardHeights = [0, 440, 380, 340, 310, 285, 265];
   if (!ready || now === null)
     return <div className="skeleton h-96" role="status" aria-label="Loading fleet" />;
   if (query.get('bus') && !detail)
@@ -255,7 +256,7 @@ export function FleetWorkspace({ busesOnly = false }: { busesOnly?: boolean }) {
                 placeholder="Search buses, drivers or routes"
               />
               <label className="bus-density-control">
-                <span>Buses per row</span>
+                <span>Buses per row · locked card size</span>
                 <input
                   type="range"
                   min="1"
@@ -298,7 +299,12 @@ export function FleetWorkspace({ busesOnly = false }: { busesOnly?: boolean }) {
           ) : (
             <div
               className="fleet-bus-grid"
-              style={{ '--bus-columns': busColumns } as CSSProperties}
+              style={
+                {
+                  '--bus-columns': busColumns,
+                  '--bus-card-height': `${busCardHeights[busColumns]}px`,
+                } as CSSProperties
+              }
             >
               {list.map((bus, i) => {
                 const v = reading(bus),

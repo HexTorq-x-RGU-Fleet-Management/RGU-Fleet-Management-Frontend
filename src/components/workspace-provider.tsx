@@ -85,33 +85,23 @@ export function broadcastViewerChange() {
   channel.postMessage({ sender: sessionSender });
   channel.close();
 }
-const devUser: Principal = {
-  id: 'local-admin',
-  tenantId: 'local-tenant',
-  tenantName: 'RGU Fleet',
-  email: 'admin@local.dev',
-  fullName: 'Administrator',
-  role: 'admin',
-  mustChangePassword: false,
-  authVersion: 1,
-};
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<State>({ ...initial, role: 'admin' }),
-    [user, setUser] = useState<Principal | null>(devUser),
-    [ready, setReady] = useState(true),
+  const [state, setState] = useState<State>(initial),
+    [user, setUser] = useState<Principal | null>(null),
+    [ready, setReady] = useState(false),
     [setupRequired, setSetup] = useState(false),
     [error, setError] = useState<string | null>(null),
     [provider, setProvider] = useState<any>(null),
     [telemetry, setTelemetry] = useState<TelemetryEnvelope | null>(null);
   const generation = useRef(0),
-    userRef = useRef<Principal | null>(devUser),
+    userRef = useRef<Principal | null>(null),
     prefsQueue = useRef(Promise.resolve());
   const clear = useCallback(() => {
     generation.current++;
-    bindViewer(devUser.id);
-    userRef.current = devUser;
-    setUser(devUser);
-    setState({ ...initial, role: 'admin' });
+    bindViewer(null);
+    userRef.current = null;
+    setUser(null);
+    setState(initial);
     setProvider(null);
     setTelemetry(null);
   }, []);
@@ -122,9 +112,12 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       if (seq !== generation.current) return;
       setSetup(auth.setupRequired);
       if (!auth.user) {
-        setUser(devUser);
-        userRef.current = devUser;
-        bindViewer(devUser.id);
+        userRef.current = null;
+        setUser(null);
+        bindViewer(null);
+        setState(initial);
+        setProvider(null);
+        setTelemetry(null);
         setError(null);
         setReady(true);
         return;
@@ -158,10 +151,13 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       setError(null);
     } catch (e) {
       if (seq === generation.current) {
-        setUser(devUser);
-        userRef.current = devUser;
-        bindViewer(devUser.id);
-        setError(null);
+        userRef.current = null;
+        setUser(null);
+        bindViewer(null);
+        setState(initial);
+        setProvider(null);
+        setTelemetry(null);
+        setError(e instanceof ApiError && e.status === 401 ? null : (e as Error).message);
       }
     } finally {
       if (seq === generation.current) setReady(true);
@@ -284,9 +280,12 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     await refresh();
   }
   async function signOut() {
-    await api.logout();
-    clear();
-    broadcastViewerChange();
+    try {
+      await api.logout();
+    } finally {
+      clear();
+      broadcastViewerChange();
+    }
   }
   return (
     <Workspace.Provider

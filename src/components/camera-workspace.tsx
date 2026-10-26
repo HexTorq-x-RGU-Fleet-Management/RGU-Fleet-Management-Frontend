@@ -642,7 +642,14 @@ export function CameraWorkspace() {
           {recorders.map((item) => (
             <button
               key={item.id}
-              className={r.id === item.id ? 'selected' : ''}
+              className={
+                [
+                  r.id === item.id ? 'selected' : '',
+                  state.buses.some((mapped) => mapped.recorderId === item.id) ? 'mapped' : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')
+              }
               disabled={recording}
               onClick={() => {
                 setDevice(item.id);
@@ -655,7 +662,14 @@ export function CameraWorkspace() {
             >
               <span className={'status-dot ' + (item.online ? '' : 'offline')} />
               {item.name}
-              <span>{item.channels}</span>
+              {state.buses
+                .filter((mapped) => mapped.recorderId === item.id)
+                .map((mapped) => (
+                  <span className="recorder-bus-tag" key={mapped.id}>
+                    {mapped.busNumber}
+                  </span>
+                ))}
+              <span className="recorder-channel-count">{item.channels}</span>
             </button>
           ))}
         </div>

@@ -255,19 +255,45 @@ export function FleetWorkspace({ busesOnly = false }: { busesOnly?: boolean }) {
                 onChange={setSearch}
                 placeholder="Search buses, drivers or routes"
               />
-              <label className="bus-density-control">
-                <span>Buses per row · locked card size</span>
-                <input
-                  type="range"
-                  min="1"
-                  max="6"
-                  step="1"
-                  value={busColumns}
-                  aria-label="Buses per row"
-                  onChange={(e) => setBusColumns(Number(e.target.value))}
-                />
-                <strong>{busColumns}</strong>
-              </label>
+              <div className="bus-density-control">
+                <span className="bus-density-caption">Buses per row</span>
+                <div className="bus-density-slider-deck">
+                  <span className="density-bound min" title="Minimum: 1 bus per row">
+                    <span className="bound-tag">Min</span> 1
+                  </span>
+                  <div className="density-track-wrapper">
+                    <input
+                      type="range"
+                      className="density-range-input"
+                      min="1"
+                      max="6"
+                      step="1"
+                      value={busColumns}
+                      aria-label="Buses per row (min: 1, max: 6)"
+                      onChange={(e) => setBusColumns(Number(e.target.value))}
+                    />
+                    <div className="density-ticks" aria-hidden="true">
+                      {[1, 2, 3, 4, 5, 6].map((lvl) => (
+                        <span
+                          key={lvl}
+                          className={`density-tick ${busColumns >= lvl ? 'filled' : ''} ${busColumns === lvl ? 'active' : ''}`}
+                          title={`Level ${lvl}`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <span className="density-bound max" title="Maximum: 6 buses per row">
+                    <span className="bound-tag">Max</span> 6
+                  </span>
+                </div>
+                <div
+                  className="bus-density-indicator"
+                  title={`Selected: ${busColumns} buses per row (Min: 1, Max: 6)`}
+                >
+                  <strong>{busColumns}</strong>
+                  <span className="density-max-hint">/ 6</span>
+                </div>
+              </div>
             </div>
             <div className="segmented fleet-filters" aria-label="Bus filter">
               {[

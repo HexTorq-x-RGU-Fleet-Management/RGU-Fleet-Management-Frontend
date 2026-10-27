@@ -32,7 +32,10 @@ export function Settings() {
     [googleLinked, setGoogleLinked] = useState(false),
     [storage, setStorage] = useState<any>(null),
     [wheelseyeSources, setWheelseyeSources] = useState<any[]>([]),
-    [wheelseyeBusy, setWheelseyeBusy] = useState(false);
+    [wheelseyeBusy, setWheelseyeBusy] = useState(false),
+    [deviceView, setDeviceView] = useState<{ sourceId: string; device: any } | null>(null),
+    [deviceDetail, setDeviceDetail] = useState<any>(null),
+    [deviceBusy, setDeviceBusy] = useState(false);
   useEffect(() => {
     if (tab === 'storage' && user?.role !== 'superadmin')
       void request('/api/recordings/storage')
@@ -46,6 +49,19 @@ export function Settings() {
         .then((result) => setWheelseyeSources(result.sources || []))
         .catch((e) => toast.error(e.message));
   }, [tab, user?.id]);
+  useEffect(() => {
+    if (!deviceView) return;
+    const controller = new AbortController();
+    setDeviceBusy(true);
+    void fleetApi
+      .wheelseyeDevice(deviceView.sourceId, String(deviceView.device.deviceNumber), controller.signal)
+      .then(setDeviceDetail)
+      .catch((e) => {
+        if (e.name !== 'AbortError') toast.error(e.message);
+      })
+      .finally(() => setDeviceBusy(false));
+    return () => controller.abort();
+  }, [deviceView]);
   useEffect(() => {
     if (tab === 'account' && user?.role === 'admin')
       void api
@@ -520,20 +536,33 @@ export function Settings() {
                             {source.pollIntervalSeconds || 60}s
                           </small>
                         </div>
-                        <Button
-                          onClick={() =>
-                            void fleetApi
-                              .removeWheelseyeSource(source.id)
-                              .then(() =>
-                                setWheelseyeSources((items) =>
-                                  items.filter((item) => item.id !== source.id),
-                                ),
-                              )
-                              .catch((e) => toast.error(e.message))
-                          }
-                        >
-                          Remove
-                        </Button>
+                        <div className="control-actions">
+                          <Button
+                            onClick={() => {
+                              const first = source.devices?.[0];
+                              if (first) {
+                                setDeviceView({ sourceId: source.id, device: first });
+                                setDeviceDetail(null);
+                              } else toast.error('No devices have been discovered for this source yet.');
+                            }}
+                          >
+                            View devices
+                          </Button>
+                          <Button
+                            onClick={() =>
+                              void fleetApi
+                                .removeWheelseyeSource(source.id)
+                                .then(() =>
+                                  setWheelseyeSources((items) =>
+                                    items.filter((item) => item.id !== source.id),
+                                  ),
+                                )
+                                .catch((e) => toast.error(e.message))
+                            }
+                          >
+                            Remove
+                          </Button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -543,8 +572,7 @@ export function Settings() {
                     onClick={async () => {
                       setWheelseyeBusy(true);
                       try {
-                        await fleetApi.pollWheelseye();
-                        const result = await fleetApi.wheelseyeSources();
+                        const result = await fleetApi.refreshWheelseye();
                         setWheelseyeSources(result.sources || []);
                         await refresh();
                         toast.success('WheelsEye devices and latest GPS data refreshed.');
@@ -558,8 +586,8 @@ export function Settings() {
                     Refresh WheelsEye devices
                   </Button>
                   <p className="small muted mt-4">
-                    WheelsEye locations are stored in the backend every minute. Fuel litres are
-                    appear after a discovered device is mapped to a bus.
+                    WheelsEye locations are stored in the backend every minute. Select “View
+                    devices” to inspect the latest provider response and stored samples.
                   </p>
                 </>
               ) : (
@@ -712,6 +740,56 @@ export function Settings() {
             Verify and import
           </Button>
         </form>
+      </Modal>
+      <Modal
+        open={Boolean(deviceView)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeviceView(null);
+            setDeviceDetail(null);
+          }
+        }}
+        title={deviceView ? `WheelsEye · ${deviceView.device.vehicleNumber || deviceView.device.deviceNumber}` : 'WheelsEye device'}
+        description="Latest live provider reading and persisted one-minute location samples."
+        wide
+      >
+        {deviceView && (
+          <div className="telemetry-device-dialog">
+            <div className="settings-list-row">
+              <div>
+                <strong>{deviceView.device.vehicleNumber || 'Unregistered vehicle'}</strong>
+                <small>Device {deviceView.device.deviceNumber}</small>
+              </div>
+              <Badge tone={deviceDetail ? 'green' : 'neutral'}>{deviceBusy ? 'Loading live data' : deviceDetail ? 'Live checked' : 'Waiting'}</Badge>
+            </div>
+            {deviceDetail && (
+              <>
+                <div className="telemetry-device-live">
+                  <strong>{deviceDetail.vehicle.speed} km/h</strong>
+                  <span>{deviceDetail.vehicle.status} · {deviceDetail.vehicle.location?.address || 'Location unavailable'}</span>
+                  <span>GPS {new Date(deviceDetail.vehicle.gpsTime * 1000).toLocaleString('en-IN')}</span>
+                </div>
+                <div className="table-scroll">
+                  <table className="data-table">
+                    <thead><tr><th>Time</th><th>Location</th><th>Speed</th><th>Ignition</th><th>Fuel</th></tr></thead>
+                    <tbody>
+                      {deviceDetail.samples.map((sample: any, index: number) => (
+                        <tr key={`${sample.vehicle.gpsTime}-${index}`}>
+                          <td>{new Date(sample.vehicle.gpsTime * 1000).toLocaleString('en-IN')}</td>
+                          <td>{sample.vehicle.location?.address || `${sample.vehicle.location?.latitude}, ${sample.vehicle.location?.longitude}`}</td>
+                          <td>{sample.vehicle.speed} km/h</td>
+                          <td>{sample.vehicle.ignition ? 'On' : 'Off'}</td>
+                          <td>{sample.vehicle.fuelData?.currentLiters ?? '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {!deviceDetail.samples.length && <p className="small muted">No stored samples yet; the next server poll will appear here.</p>}
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </Modal>
       <Confirm
         open={disconnect}

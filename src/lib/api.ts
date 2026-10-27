@@ -123,6 +123,13 @@ export const fleetApi = {
     ),
   pollWheelseye: () => request('/api/fleet/vendor/poll', {}),
   wheelseyeSources: () => request('/api/fleet/wheelseye/sources'),
+  refreshWheelseye: () => request('/api/fleet/wheelseye/refresh', {}),
+  wheelseyeDevice: (sourceId: string, deviceId: string, signal?: AbortSignal) =>
+    request<{ vehicle: import('./fleet').Vehicle; samples: { vehicle: import('./fleet').Vehicle; receivedAt: string }[]; fetchedAt: number }>(
+      '/api/fleet/wheelseye/device?' + new URLSearchParams({ sourceId, deviceId }),
+      undefined,
+      signal,
+    ),
   addWheelseyeSource: (label: string, url: string) =>
     request('/api/fleet/wheelseye/sources', { label, url }),
   removeWheelseyeSource: (id: string) =>

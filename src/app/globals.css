@@ -11,6 +11,11 @@
 :root {
   --font-stack-sans: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-stack-mono: ui-monospace, 'SF Mono', 'Cascadia Code', 'Segoe UI Mono', monospace;
+  --ascii-font: var(--font-stack-mono);
+  --ascii-accent: var(--accent);
+  --ascii-flash: var(--accent);
+  --ascii-glyph: var(--muted);
+  --ascii-surface: var(--panel);
 
   /* Official Rathinam University Brand System (from rguedu.in) */
   --color-brand-purple: #71307e;

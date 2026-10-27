@@ -873,10 +873,11 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
     let first = true;
     const readHistory = async () => {
       try {
+        const currentNow = Math.floor(Date.now() / 1000);
         const result = await fleetApi.history(
           bus.id,
-          Math.max(0, now - range * 60),
-          now,
+          Math.max(0, currentNow - range * 60),
+          currentNow,
           abort.signal,
         );
         const ordered = result.samples
@@ -899,7 +900,7 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
       clearInterval(timer);
       abort.abort();
     };
-  }, [bus.id, bus.telemetryDeviceId, range, user?.id, now]);
+  }, [bus.id, bus.telemetryDeviceId, range, user?.id]);
   const index =
       cursor === null
         ? samples.length - 1

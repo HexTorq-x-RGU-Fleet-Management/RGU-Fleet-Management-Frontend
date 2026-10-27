@@ -30,7 +30,7 @@ const defaults: Preferences = {
     retention: 7,
     quality: 'auto',
     fit: 'contain',
-    theme: 'dark',
+    theme: 'light',
     rotation: 30,
     reduceMotion: false,
     pureSite: true,

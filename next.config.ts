@@ -2,6 +2,12 @@ import type { NextConfig } from 'next';
 const nextConfig: NextConfig = {
   distDir: process.env.RGU_BUILD_DIR || '.next',
   poweredByHeader: false,
+  async rewrites() {
+    const target = process.env.RGU_API_PROXY_TARGET?.replace(/\/$/, '');
+    return target
+      ? [{ source: '/rgu/:path*', destination: `${target}/:path*` }]
+      : [];
+  },
   async headers() {
     return [
       {

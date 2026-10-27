@@ -143,7 +143,7 @@
 
 .permission-recorders small {
   display: block;
-  font-size: 9px;
+  font-size: 11px;
   color: var(--subtle);
 }
 
@@ -386,7 +386,7 @@
 }
 
 .notification-card small {
-  font-size: 9px;
+  font-size: 11px;
   color: var(--subtle);
 }
 
@@ -543,7 +543,7 @@
 }
 
 .auth-image-credit {
-  font-size: 9px;
+  font-size: 11px;
   color: #7b8f9e;
 }
 

@@ -1,7 +1,8 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import type * as Leaflet from 'leaflet';
-import { MapPin, Navigation, Map, RefreshCw, LoaderCircle } from 'lucide-react';
+import { MapPin, Navigation, Map, RefreshCw } from 'lucide-react';
+import { AsciiSkeleton } from 'ascii-reveal';
 import { type Vehicle, timeLabel } from '@/lib/fleet';
 import { tamilNaduBounds, defaultTileUrl, withinTamilNaduView } from '@/lib/map-config';
 import { Badge, Button } from './ui';
@@ -161,8 +162,15 @@ export function JourneyMap({
       />
       {status === 'loading' && (
         <div className="map-network-state" role="status">
-          <LoaderCircle className="spin" size={14} />
-          Loading road tiles…
+          <AsciiSkeleton
+            as="div"
+            variant="terminal"
+            rows={2}
+            width="100%"
+            height={22}
+            seed={11}
+          />
+          Loading road tiles...
         </div>
       )}
       {(status === 'error' || status === 'unavailable') && (

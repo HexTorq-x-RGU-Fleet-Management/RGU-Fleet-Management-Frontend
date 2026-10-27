@@ -753,6 +753,8 @@ export function Health() {
 
       {error && <p role="alert">{error}</p>}
 
+      {!data && loading && <AsciiLoading label="Loading backend health..." cards={4} compact />}
+
       {data && (
         <>
           {/* Bento Metric Cards */}
@@ -796,7 +798,15 @@ export function Health() {
                 {formatBytes(data.metrics.recordingStorage.maxBytes)}
               </div>
               <div className="telemetry-gauge-wrap">
-                <div className="gauge-track">
+                <div
+                  className="gauge-track"
+                  role="progressbar"
+                  aria-label="Recording storage used"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={Math.round(Math.min(storageUsedPercent, 100))}
+                  aria-valuetext={`${storageUsedPercent.toFixed(1)} percent used`}
+                >
                   <div
                     className={`gauge-fill ${isStorageWarning ? 'warning-gradient' : 'primary-gradient'}`}
                     style={{ width: `${Math.min(storageUsedPercent, 100)}%` }}

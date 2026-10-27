@@ -67,7 +67,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     [query, setQuery] = useState(''),
     [notifications, setNotifications] = useState(false),
     [currentTime, setCurrentTime] = useState('');
-  const asciiReveal = useRef<AsciiRevealHandle>(null);
+  const asciiReveal = useRef<AsciiRevealHandle>(null),
+    shellRef = useRef<HTMLDivElement>(null),
+    wasMobile = useRef(false);
+  useEffect(() => {
+    if (mobile) {
+      shellRef.current?.querySelector<HTMLElement>('.mobile-sidebar-close')?.focus();
+    } else if (wasMobile.current) {
+      shellRef.current?.querySelector<HTMLElement>('.mobile-menu')?.focus();
+    }
+    wasMobile.current = mobile;
+  }, [mobile]);
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
       const reveal = asciiReveal.current,
@@ -136,7 +146,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     router.push(href);
   }
   return (
-    <div className={`app-shell ${collapsed ? 'sidebar-collapsed' : ''}`}>
+    <div className={`app-shell ${collapsed ? 'sidebar-collapsed' : ''}`} ref={shellRef}>
       <NavigationLoader />
       <a href="#main-content" className="skip-link">
         Skip to content
@@ -152,6 +162,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         id="workspace-sidebar"
         className={`sidebar ${mobile ? 'sidebar-open' : ''}`}
         aria-label="Workspace sidebar"
+        role={mobile ? 'dialog' : undefined}
+        aria-modal={mobile || undefined}
         data-lenis-prevent
       >
         <IconButton
@@ -324,7 +336,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
           <div className="topbar-actions">
             {currentTime && (
-              <span className="topbar-clock-badge" title="Live IST Server Time">
+              <span className="topbar-clock-badge" title="Local time (Asia/Kolkata)">
                 <Clock size={13} style={{ display: 'inline', marginRight: 5, verticalAlign: 'middle' }} />
                 {currentTime}
               </span>
@@ -359,10 +371,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           selector={dashboardCardSelector}
           revealOnMount={false}
           lazy
+          inert={mobile || undefined}
         >
           {children}
         </AsciiReveal>
-        <footer className="app-footer">
+        <footer className="app-footer" inert={mobile || undefined}>
           <span>
             RGU Fleet Management <i />
             By HexTorq for Rathinam Global University

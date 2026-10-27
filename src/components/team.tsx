@@ -4,6 +4,7 @@ import { Users, UserPlus, Pencil, UserX, UserCheck, ShieldCheck, HardDrive, Cctv
 import { toast } from 'sonner';
 import { PageHeading, Button, Modal, Field, Confirm, Badge, SearchInput } from './ui';
 import { useWorkspace } from './workspace-provider';
+import { AsciiLoading } from './ascii-loading';
 import { request } from '@/lib/api';
 
 type Grant = {
@@ -231,11 +232,7 @@ export function Team() {
           );
         })}
 
-        {loading && (
-          <div style={{ padding: '36px 24px', textAlign: 'center', color: '#94a3b8' }}>
-            <p>Loading team members from backend…</p>
-          </div>
-        )}
+        {loading && <AsciiLoading label="Loading team members from backend..." cards={3} compact />}
 
         {!loading && !filteredUsers.length && (
           <div className="fleet-no-data" style={{ padding: 48 }}>

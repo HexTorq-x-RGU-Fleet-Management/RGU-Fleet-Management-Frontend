@@ -7,6 +7,7 @@ import { Button, Field } from './ui';
 import { api } from '@/lib/api';
 import { useWorkspace, broadcastViewerChange } from './workspace-provider';
 import { GoogleAuthButton } from './google-auth-button';
+import GradientASCII from './gradient-ascii';
 
 export function AuthScreen() {
   const { ready, user, setupRequired, error, refresh } = useWorkspace(),
@@ -32,10 +33,23 @@ export function AuthScreen() {
   }
 
   return (
-    <main className="auth-page">
+    <main className="auth-page auth-ambient-page">
+      <div className="auth-ambient" aria-hidden="true">
+        <GradientASCII
+          colors={['#06080e', '#71307e', '#2096db', '#f6f8ff']}
+          shape="horizon"
+          cellSize={18}
+          density={0.74}
+          glyphOpacity={0.8}
+          glow={0.38}
+          softness={0.55}
+          flow={0.6}
+          speed={0.9}
+          gradientOpacity={0.86}
+          grain={0.07}
+        />
+      </div>
       <section className="auth-story">
-        <div className="auth-grid" />
-        <div className="auth-photo-overlay" />
         <div className="brand">
           <span className="brand-symbol">
             <img src="/rathinam-logo.svg" alt="Rathinam Logo" width={34} height={34} />
@@ -187,7 +201,9 @@ export function AuthScreen() {
               {!signup && !setupRequired && (
                 <div className="google-auth-divider">
                   <span>or continue with</span>
-                  <GoogleAuthButton onCredential={(credential) => void signInWithGoogle(credential)} />
+                  <GoogleAuthButton
+                    onCredential={(credential) => void signInWithGoogle(credential)}
+                  />
                 </div>
               )}
               {!setupRequired && (

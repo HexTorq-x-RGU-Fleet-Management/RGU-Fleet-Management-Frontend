@@ -73,9 +73,18 @@ function Metric({
   );
 }
 function FuelMeter({ value }: { value: number }) {
+  const clamped = Math.max(0, Math.min(100, value));
   return (
-    <div className="fuel-meter" aria-label={'Fuel ' + value.toFixed(1) + ' percent'}>
-      <span style={{ width: Math.max(0, Math.min(100, value)) + '%' }} />
+    <div
+      className="fuel-meter"
+      role="progressbar"
+      aria-label="Fuel level"
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={Math.round(clamped)}
+      aria-valuetext={value.toFixed(1) + ' percent'}
+    >
+      <span style={{ width: clamped + '%' }} />
     </div>
   );
 }

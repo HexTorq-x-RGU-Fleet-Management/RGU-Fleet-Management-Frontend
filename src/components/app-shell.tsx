@@ -1,9 +1,9 @@
 'use client';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as Dropdown from '@radix-ui/react-dropdown-menu';
-import { AsciiReveal } from 'ascii-reveal';
+import { AsciiReveal, type AsciiRevealHandle } from 'ascii-reveal';
 import {
   LayoutDashboard,
   BusFront,
@@ -67,6 +67,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     [query, setQuery] = useState(''),
     [notifications, setNotifications] = useState(false),
     [currentTime, setCurrentTime] = useState('');
+  const asciiReveal = useRef<AsciiRevealHandle>(null);
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      const reveal = asciiReveal.current,
+        root = reveal?.element;
+      if (!reveal || !root) return;
+      root
+        .querySelectorAll<HTMLElement>(dashboardCardSelector)
+        .forEach((element) => element.setAttribute('data-ascii', 'surface'));
+      void reveal.reveal();
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [path]);
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
@@ -334,15 +347,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </header>
         <AsciiReveal
+          ref={asciiReveal}
           as="main"
           id="main-content"
           className="main-content"
           key={path}
           preset="terminal"
+          duration="cinematic"
           origin="top-left"
           speed={0.8}
           selector={dashboardCardSelector}
-          revealOnHydrate
+          revealOnMount={false}
           lazy
         >
           {children}

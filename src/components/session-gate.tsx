@@ -6,6 +6,7 @@ import { useWorkspace } from './workspace-provider';
 import { Button, Field } from './ui';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
+import { AsciiLoading } from './ascii-loading';
 
 export function SessionGate({ children }: { children: ReactNode }) {
   const { user, ready, error, refresh, signOut } = useWorkspace();
@@ -22,12 +23,7 @@ export function SessionGate({ children }: { children: ReactNode }) {
       router.replace('/platform');
   }, [path, ready, router, user]);
 
-  if (!ready)
-    return (
-      <div className="fleet-no-data" role="status">
-        Checking account session…
-      </div>
-    );
+  if (!ready) return <AsciiLoading label="Checking account session..." cards={2} compact />;
 
   if (!user) return <AuthScreen />;
 

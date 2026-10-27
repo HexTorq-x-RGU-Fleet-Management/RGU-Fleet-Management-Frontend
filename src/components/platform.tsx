@@ -24,13 +24,13 @@ import {
   Search,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { PageHeading, Button, Confirm, Modal, Field, Badge, SearchInput } from './ui';
+import { PageHeading, Button, IconButton, Confirm, Modal, Field, Badge, SearchInput } from './ui';
 import { useWorkspace } from './workspace-provider';
 import { request } from '@/lib/api';
 import { formatBytes } from '@/lib/model';
 
 export function Platform() {
-  const { user, state } = useWorkspace(),
+  const { user, state, patch } = useWorkspace(),
     [workspaces, setWorkspaces] = useState<any[]>([]),
     [loading, setLoading] = useState(true),
     [error, setError] = useState(''),
@@ -40,8 +40,16 @@ export function Platform() {
     [busy, setBusy] = useState(false),
     [filter, setFilter] = useState<'all' | 'active' | 'pending' | 'suspended'>('all'),
     [searchQuery, setSearchQuery] = useState(''),
-    [pureSite, setPureSite] = useState(true),
+    [page, setPage] = useState(1),
     [currentTime, setCurrentTime] = useState('');
+
+  const pureSite = state.settings.pureSite ?? true;
+  const PAGE_SIZE = 10;
+  const togglePureSite = async () => {
+    const next = !pureSite;
+    await patch({ settings: { ...state.settings, pureSite: next } });
+    toast.success(next ? 'Pure Site View enabled' : 'Standard View enabled');
+  };
 
   useEffect(() => {
     const updateTime = () => {
@@ -79,7 +87,7 @@ export function Platform() {
 
   const filteredWorkspaces = useMemo(() => {
     return workspaces.filter((w) => {
-      const matchesFilter = filter === 'all' || w.status === filter;
+      const matchesFilter = filter === 'all' || w.status?.toLowerCase() === filter.toLowerCase();
       const q = searchQuery.toLowerCase().trim();
       const matchesSearch =
         !q ||
@@ -89,6 +97,15 @@ export function Platform() {
       return matchesFilter && matchesSearch;
     });
   }, [workspaces, filter, searchQuery]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [filter, searchQuery]);
+
+  const totalPages = Math.ceil(filteredWorkspaces.length / PAGE_SIZE) || 1;
+  const paginatedWorkspaces = useMemo(() => {
+    return filteredWorkspaces.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  }, [filteredWorkspaces, page]);
 
   const stats = useMemo(() => {
     const active = workspaces.filter((w) => w.status === 'active').length;
@@ -127,7 +144,7 @@ export function Platform() {
               <Button
                 variant="secondary"
                 aria-label="Toggle Pure Site View"
-                onClick={() => setPureSite(!pureSite)}
+                onClick={togglePureSite}
               >
                 {pureSite ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
                 {pureSite ? 'Standard View' : 'Pure Site View'}
@@ -142,7 +159,7 @@ export function Platform() {
           description="High-density transport safety, AIS-140 GPS telemetry and verified camera surveillance for Rathinam campus fleet."
         >
           {!pureSite && (
-            <Button variant="secondary" onClick={() => setPureSite(true)}>
+            <Button variant="secondary" onClick={togglePureSite}>
               <Maximize2 size={14} />
               Pure Site View
             </Button>
@@ -212,61 +229,6 @@ export function Platform() {
           </div>
         </div>
 
-        {/* RTO Transport Compliance Deck */}
-        <div className="rto-compliance-deck">
-          <div className="rto-compliance-header">
-            <div className="rto-compliance-title">
-              <div className="rto-badge-icon">
-                <ShieldCheck size={24} />
-              </div>
-              <div>
-                <h3>Tamil Nadu Transport & RTO Safety Compliance Standards</h3>
-                <p>
-                  Integrated surveillance monitoring meeting Indian Ministry of Road Transport (MoRTH) and Coimbatore RTO university guidelines.
-                </p>
-              </div>
-            </div>
-            <span className="status-indicator-pill active">
-              <span className="beacon-pulse" style={{ width: 8, height: 8 }} />
-              Certified Operations
-            </span>
-          </div>
-
-          <div className="rto-pillars-grid">
-            <div className="rto-pillar-item">
-              <span className="pillar-tag">
-                <Radio size={12} /> Pillar 1: Telemetry
-              </span>
-              <strong>AIS-140 GPS & Fuel Sensors</strong>
-              <span>Sub-meter positioning, vehicle speed threshold logging, and tamper alert telemetry.</span>
-            </div>
-
-            <div className="rto-pillar-item">
-              <span className="pillar-tag">
-                <Cctv size={12} /> Pillar 2: Surveillance
-              </span>
-              <strong>In-Cabin & Road Dual View</strong>
-              <span>Verified Hik-Connect NVR streams covering driver cockpit and passenger compartments.</span>
-            </div>
-
-            <div className="rto-pillar-item">
-              <span className="pillar-tag">
-                <AlertTriangle size={12} /> Pillar 3: Safety Limits
-              </span>
-              <strong>Speed Governor & SOS</strong>
-              <span>Coimbatore urban & highway speed bounds monitored in real time with audio recording.</span>
-            </div>
-
-            <div className="rto-pillar-item">
-              <span className="pillar-tag">
-                <Users size={12} /> Pillar 4: Clearances
-              </span>
-              <strong>Driver & Attendant Roster</strong>
-              <span>Role-gated operator permissions and audit records preserved for inspection review.</span>
-            </div>
-          </div>
-        </div>
-
         {/* Quick Admin Navigation Toolbar */}
         <div className="admin-card-container p-6">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
@@ -328,7 +290,7 @@ export function Platform() {
             <Button
               variant="secondary"
               aria-label="Toggle Pure Site View"
-              onClick={() => setPureSite(!pureSite)}
+              onClick={togglePureSite}
             >
               {pureSite ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
               {pureSite ? 'Standard View' : 'Pure Site View'}
@@ -343,15 +305,19 @@ export function Platform() {
         description="Verify administrator credentials, grant tenant access, and oversee multi-tenant fleet security."
       >
         {!pureSite && (
-          <Button variant="secondary" onClick={() => setPureSite(true)}>
+          <Button variant="secondary" onClick={togglePureSite}>
             <Maximize2 size={14} />
             Pure Site View
           </Button>
         )}
-        <Button loading={loading} onClick={() => void load()}>
-          <RefreshCw size={15} />
-          Refresh Workspaces
-        </Button>
+        <IconButton
+          label="Refresh workspaces"
+          disabled={loading}
+          onClick={() => void load()}
+          style={{ width: 34, height: 34 }}
+        >
+          <RefreshCw size={14} className={loading ? 'spin' : ''} />
+        </IconButton>
       </PageHeading>
 
       {error && <p role="alert">{error}</p>}
@@ -417,58 +383,6 @@ export function Platform() {
         </div>
       </div>
 
-      {/* RTO Transport Compliance Standards */}
-      <div className="rto-compliance-deck">
-        <div className="rto-compliance-header">
-          <div className="rto-compliance-title">
-            <div className="rto-badge-icon">
-              <ShieldCheck size={24} />
-            </div>
-            <div>
-              <h3>Institutional Fleet & RTO Transport Compliance Engine</h3>
-              <p>
-                Rathinam Global University multi-campus fleet surveillance operates under certified AIS-140 tracking and real-time CCTV audit.
-              </p>
-            </div>
-          </div>
-          <span className="status-indicator-pill active">
-            <span className="beacon-pulse" style={{ width: 8, height: 8 }} />
-            Active Platform RLS
-          </span>
-        </div>
-
-        <div className="rto-pillars-grid">
-          <div className="rto-pillar-item">
-            <span className="pillar-tag">
-              <Shield size={12} /> Compliance Policy
-            </span>
-            <strong>Zero Unauthenticated Access</strong>
-            <span>All fleet recorders and GPS data strictly verified via session tokens and PostgreSQL RLS.</span>
-          </div>
-          <div className="rto-pillar-item">
-            <span className="pillar-tag">
-              <Cctv size={12} /> Media Security
-            </span>
-            <strong>Encrypted Camera Pipeline</strong>
-            <span>Hik-Connect H.264/JPEG transport never falls back to browser-local sample streams.</span>
-          </div>
-          <div className="rto-pillar-item">
-            <span className="pillar-tag">
-              <Radio size={12} /> Road Tracking
-            </span>
-            <strong>Tamil Nadu OpenStreetMap Grid</strong>
-            <span>Persisted vehicle routes mapped accurately against local transportation network bounds.</span>
-          </div>
-          <div className="rto-pillar-item">
-            <span className="pillar-tag">
-              <Users size={12} /> Operator Auditing
-            </span>
-            <strong>Tamper-Proof Audit History</strong>
-            <span>Every approval, password reset, and stream access is logged to the central audit database.</span>
-          </div>
-        </div>
-      </div>
-
       {/* Admin Toolbar: Search & Segmented Filter */}
       <div className="admin-toolbar-deck">
         <div className="admin-filter-pills" role="tablist" aria-label="Filter workspaces">
@@ -498,7 +412,8 @@ export function Platform() {
 
       {/* Glass Data Cards */}
       <div className="admin-card-container">
-        {filteredWorkspaces.map((w) => {
+        {paginatedWorkspaces.map((w, index) => {
+          const serialNumber = (page - 1) * PAGE_SIZE + index + 1;
           const initials = (w.fullName || w.workspaceName || 'W')
             .split(' ')
             .map((n: string) => n[0])
@@ -508,6 +423,10 @@ export function Platform() {
 
           return (
             <div className="admin-workspace-card" key={w.id}>
+              <div className="activity-serial-badge" title={`Serial No. #${serialNumber}`}>
+                #{String(serialNumber).padStart(2, '0')}
+              </div>
+
               <div className="admin-workspace-info">
                 <div className="admin-avatar-ring">{initials}</div>
                 <div className="admin-workspace-text">
@@ -591,6 +510,34 @@ export function Platform() {
                 ? `No workspaces match "${searchQuery}". Clear your search query.`
                 : 'Admins can request new access directly from the sign-in portal.'}
             </p>
+          </div>
+        )}
+      </div>
+
+      {/* Workspaces Pagination */}
+      <div className="activity-pagination-deck" style={{ marginTop: 16 }}>
+        <div className="activity-pagination-status">
+          Showing <strong>{filteredWorkspaces.length ? (page - 1) * PAGE_SIZE + 1 : 0}</strong>–<strong>{Math.min(page * PAGE_SIZE, filteredWorkspaces.length)}</strong> of <strong>{filteredWorkspaces.length}</strong> workspaces
+        </div>
+        {totalPages > 1 && (
+          <div className="activity-pagination-controls" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Button
+              variant="secondary"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+            >
+              Previous
+            </Button>
+            <span style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 600 }}>
+              Page {page} of {totalPages}
+            </span>
+            <Button
+              variant="secondary"
+              disabled={page >= totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            >
+              Next
+            </Button>
           </div>
         )}
       </div>
@@ -690,12 +637,18 @@ export function Platform() {
 }
 
 export function Health() {
-  const { user } = useWorkspace(),
+  const { user, state, patch } = useWorkspace(),
     [data, setData] = useState<any>(null),
     [error, setError] = useState(''),
     [loading, setLoading] = useState(true),
-    [pureSite, setPureSite] = useState(true),
     [currentTime, setCurrentTime] = useState('');
+
+  const pureSite = state.settings.pureSite ?? true;
+  const togglePureSite = async () => {
+    const next = !pureSite;
+    await patch({ settings: { ...state.settings, pureSite: next } });
+    toast.success(next ? 'Pure Site View enabled' : 'Standard View enabled');
+  };
 
   useEffect(() => {
     const updateTime = () => {
@@ -772,7 +725,7 @@ export function Health() {
             <Button
               variant="secondary"
               aria-label="Toggle Pure Site View"
-              onClick={() => setPureSite(!pureSite)}
+              onClick={togglePureSite}
             >
               {pureSite ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
               {pureSite ? 'Standard View' : 'Pure Site View'}
@@ -787,15 +740,19 @@ export function Health() {
         description="Real-time backend performance, process memory consumption, active streams, and persisted alerts."
       >
         {!pureSite && (
-          <Button variant="secondary" onClick={() => setPureSite(true)}>
+          <Button variant="secondary" onClick={togglePureSite}>
             <Maximize2 size={14} />
             Pure Site View
           </Button>
         )}
-        <Button loading={loading} onClick={() => void load()}>
-          <RefreshCw size={15} />
-          Refresh Health
-        </Button>
+        <IconButton
+          label="Refresh health"
+          disabled={loading}
+          onClick={() => void load()}
+          style={{ width: 34, height: 34 }}
+        >
+          <RefreshCw size={14} className={loading ? 'spin' : ''} />
+        </IconButton>
       </PageHeading>
 
       {error && <p role="alert">{error}</p>}

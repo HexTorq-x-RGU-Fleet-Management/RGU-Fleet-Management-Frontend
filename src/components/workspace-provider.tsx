@@ -33,6 +33,7 @@ const defaults: Preferences = {
     theme: 'dark',
     rotation: 30,
     reduceMotion: false,
+    pureSite: true,
   },
 };
 const initial: State = {
@@ -135,9 +136,19 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       }
       const data = await request('/api/workspace');
       if (seq !== generation.current) return;
+      const loadedPureSite =
+        data.preferences?.settings?.pureSite ??
+        (typeof window !== 'undefined' && localStorage.getItem('rgu-pure-site') === 'false'
+          ? false
+          : true);
       setState({
         ...initial,
         ...data.preferences,
+        settings: {
+          ...initial.settings,
+          ...(data.preferences?.settings || {}),
+          pureSite: loadedPureSite,
+        },
         role: actor.role,
         buses: data.buses,
         recorders: adaptDevices(data.devices, data.buses),
@@ -242,7 +253,23 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     document.documentElement.dataset.theme = state.settings.theme;
     document.documentElement.dataset.motion = state.settings.reduceMotion ? 'reduced' : 'full';
   }, [state.settings]);
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('rgu-pure-site');
+      if (stored !== null) {
+        const val = stored !== 'false';
+        setState((s) =>
+          s.settings.pureSite === val ? s : { ...s, settings: { ...s.settings, pureSite: val } },
+        );
+      }
+    }
+  }, []);
   const patch = useCallback((change: Partial<Preferences>) => {
+    if (change.settings?.pureSite !== undefined && typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('rgu-pure-site', String(change.settings.pureSite));
+      } catch {}
+    }
     setState((s) => ({
       ...s,
       ...change,

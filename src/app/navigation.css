@@ -133,8 +133,16 @@
   .sidebar,
   .main-shell {
     transition:
-      width 0.2s ease,
-      margin-left 0.2s ease;
+      width 0.24s cubic-bezier(0.2, 0, 0, 1),
+      margin-left 0.24s cubic-bezier(0.2, 0, 0, 1),
+      padding 0.24s cubic-bezier(0.2, 0, 0, 1);
+    will-change: width, margin-left;
+  }
+  .icon-button.sidebar-edge-toggle {
+    transition:
+      left 0.24s cubic-bezier(0.2, 0, 0, 1),
+      background 0.15s ease,
+      transform 0.15s ease;
   }
   .sidebar-collapsed .sidebar {
     width: 76px;
@@ -158,6 +166,16 @@
   .sidebar-collapsed .profile-button > span:not(.avatar),
   .sidebar-collapsed .profile-button > svg {
     display: none;
+    opacity: 0;
+  }
+  .sidebar .brand > span:last-child,
+  .sidebar .workspace-switch,
+  .sidebar .nav-caption,
+  .sidebar .nav-link > span,
+  .sidebar .profile-button > span:not(.avatar),
+  .sidebar .profile-button > svg {
+    transition: opacity 0.15s ease;
+    white-space: nowrap;
   }
   .sidebar-collapsed .nav-link {
     justify-content: center;
@@ -171,6 +189,35 @@
   .sidebar-collapsed .nav-link::before {
     display: none;
   }
+}
+
+.topbar-page-topic {
+  font-weight: 700 !important;
+  font-size: 15px;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+.topbar-clock-badge {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+  font-weight: 700;
+  color: #f8fafc;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 5px 12px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+:root[data-theme='light'] .topbar-clock-badge {
+  background: rgba(241, 245, 249, 0.9);
+  color: #0f172a;
+  border-color: rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
 @media (max-width: 760px) {
   .icon-button.sidebar-toggle {

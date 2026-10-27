@@ -61,6 +61,7 @@ export type Settings = {
   theme: 'dark' | 'light';
   rotation: number;
   reduceMotion: boolean;
+  pureSite?: boolean;
 };
 export type Principal = {
   id: string;

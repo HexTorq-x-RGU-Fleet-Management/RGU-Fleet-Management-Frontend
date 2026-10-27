@@ -10,6 +10,11 @@ import {
   ShieldCheck,
   ChevronRight,
   Route,
+  Sun,
+  Moon,
+  Maximize2,
+  Minimize2,
+  Check,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useWorkspace } from './workspace-provider';
@@ -46,6 +51,20 @@ export function Settings() {
       toast.error((e as Error).message);
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function updatePreference(key: string, value: any) {
+    try {
+      await patch({
+        settings: {
+          ...state.settings,
+          [key]: value,
+        },
+      });
+      toast.success('Preference updated');
+    } catch (e) {
+      toast.error((e as Error).message);
     }
   }
   return (
@@ -177,56 +196,152 @@ export function Settings() {
           {tab === 'viewing' && (
             <section className="panel settings-panel">
               <h2>Viewing preferences</h2>
-              <form
-                onSubmit={async (e) => {
-                  e.preventDefault();
-                  const d = new FormData(e.currentTarget);
-                  await patch({
-                    settings: {
-                      ...state.settings,
-                      theme: String(d.get('theme')) as 'dark' | 'light',
-                      quality: String(d.get('quality')) as 'auto' | 'sd' | 'hd',
-                      rotation: Number(d.get('rotation')),
-                      reduceMotion: d.get('motion') === 'on',
-                    },
-                  });
-                  toast.success('Preferences saved to your account.');
-                }}
-              >
-                <Field label="Appearance">
-                  <select name="theme" defaultValue={state.settings.theme}>
-                    <option value="dark">Dark</option>
-                    <option value="light">Light</option>
-                  </select>
-                </Field>
-                <Field label="Default quality">
-                  <select name="quality" defaultValue={state.settings.quality}>
-                    <option value="auto">Adaptive</option>
-                    <option value="sd">SD</option>
-                    <option value="hd">HD</option>
-                  </select>
-                </Field>
-                <Field label="Rotation interval">
-                  <select name="rotation" defaultValue={state.settings.rotation}>
-                    {[15, 30, 60, 120].map((n) => (
-                      <option key={n} value={n}>
-                        {n} seconds
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-                <label className="setting-row">
-                  <span>Reduce motion</span>
-                  <input
-                    type="checkbox"
-                    name="motion"
-                    defaultChecked={state.settings.reduceMotion}
-                  />
-                </label>
-                <Button type="submit" variant="primary">
-                  Save preferences
-                </Button>
-              </form>
+              <p className="muted" style={{ marginBottom: 20 }}>
+                Preferences update instantly across your session and are automatically saved to your account.
+              </p>
+
+              <div className="setting-block" style={{ marginBottom: 22 }}>
+                <span className="setting-label-bold" style={{ display: 'block', fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>
+                  Appearance
+                </span>
+                <div className="settings-button-group" role="radiogroup" aria-label="Appearance">
+                  {[
+                    { id: 'dark', label: 'Dark theme', icon: Moon },
+                    { id: 'light', label: 'Light theme', icon: Sun },
+                  ].map((opt) => {
+                    const active = state.settings.theme === opt.id;
+                    const Icon = opt.icon;
+                    return (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        role="radio"
+                        aria-checked={active}
+                        className={`settings-option-btn ${active ? 'active' : ''}`}
+                        onClick={() => void updatePreference('theme', opt.id)}
+                      >
+                        <Icon size={15} />
+                        <span>{opt.label}</span>
+                        {active && <Check size={14} className="active-check" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="setting-block" style={{ marginBottom: 22 }}>
+                <span className="setting-label-bold" style={{ display: 'block', fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>
+                  Default video quality
+                </span>
+                <div className="settings-button-group" role="radiogroup" aria-label="Video quality">
+                  {[
+                    { id: 'auto', label: 'Adaptive (Auto)' },
+                    { id: 'sd', label: 'SD (Standard Def)' },
+                    { id: 'hd', label: 'HD (High Def)' },
+                  ].map((opt) => {
+                    const active = state.settings.quality === opt.id;
+                    return (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        role="radio"
+                        aria-checked={active}
+                        className={`settings-option-btn ${active ? 'active' : ''}`}
+                        onClick={() => void updatePreference('quality', opt.id)}
+                      >
+                        <span>{opt.label}</span>
+                        {active && <Check size={14} className="active-check" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="setting-block" style={{ marginBottom: 22 }}>
+                <span className="setting-label-bold" style={{ display: 'block', fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>
+                  Camera rotation interval
+                </span>
+                <div className="settings-button-group" role="radiogroup" aria-label="Rotation interval">
+                  {[
+                    { id: 15, label: '15 seconds' },
+                    { id: 30, label: '30 seconds' },
+                    { id: 60, label: '60 seconds' },
+                    { id: 120, label: '120 seconds' },
+                  ].map((opt) => {
+                    const active = state.settings.rotation === opt.id;
+                    return (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        role="radio"
+                        aria-checked={active}
+                        className={`settings-option-btn ${active ? 'active' : ''}`}
+                        onClick={() => void updatePreference('rotation', opt.id)}
+                      >
+                        <span>{opt.label}</span>
+                        {active && <Check size={14} className="active-check" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="setting-block" style={{ marginBottom: 22 }}>
+                <span className="setting-label-bold" style={{ display: 'block', fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>
+                  Command deck view mode
+                </span>
+                <div className="settings-button-group" role="radiogroup" aria-label="Command deck view mode">
+                  {[
+                    { id: true, label: 'Pure Site View', icon: Maximize2 },
+                    { id: false, label: 'Standard View', icon: Minimize2 },
+                  ].map((opt) => {
+                    const isPure = state.settings.pureSite ?? true;
+                    const active = isPure === opt.id;
+                    const Icon = opt.icon;
+                    return (
+                      <button
+                        key={String(opt.id)}
+                        type="button"
+                        role="radio"
+                        aria-checked={active}
+                        className={`settings-option-btn ${active ? 'active' : ''}`}
+                        onClick={() => void updatePreference('pureSite', opt.id)}
+                      >
+                        <Icon size={14} />
+                        <span>{opt.label}</span>
+                        {active && <Check size={14} className="active-check" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="setting-block" style={{ marginBottom: 12 }}>
+                <span className="setting-label-bold" style={{ display: 'block', fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>
+                  Interface animation motion
+                </span>
+                <div className="settings-button-group" role="radiogroup" aria-label="Interface motion">
+                  {[
+                    { id: false, label: 'Full animations' },
+                    { id: true, label: 'Reduced motion' },
+                  ].map((opt) => {
+                    const active = !state.settings.reduceMotion === !opt.id;
+                    return (
+                      <button
+                        key={String(opt.id)}
+                        type="button"
+                        role="radio"
+                        aria-checked={active}
+                        className={`settings-option-btn ${active ? 'active' : ''}`}
+                        onClick={() => void updatePreference('reduceMotion', opt.id)}
+                      >
+                        <span>{opt.label}</span>
+                        {active && <Check size={14} className="active-check" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             </section>
           )}
           {tab === 'storage' && (

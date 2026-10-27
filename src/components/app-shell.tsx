@@ -26,6 +26,7 @@ import {
   Moon,
   PanelLeftClose,
   PanelLeftOpen,
+  Clock,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useWorkspace } from './workspace-provider';
@@ -48,7 +49,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     [collapsed, setCollapsed] = useState(false),
     [search, setSearch] = useState(false),
     [query, setQuery] = useState(''),
-    [notifications, setNotifications] = useState(false);
+    [notifications, setNotifications] = useState(false),
+    [currentTime, setCurrentTime] = useState('');
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      setCurrentTime(
+        now.toLocaleTimeString('en-IN', {
+          timeZone: 'Asia/Kolkata',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: true,
+        }) + ' IST',
+      );
+    };
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+    return () => clearInterval(interval);
+  }, []);
   useEffect(() => {
     try {
       setCollapsed(localStorage.getItem('rgu-sidebar-collapsed') === 'true');
@@ -272,9 +291,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </IconButton>
             <span className="breadcrumb-root">{user.tenantName || 'Platform'}</span>
             <span className="breadcrumb-slash">/</span>
-            <strong>{title}</strong>
+            <strong className="topbar-page-topic font-bold">{title}</strong>
           </div>
           <div className="topbar-actions">
+            {currentTime && (
+              <span className="topbar-clock-badge" title="Live IST Server Time">
+                <Clock size={13} style={{ display: 'inline', marginRight: 5, verticalAlign: 'middle' }} />
+                {currentTime}
+              </span>
+            )}
             <button className="global-search" onClick={() => setSearch(true)}>
               <Search size={15} />
               <span>Search anything...</span>

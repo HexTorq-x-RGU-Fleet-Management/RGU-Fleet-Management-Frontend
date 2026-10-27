@@ -12,7 +12,10 @@ export function ActivityLog() {
     [error, setError] = useState(''),
     [loading, setLoading] = useState(true),
     [next, setNext] = useState<string | null>(null),
-    [categoryFilter, setCategoryFilter] = useState<'all' | 'security' | 'approval' | 'system'>('all');
+    [categoryFilter, setCategoryFilter] = useState<'all' | 'security' | 'approval' | 'system'>('all'),
+    [page, setPage] = useState(1);
+
+  const PAGE_SIZE = 10;
 
   async function load(before?: string, searchStr?: string) {
     setLoading(true);
@@ -74,6 +77,13 @@ export function ActivityLog() {
     if (categoryFilter === 'all') return true;
     return getEventCategory(e.action) === categoryFilter;
   });
+
+  useEffect(() => {
+    setPage(1);
+  }, [categoryFilter, query]);
+
+  const totalPages = Math.ceil(filteredEvents.length / PAGE_SIZE) || 1;
+  const paginatedEvents = filteredEvents.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   if (user?.role === 'member')
     return (
@@ -209,7 +219,8 @@ export function ActivityLog() {
 
       {/* Glass Data Cards for Audit Log */}
       <div className="admin-card-container">
-        {filteredEvents.map((e, index) => {
+        {paginatedEvents.map((e, index) => {
+          const serialNumber = (page - 1) * PAGE_SIZE + index + 1;
           const actionLower = e.action?.toLowerCase() || '';
           const isSecurity =
             actionLower.includes('password') ||
@@ -223,8 +234,8 @@ export function ActivityLog() {
             <div className="admin-workspace-card activity-log-card" key={e.id}>
               <div className="activity-card-left">
                 {/* High visibility serial number badge */}
-                <div className="activity-serial-badge" title={`Serial No. #${index + 1}`}>
-                  #{String(index + 1).padStart(2, '0')}
+                <div className="activity-serial-badge" title={`Serial No. #${serialNumber}`}>
+                  #{String(serialNumber).padStart(2, '0')}
                 </div>
 
                 <div
@@ -310,28 +321,37 @@ export function ActivityLog() {
       {/* Page Navigation & Pagination Deck */}
       <div className="activity-pagination-deck">
         <div className="activity-pagination-status">
-          Showing <strong>{filteredEvents.length}</strong> of <strong>{events.length}</strong> records loaded
-          {next ? ' · Older journal pages available' : ' · End of recorded ledger'}
+          Showing <strong>{filteredEvents.length ? (page - 1) * PAGE_SIZE + 1 : 0}</strong>–<strong>{Math.min(page * PAGE_SIZE, filteredEvents.length)}</strong> of <strong>{filteredEvents.length}</strong> records loaded
+          {next ? ' · Older records available' : ' · End of recorded ledger'}
         </div>
-        <div className="activity-pagination-controls">
+        <div className="activity-pagination-controls" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {totalPages > 1 && (
+            <>
+              <Button
+                variant="secondary"
+                disabled={page <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+              >
+                Previous
+              </Button>
+              <span style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 600 }}>
+                Page {page} of {totalPages}
+              </span>
+              <Button
+                variant="secondary"
+                disabled={page >= totalPages}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              >
+                Next
+              </Button>
+            </>
+          )}
           {next && (
             <Button onClick={() => void load(next)} loading={loading} variant="primary">
               <ArrowDown size={14} />
               Load older events
             </Button>
           )}
-          <Button
-            onClick={() => {
-              setQuery('');
-              setCategoryFilter('all');
-              void load();
-            }}
-            loading={loading}
-            variant="secondary"
-          >
-            <RefreshCw size={14} />
-            Refresh timeline
-          </Button>
         </div>
       </div>
     </div>

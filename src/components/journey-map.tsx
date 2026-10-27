@@ -86,7 +86,7 @@ export function JourneyMap({
           initial ? [initial.location.latitude, initial.location.longitude] : [10.932, 76.978],
           { radius: 9, color: '#ffffff', weight: 3, fillColor: '#852482', fillOpacity: 1 },
         ).addTo(map);
-        marker.bindTooltip('Selected bus position · mock GPS', { direction: 'top' });
+        marker.bindTooltip('Selected bus position · WheelsEye GPS', { direction: 'top' });
         map.on('dragstart', () => setFollowing(false));
         layers.current = { map, tiles, trail, past, marker };
         setReady(true);
@@ -123,9 +123,7 @@ export function JourneyMap({
         <span>
           <MapPin size={14} /> TAMIL NADU / ROAD MAP
         </span>
-        <Badge tone={source === 'mock' ? 'amber' : 'neutral'}>
-          {source === 'mock' ? 'Backend mock GPS' : 'Stored GPS'}
-        </Badge>
+        <Badge tone="neutral">{source === 'vendor' ? 'WheelsEye GPS' : 'Stored GPS'}</Badge>
       </div>
       <div className="map-view-actions">
         <Button

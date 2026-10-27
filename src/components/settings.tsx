@@ -507,7 +507,7 @@ export function Settings() {
                       />
                     </Field>
                     <Button type="submit" variant="primary" loading={wheelseyeBusy}>
-                      Add connection and discover devices
+                      Save WheelsEye connection
                     </Button>
                   </form>
                   <div className="settings-list mt-6">
@@ -539,23 +539,31 @@ export function Settings() {
                   </div>
                   <Button
                     variant="primary"
-                    onClick={() =>
-                      void fleetApi
-                        .pollMock()
-                        .then(() => refresh())
-                        .then(() => toast.success('Mock telemetry stored in PostgreSQL.'))
-                        .catch((e) => toast.error(e.message))
-                    }
+                    loading={wheelseyeBusy}
+                    onClick={async () => {
+                      setWheelseyeBusy(true);
+                      try {
+                        await fleetApi.pollWheelseye();
+                        const result = await fleetApi.wheelseyeSources();
+                        setWheelseyeSources(result.sources || []);
+                        await refresh();
+                        toast.success('WheelsEye devices and latest GPS data refreshed.');
+                      } catch (e) {
+                        toast.error((e as Error).message);
+                      } finally {
+                        setWheelseyeBusy(false);
+                      }
+                    }}
                   >
-                    Poll mock telemetry
+                    Refresh WheelsEye devices
                   </Button>
                   <p className="small muted mt-4">
                     WheelsEye locations are stored in the backend every minute. Fuel litres are
-                    shown only when the provider supplies a fuel endpoint.
+                    appear after a discovered device is mapped to a bus.
                   </p>
                 </>
               ) : (
-                <p className="muted">Only workspace admins can run the mock provider.</p>
+                <p className="muted">Only workspace admins can manage WheelsEye connections.</p>
               )}
             </section>
           )}

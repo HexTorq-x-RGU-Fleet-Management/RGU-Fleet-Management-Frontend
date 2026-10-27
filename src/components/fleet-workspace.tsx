@@ -210,10 +210,8 @@ export function FleetWorkspace({ busesOnly = false }: { busesOnly?: boolean }) {
                 </strong>
                 <span>
                   {vehicles.length
-                    ? telemetry?.source === 'mock'
-                      ? 'GPS/fuel: backend-stored simulator samples'
-                      : 'GPS/fuel: stored provider observations'
-                    : 'GPS/fuel: no observations stored · vendor API is phase 2'}
+                    ? 'GPS/fuel: stored WheelsEye observations'
+                    : 'GPS/fuel: no observations stored yet'}
                 </span>
               </div>
               <div className="stats-grid">
@@ -891,7 +889,7 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
         </h3>
         <p>
           {error ||
-            'GPS/fuel vendor integration is phase 2. Any simulator data must first be stored by the backend.'}
+            'The backend will show this timeline after the WheelsEye device is discovered and mapped to this bus.'}
         </p>
       </div>
     );
@@ -926,9 +924,7 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
               {timeLabel(v.gpsTime)} <small>IST</small>
             </h2>
           </div>
-          <Badge tone={source === 'mock' ? 'amber' : 'neutral'}>
-            {source === 'mock' ? 'Backend mock samples' : 'Provider observations'}
-          </Badge>
+          <Badge tone="neutral">{source === 'vendor' ? 'WheelsEye observations' : 'Provider observations'}</Badge>
           <p>
             <Navigation size={16} />
             {v.status.toLowerCase()} · {v.speed.toFixed(1)} km/h

@@ -115,7 +115,7 @@ export const fleetApi = {
     request('/api/fleet/buses', { ...bus, ...(!bus.id ? { id: undefined } : {}) }),
   removeBus: (id: string) => request('/api/fleet/buses/remove', { id }),
   telemetry: () => request<import('./fleet').TelemetryEnvelope>('/api/fleet/telemetry'),
-  pollMock: () => request('/api/fleet/mock/poll', {}),
+  pollWheelseye: () => request('/api/fleet/vendor/poll', {}),
   wheelseyeSources: () => request('/api/fleet/wheelseye/sources'),
   addWheelseyeSource: (label: string, url: string) =>
     request('/api/fleet/wheelseye/sources', { label, url }),
@@ -130,7 +130,7 @@ export const fleetApi = {
     request<{
       samples: {
         vehicle: import('./fleet').Vehicle;
-        source: 'mock' | 'vendor';
+        source: 'vendor';
         receivedAt: string;
       }[];
     }>(

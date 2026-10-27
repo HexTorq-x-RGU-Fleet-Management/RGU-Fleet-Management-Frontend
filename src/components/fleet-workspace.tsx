@@ -871,14 +871,19 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
       return;
     }
     let first = true;
-    const readLive = async () => {
+    const readHistory = async () => {
       try {
-        const result = await fleetApi.live(bus.id, abort.signal);
-        setSamples((current) => {
-          const next = current.filter((sample) => sample.gpsTime !== result.vehicle.gpsTime);
-          return [...next, result.vehicle].slice(-Math.max(30, range));
-        });
-        setSource(result.source);
+        const result = await fleetApi.history(
+          bus.id,
+          Math.max(0, now - range * 60),
+          now,
+          abort.signal,
+        );
+        const ordered = result.samples
+          .map((sample) => sample.vehicle)
+          .sort((a, b) => a.gpsTime - b.gpsTime);
+        setSamples(ordered);
+        setSource(result.samples.some((sample) => sample.source === 'vendor') ? 'vendor' : undefined);
       } catch (e) {
         if ((e as Error).name !== 'AbortError') setError((e as Error).message);
       } finally {
@@ -888,13 +893,13 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
         }
       }
     };
-    void readLive();
-    const timer = setInterval(() => void readLive(), 15000);
+    void readHistory();
+    const timer = setInterval(() => void readHistory(), 60000);
     return () => {
       clearInterval(timer);
       abort.abort();
     };
-  }, [bus.id, bus.telemetryDeviceId, range, user?.id]);
+  }, [bus.id, bus.telemetryDeviceId, range, user?.id, now]);
   const index =
       cursor === null
         ? samples.length - 1
@@ -947,7 +952,7 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
       <div className="fleet-toolbar">
         <div>
           <h2>Journey explorer</h2>
-          <p className="muted">Live WheelsEye GPS, speed, ignition and fuel for the mapped device.</p>
+          <p className="muted">Persisted WheelsEye GPS, speed, ignition and fuel samples for the mapped device.</p>
         </div>
         <label className="compact-select">
           Window

@@ -30,7 +30,9 @@ export function Settings() {
     [busy, setBusy] = useState(false),
     [disconnect, setDisconnect] = useState(false),
     [googleLinked, setGoogleLinked] = useState(false),
-    [storage, setStorage] = useState<any>(null);
+    [storage, setStorage] = useState<any>(null),
+    [wheelseyeSources, setWheelseyeSources] = useState<any[]>([]),
+    [wheelseyeBusy, setWheelseyeBusy] = useState(false);
   useEffect(() => {
     if (tab === 'storage' && user?.role !== 'superadmin')
       void request('/api/recordings/storage')
@@ -38,8 +40,18 @@ export function Settings() {
         .catch((e) => toast.error(e.message));
   }, [tab, user?.id]);
   useEffect(() => {
+    if (tab === 'fleet' && user?.role === 'admin')
+      void fleetApi
+        .wheelseyeSources()
+        .then((result) => setWheelseyeSources(result.sources || []))
+        .catch((e) => toast.error(e.message));
+  }, [tab, user?.id]);
+  useEffect(() => {
     if (tab === 'account' && user?.role === 'admin')
-      void api.googleStatus().then((result) => setGoogleLinked(result.linked)).catch(() => undefined);
+      void api
+        .googleStatus()
+        .then((result) => setGoogleLinked(result.linked))
+        .catch(() => undefined);
   }, [tab, user?.id]);
   async function action(work: () => Promise<unknown>) {
     setBusy(true);
@@ -80,10 +92,12 @@ export function Settings() {
             ['account', 'Hik-Connect account', 'Provider access', Link2],
             ['viewing', 'Viewing preferences', 'Appearance and playback', SlidersHorizontal],
             ['storage', 'Recording storage', 'Retention and capacity', HardDrive],
-            ['fleet', 'Fleet mock provider', 'GPS and fuel simulator', Route],
+            ['fleet', 'Fleet telemetry', 'WheelsEye connections and devices', Route],
             ['security', 'Viewer password', 'Access protection', ShieldCheck],
           ]
-            .filter(([id]) => user?.role !== 'superadmin' || ['viewing', 'security'].includes(String(id)))
+            .filter(
+              ([id]) => user?.role !== 'superadmin' || ['viewing', 'security'].includes(String(id)),
+            )
             .map(([id, label, description, Icon]) => (
               <button
                 key={String(id)}
@@ -197,11 +211,21 @@ export function Settings() {
             <section className="panel settings-panel">
               <h2>Viewing preferences</h2>
               <p className="muted" style={{ marginBottom: 20 }}>
-                Preferences update instantly across your session and are automatically saved to your account.
+                Preferences update instantly across your session and are automatically saved to your
+                account.
               </p>
 
               <div className="setting-block" style={{ marginBottom: 22 }}>
-                <span className="setting-label-bold" style={{ display: 'block', fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>
+                <span
+                  className="setting-label-bold"
+                  style={{
+                    display: 'block',
+                    fontSize: 13,
+                    fontWeight: 700,
+                    color: 'var(--text)',
+                    marginBottom: 8,
+                  }}
+                >
                   Appearance
                 </span>
                 <div className="settings-button-group" role="radiogroup" aria-label="Appearance">
@@ -230,7 +254,16 @@ export function Settings() {
               </div>
 
               <div className="setting-block" style={{ marginBottom: 22 }}>
-                <span className="setting-label-bold" style={{ display: 'block', fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>
+                <span
+                  className="setting-label-bold"
+                  style={{
+                    display: 'block',
+                    fontSize: 13,
+                    fontWeight: 700,
+                    color: 'var(--text)',
+                    marginBottom: 8,
+                  }}
+                >
                   Default video quality
                 </span>
                 <div className="settings-button-group" role="radiogroup" aria-label="Video quality">
@@ -258,10 +291,23 @@ export function Settings() {
               </div>
 
               <div className="setting-block" style={{ marginBottom: 22 }}>
-                <span className="setting-label-bold" style={{ display: 'block', fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>
+                <span
+                  className="setting-label-bold"
+                  style={{
+                    display: 'block',
+                    fontSize: 13,
+                    fontWeight: 700,
+                    color: 'var(--text)',
+                    marginBottom: 8,
+                  }}
+                >
                   Camera rotation interval
                 </span>
-                <div className="settings-button-group" role="radiogroup" aria-label="Rotation interval">
+                <div
+                  className="settings-button-group"
+                  role="radiogroup"
+                  aria-label="Rotation interval"
+                >
                   {[
                     { id: 15, label: '15 seconds' },
                     { id: 30, label: '30 seconds' },
@@ -287,10 +333,23 @@ export function Settings() {
               </div>
 
               <div className="setting-block" style={{ marginBottom: 22 }}>
-                <span className="setting-label-bold" style={{ display: 'block', fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>
+                <span
+                  className="setting-label-bold"
+                  style={{
+                    display: 'block',
+                    fontSize: 13,
+                    fontWeight: 700,
+                    color: 'var(--text)',
+                    marginBottom: 8,
+                  }}
+                >
                   Command deck view mode
                 </span>
-                <div className="settings-button-group" role="radiogroup" aria-label="Command deck view mode">
+                <div
+                  className="settings-button-group"
+                  role="radiogroup"
+                  aria-label="Command deck view mode"
+                >
                   {[
                     { id: true, label: 'Pure Site View', icon: Maximize2 },
                     { id: false, label: 'Standard View', icon: Minimize2 },
@@ -317,10 +376,23 @@ export function Settings() {
               </div>
 
               <div className="setting-block" style={{ marginBottom: 12 }}>
-                <span className="setting-label-bold" style={{ display: 'block', fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>
+                <span
+                  className="setting-label-bold"
+                  style={{
+                    display: 'block',
+                    fontSize: 13,
+                    fontWeight: 700,
+                    color: 'var(--text)',
+                    marginBottom: 8,
+                  }}
+                >
                   Interface animation motion
                 </span>
-                <div className="settings-button-group" role="radiogroup" aria-label="Interface motion">
+                <div
+                  className="settings-button-group"
+                  role="radiogroup"
+                  aria-label="Interface motion"
+                >
                   {[
                     { id: false, label: 'Full animations' },
                     { id: true, label: 'Reduced motion' },
@@ -389,12 +461,78 @@ export function Settings() {
               <div className="settings-section-heading">
                 <Route size={20} />
                 <div>
-                  <h2>Fleet mock provider</h2>
-                  <p>Generate test GPS and fuel observations for mapped buses.</p>
+                  <h2>Fleet telemetry</h2>
+                  <p>Add WheelsEye accounts and discover their vehicle devices.</p>
                 </div>
               </div>
               {user?.role === 'admin' ? (
                 <>
+                  <form
+                    onSubmit={async (e) => {
+                      e.preventDefault();
+                      const form = e.currentTarget,
+                        data = new FormData(form);
+                      setWheelseyeBusy(true);
+                      try {
+                        const result = await fleetApi.addWheelseyeSource(
+                          String(data.get('label')),
+                          String(data.get('url')),
+                        );
+                        setWheelseyeSources((current) => [
+                          ...current.filter((item) => item.id !== result.source.id),
+                          result.source,
+                        ]);
+                        form.reset();
+                        toast.success(`${result.fetched} device(s) discovered and saved.`);
+                      } catch (e) {
+                        toast.error((e as Error).message);
+                      } finally {
+                        setWheelseyeBusy(false);
+                      }
+                    }}
+                  >
+                    <Field label="Connection name">
+                      <input name="label" placeholder="Main WheelsEye account" required />
+                    </Field>
+                    <Field label="WheelsEye currentLoc URL">
+                      <input
+                        name="url"
+                        type="url"
+                        placeholder="https://api.wheelseye.com/currentLoc?accessToken=…"
+                        required
+                      />
+                    </Field>
+                    <Button type="submit" variant="primary" loading={wheelseyeBusy}>
+                      Add connection and discover devices
+                    </Button>
+                  </form>
+                  <div className="settings-list mt-6">
+                    {wheelseyeSources.map((source) => (
+                      <div className="settings-list-row" key={source.id}>
+                        <div>
+                          <strong>{source.label}</strong>
+                          <small>
+                            {source.devices?.length || 0} devices · polls every{' '}
+                            {source.pollIntervalSeconds || 60}s
+                          </small>
+                        </div>
+                        <Button
+                          onClick={() =>
+                            void fleetApi
+                              .removeWheelseyeSource(source.id)
+                              .then(() =>
+                                setWheelseyeSources((items) =>
+                                  items.filter((item) => item.id !== source.id),
+                                ),
+                              )
+                              .catch((e) => toast.error(e.message))
+                          }
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
                   <Button
                     variant="primary"
                     onClick={() =>
@@ -408,8 +546,8 @@ export function Settings() {
                     Poll mock telemetry
                   </Button>
                   <p className="small muted mt-4">
-                    Only buses with a telemetry device ID receive samples. This is test data; the
-                    real GPS/fuel vendor integration will replace it in phase 2.
+                    WheelsEye locations are stored in the backend every minute. Fuel litres are
+                    shown only when the provider supplies a fuel endpoint.
                   </p>
                 </>
               ) : (

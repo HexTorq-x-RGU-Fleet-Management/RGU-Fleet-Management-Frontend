@@ -41,16 +41,18 @@ export async function request<T = any>(
   path: string,
   data?: unknown,
   signal?: AbortSignal,
+  method?: 'GET' | 'POST' | 'DELETE',
 ): Promise<T> {
-  const timeoutMs = path.includes('/live/start') || path.includes('/previews/') || path.includes('/connect/')
-    ? 60000
-    : path === '/api/auth/status' || path === '/api/health'
-      ? 5000
-      : 10000;
+  const timeoutMs =
+    path.includes('/live/start') || path.includes('/previews/') || path.includes('/connect/')
+      ? 60000
+      : path === '/api/auth/status' || path === '/api/health'
+        ? 5000
+        : 10000;
   let response: Response;
   try {
     response = await fetch(apiUrl(path), {
-      method: data === undefined ? 'GET' : 'POST',
+      method: method || (data === undefined ? 'GET' : 'POST'),
       credentials: 'include',
       cache: 'no-store',
       headers: {
@@ -62,9 +64,7 @@ export async function request<T = any>(
           : {}),
       },
       ...(data === undefined ? {} : { body: JSON.stringify(data) }),
-      signal:
-        signal ??
-        AbortSignal.timeout(timeoutMs),
+      signal: signal ?? AbortSignal.timeout(timeoutMs),
     });
   } catch (error) {
     if (error instanceof ApiError || (error instanceof Error && error.name === 'AbortError'))
@@ -116,6 +116,16 @@ export const fleetApi = {
   removeBus: (id: string) => request('/api/fleet/buses/remove', { id }),
   telemetry: () => request<import('./fleet').TelemetryEnvelope>('/api/fleet/telemetry'),
   pollMock: () => request('/api/fleet/mock/poll', {}),
+  wheelseyeSources: () => request('/api/fleet/wheelseye/sources'),
+  addWheelseyeSource: (label: string, url: string) =>
+    request('/api/fleet/wheelseye/sources', { label, url }),
+  removeWheelseyeSource: (id: string) =>
+    request(
+      '/api/fleet/wheelseye/sources/' + encodeURIComponent(id),
+      undefined,
+      undefined,
+      'DELETE',
+    ),
   history: (busId: string, from: number, to: number, signal?: AbortSignal) =>
     request<{
       samples: {

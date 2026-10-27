@@ -413,8 +413,16 @@ export function FleetWorkspace({ busesOnly = false }: { busesOnly?: boolean }) {
 function BusEditor({ bus, onClose }: { bus: Bus | null; onClose: () => void }) {
   const { state, user, saveBus } = useWorkspace(),
     [draft, setDraft] = useState<Bus | null>(null),
-    [busy, setBusy] = useState(false);
+    [busy, setBusy] = useState(false),
+    [telemetrySources, setTelemetrySources] = useState<any[]>([]);
   useEffect(() => setDraft(bus), [bus]);
+  useEffect(() => {
+    if (bus && user?.role === 'admin')
+      void fleetApi
+        .wheelseyeSources()
+        .then((result) => setTelemetrySources(result.sources || []))
+        .catch(() => undefined);
+  }, [bus, user?.id]);
   if (!draft) return null;
   const set = (change: Partial<Bus>) => setDraft({ ...draft, ...change });
   return (
@@ -510,13 +518,21 @@ function BusEditor({ bus, onClose }: { bus: Bus | null; onClose: () => void }) {
             </select>
           </Field>
           <Field label="GPS + fuel device">
-            <input
+            <select
               aria-label="GPS + fuel device"
-              maxLength={256}
               value={draft.telemetryDeviceId ?? ''}
               onChange={(e) => set({ telemetryDeviceId: e.target.value.trim() || null })}
-              placeholder="Optional · vendor integration in phase 2"
-            />
+            >
+              <option value="">Not mapped</option>
+              {telemetrySources.flatMap((source) =>
+                (source.devices || []).map((device: any) => (
+                  <option key={`${source.id}:${device.deviceNumber}`} value={device.deviceNumber}>
+                    {device.vehicleNumber || device.deviceNumber} · {device.deviceNumber} ·{' '}
+                    {source.label}
+                  </option>
+                )),
+              )}
+            </select>
           </Field>
         </div>
         <p className="small muted">

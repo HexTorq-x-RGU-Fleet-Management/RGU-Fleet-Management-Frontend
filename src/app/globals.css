@@ -1245,6 +1245,9 @@ td strong {
   box-sizing: border-box;
   min-height: 100dvh;
   padding: 42px 40px 60px calc(236px + 40px);
+  /* Keep rows at their natural height instead of stretching to 100dvh. */
+  align-content: start;
+  grid-auto-rows: min-content;
 }
 
 @media (max-width: 1050px) {

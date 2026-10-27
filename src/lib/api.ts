@@ -115,6 +115,12 @@ export const fleetApi = {
     request('/api/fleet/buses', { ...bus, ...(!bus.id ? { id: undefined } : {}) }),
   removeBus: (id: string) => request('/api/fleet/buses/remove', { id }),
   telemetry: () => request<import('./fleet').TelemetryEnvelope>('/api/fleet/telemetry'),
+  live: (busId: string, signal?: AbortSignal) =>
+    request<{ vehicle: import('./fleet').Vehicle; source: 'vendor'; fetchedAt: number }>(
+      '/api/fleet/live?' + new URLSearchParams({ busId }),
+      undefined,
+      signal,
+    ),
   pollWheelseye: () => request('/api/fleet/vendor/poll', {}),
   wheelseyeSources: () => request('/api/fleet/wheelseye/sources'),
   addWheelseyeSource: (label: string, url: string) =>

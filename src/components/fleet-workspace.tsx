@@ -870,21 +870,31 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
       setLoading(false);
       return;
     }
-    const end = Math.floor(now / 60) * 60;
-    void fleetApi
-      .history(bus.id, end - range * 60, end, abort.signal)
-      .then((d) => {
-        setSamples(d.samples.map((s) => s.vehicle));
-        setSource(d.samples[0]?.source);
-      })
-      .catch((e) => {
-        if (e.name !== 'AbortError') setError(e.message);
-      })
-      .finally(() => {
-        if (!abort.signal.aborted) setLoading(false);
-      });
-    return () => abort.abort();
-  }, [bus.id, bus.telemetryDeviceId, range, Math.floor(now / 60), user?.id]);
+    let first = true;
+    const readLive = async () => {
+      try {
+        const result = await fleetApi.live(bus.id, abort.signal);
+        setSamples((current) => {
+          const next = current.filter((sample) => sample.gpsTime !== result.vehicle.gpsTime);
+          return [...next, result.vehicle].slice(-Math.max(30, range));
+        });
+        setSource(result.source);
+      } catch (e) {
+        if ((e as Error).name !== 'AbortError') setError((e as Error).message);
+      } finally {
+        if (first && !abort.signal.aborted) {
+          first = false;
+          setLoading(false);
+        }
+      }
+    };
+    void readLive();
+    const timer = setInterval(() => void readLive(), 15000);
+    return () => {
+      clearInterval(timer);
+      abort.abort();
+    };
+  }, [bus.id, bus.telemetryDeviceId, range, user?.id]);
   const index =
       cursor === null
         ? samples.length - 1
@@ -937,7 +947,7 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
       <div className="fleet-toolbar">
         <div>
           <h2>Journey explorer</h2>
-          <p className="muted">One timestamp for stored GPS, speed, ignition and fuel.</p>
+          <p className="muted">Live WheelsEye GPS, speed, ignition and fuel for the mapped device.</p>
         </div>
         <label className="compact-select">
           Window
@@ -1084,8 +1094,7 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
           <span>{timeLabel(samples.at(-1)!.gpsTime)}</span>
         </div>
         <p className="small muted">
-          Telemetry history is not recorded camera footage. Source and timestamp are retained by the
-          backend.
+          The active map and timeline are refreshed directly from WheelsEye for this mapped bus.
         </p>
       </div>
     </section>

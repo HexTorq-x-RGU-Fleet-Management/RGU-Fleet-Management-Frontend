@@ -1236,6 +1236,29 @@ td strong {
   padding: 24px 0;
 }
 
+/*
+ * The session gate renders before the app shell exists. Reserving the sidebar
+ * offset and the same content width keeps this skeleton geometrically identical
+ * to the in-shell page skeleton, so the hand-off does not resize or jump.
+ */
+.ascii-loading-shell {
+  box-sizing: border-box;
+  min-height: 100dvh;
+  padding: 42px 40px 60px calc(236px + 40px);
+}
+
+@media (max-width: 1050px) {
+  .ascii-loading-shell {
+    padding: 28px 24px 40px calc(210px + 24px);
+  }
+}
+
+@media (max-width: 760px) {
+  .ascii-loading-shell {
+    padding: 24px 16px 40px;
+  }
+}
+
 .ascii-skeleton-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));

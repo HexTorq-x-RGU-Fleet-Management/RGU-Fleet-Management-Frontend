@@ -6,13 +6,21 @@ export function AsciiLoading({
   label = 'Loading workspace data...',
   cards = 3,
   compact = false,
+  shell = false,
 }: {
   label?: string;
   cards?: number;
   compact?: boolean;
+  shell?: boolean;
 }) {
   return (
-    <div className={`ascii-loading ${compact ? 'ascii-loading-compact' : ''}`} role="status">
+    <div
+      className={`ascii-loading ${compact ? 'ascii-loading-compact' : ''} ${
+        shell ? 'ascii-loading-shell' : ''
+      }`}
+      role="status"
+      aria-busy="true"
+    >
       <div className="ascii-skeleton-grid" aria-hidden="true">
         {Array.from({ length: cards }, (_, index) => (
           <div className="ascii-skeleton-card" key={index}>

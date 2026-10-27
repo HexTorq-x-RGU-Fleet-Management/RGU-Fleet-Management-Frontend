@@ -23,7 +23,7 @@ export function SessionGate({ children }: { children: ReactNode }) {
       router.replace('/platform');
   }, [path, ready, router, user]);
 
-  if (!ready) return <AsciiLoading label="Checking account session..." cards={2} compact />;
+  if (!ready) return <AsciiLoading label="Checking account session..." cards={3} shell />;
 
   if (!user) return <AuthScreen />;
 

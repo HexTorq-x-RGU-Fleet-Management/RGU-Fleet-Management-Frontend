@@ -20,6 +20,7 @@
   --ascii-accent: var(--accent);
   --ascii-flash: var(--accent);
   --ascii-glyph: var(--muted);
+  --ascii-skeleton: var(--muted);
   --ascii-surface: var(--panel);
 
   /* Official Rathinam University Brand System */
@@ -1246,14 +1247,25 @@ td strong {
   padding: 22px;
   overflow: hidden;
   color: var(--muted);
-  background: var(--glass-bg-card);
-  border: 1px solid var(--glass-border);
-  border-radius: 14px;
-  box-shadow: var(--glass-shadow), var(--glass-specular);
+  background: var(--panel-hover);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: none;
+}
+
+/* Make the terminal glyph pattern clearly visible on porcelain surfaces. */
+.ascii-skeleton-card .ars {
+  --ars-base: 0.55;
+  --ars-wave: 1;
 }
 
 .ascii-loading-compact .ascii-skeleton-card {
   min-height: 90px;
+}
+
+/* Keep list containers from clipping or blending the loading skeletons. */
+.admin-card-container .ascii-loading {
+  padding: 20px 24px;
 }
 
 .ascii-loading-label {

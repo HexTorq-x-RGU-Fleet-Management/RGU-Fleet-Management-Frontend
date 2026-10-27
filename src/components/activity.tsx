@@ -218,6 +218,8 @@ export function ActivityLog() {
 
       {error && <p role="alert">{error}</p>}
 
+      {loading && <AsciiLoading label="Loading audit timeline..." cards={3} />}
+
       {/* Glass Data Cards for Audit Log */}
       <div className="admin-card-container">
         {paginatedEvents.map((e, index) => {
@@ -299,8 +301,6 @@ export function ActivityLog() {
             </div>
           );
         })}
-
-        {loading && <AsciiLoading label="Loading audit timeline..." cards={3} compact />}
 
         {!filteredEvents.length && !loading && (
           <div className="fleet-no-data" style={{ padding: 48 }}>

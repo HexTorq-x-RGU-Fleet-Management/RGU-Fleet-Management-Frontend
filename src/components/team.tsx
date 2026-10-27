@@ -170,6 +170,8 @@ export function Team() {
         </span>
       </div>
 
+      {loading && <AsciiLoading label="Loading team members from backend..." cards={3} />}
+
       {/* Glass Data Cards for Team Members */}
       <div className="admin-card-container">
         {filteredUsers.map((m: any) => {
@@ -231,8 +233,6 @@ export function Team() {
             </div>
           );
         })}
-
-        {loading && <AsciiLoading label="Loading team members from backend..." cards={3} compact />}
 
         {!loading && !filteredUsers.length && (
           <div className="fleet-no-data" style={{ padding: 48 }}>

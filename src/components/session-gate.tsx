@@ -11,7 +11,7 @@ export function SessionGate({ children }: { children: ReactNode }) {
   const { user, ready, error, refresh, signOut } = useWorkspace();
   const router = useRouter();
   const path = usePathname();
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState(false), [passwordError, setPasswordError] = useState('');
 
   useEffect(() => {
     if (ready && !user && path !== '/login') router.replace('/login');
@@ -43,15 +43,33 @@ export function SessionGate({ children }: { children: ReactNode }) {
             e.preventDefault();
             const form = e.currentTarget,
               d = new FormData(form);
+            const current = String(d.get('current') || ''),
+              next = String(d.get('next') || ''),
+              confirmation = String(d.get('confirmation') || '');
+            if (next.length < 12) {
+              setPasswordError('Your new password must contain at least 12 characters.');
+              return;
+            }
+            if (next !== confirmation) {
+              setPasswordError('The new password and confirmation do not match.');
+              return;
+            }
+            if (current === next) {
+              setPasswordError('Choose a new password different from the temporary password.');
+              return;
+            }
+            setPasswordError('');
             setBusy(true);
             try {
-              await api.changePassword(String(d.get('current')), String(d.get('next')));
+              await api.changePassword(current, next);
               await refresh();
               toast.success('Password changed.');
-            } catch (e) {
-              toast.error((e as Error).message);
-            } finally {
               form.reset();
+            } catch (e) {
+              const message = (e as Error).message;
+              setPasswordError(message);
+              toast.error(message);
+            } finally {
               setBusy(false);
             }
           }}
@@ -68,6 +86,20 @@ export function SessionGate({ children }: { children: ReactNode }) {
               required
             />
           </Field>
+          <Field label="Confirm new password">
+            <input
+              name="confirmation"
+              type="password"
+              autoComplete="new-password"
+              minLength={12}
+              required
+            />
+          </Field>
+          {passwordError && (
+            <p className="form-error" role="alert">
+              {passwordError}
+            </p>
+          )}
           <Button type="submit" loading={busy}>
             Save new password
           </Button>

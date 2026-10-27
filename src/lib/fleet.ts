@@ -19,7 +19,7 @@ export type Vehicle = {
   gpsTime: number;
   location: { latitude: number; longitude: number; address: string };
   ignition: boolean;
-  fuelData: { currentLiters: number; fuelPercentage: number };
+  fuelData: { currentLiters: number; fuelPercentage: number } | null;
 };
 export type TelemetryEnvelope = {
   message: string;

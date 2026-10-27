@@ -376,11 +376,11 @@ export function FleetWorkspace({ busesOnly = false }: { busesOnly?: boolean }) {
                         </div>
                         <div>
                           <Fuel size={16} />
-                          <strong>{v?.fuelData.currentLiters.toFixed(1) ?? '—'}</strong>
+                          <strong>{v?.fuelData ? v.fuelData.currentLiters.toFixed(1) : '—'}</strong>
                           <span>litres</span>
                         </div>
                       </div>
-                      {v && <FuelMeter value={v.fuelData.fuelPercentage} />}
+                      {v?.fuelData && <FuelMeter value={v.fuelData.fuelPercentage} />}
                       <div className="bus-card-footer">
                         <span>
                           <UserRound size={14} />
@@ -628,10 +628,12 @@ function BusDetail({ bus, now, onEdit }: { bus: Bus; now: number; onEdit: () => 
         <Metric
           icon={Fuel}
           label="Fuel remaining"
-          value={v ? v.fuelData.currentLiters.toFixed(1) + ' L' : '—'}
+          value={v?.fuelData ? v.fuelData.currentLiters.toFixed(1) + ' L' : 'Unavailable'}
           note={
             v
-              ? v.fuelData.fuelPercentage.toFixed(1) + '% · ' + telemetry?.source
+              ? v.fuelData
+                ? v.fuelData.fuelPercentage.toFixed(1) + '% · ' + telemetry?.source
+                : 'Fuel data unavailable from provider'
               : 'No stored reading'
           }
         />
@@ -918,11 +920,15 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
           <div className="journey-fuel">
             <Fuel size={22} />
             <strong>
-              {v.fuelData.currentLiters.toFixed(1)}
-              <small> litres</small>
+              {v.fuelData ? v.fuelData.currentLiters.toFixed(1) : '—'}
+              {v.fuelData && <small> litres</small>}
             </strong>
-            <span>{v.fuelData.fuelPercentage.toFixed(1)}% remaining</span>
-            <FuelMeter value={v.fuelData.fuelPercentage} />
+            <span>
+              {v.fuelData
+                ? `${v.fuelData.fuelPercentage.toFixed(1)}% remaining`
+                : 'Fuel data unavailable'}
+            </span>
+            {v.fuelData && <FuelMeter value={v.fuelData.fuelPercentage} />}
           </div>
           <p>
             <Radio size={16} />
@@ -981,12 +987,15 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
           ))}
           <polyline
             points={samples
-              .map(
-                (v, i) =>
-                  35 +
-                  (i / Math.max(1, samples.length - 1)) * 675 +
-                  ',' +
-                  (100 - v.fuelData.fuelPercentage),
+              .flatMap((v, i) =>
+                v.fuelData
+                  ? [
+                      35 +
+                        (i / Math.max(1, samples.length - 1)) * 675 +
+                        ',' +
+                        (100 - v.fuelData.fuelPercentage),
+                    ]
+                  : [],
               )
               .join(' ')}
             fill="none"
@@ -1017,7 +1026,8 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
         <div className="timeline-labels">
           <span>{timeLabel(samples[0].gpsTime)}</span>
           <strong data-testid="cursor-time">
-            {timeLabel(v.gpsTime)} IST · {v.fuelData.currentLiters.toFixed(1)} L ·{' '}
+            {timeLabel(v.gpsTime)} IST ·{' '}
+            {v.fuelData ? v.fuelData.currentLiters.toFixed(1) + ' L · ' : 'Fuel unavailable · '}
             {v.speed.toFixed(1)} km/h
           </strong>
           <span>{timeLabel(samples.at(-1)!.gpsTime)}</span>

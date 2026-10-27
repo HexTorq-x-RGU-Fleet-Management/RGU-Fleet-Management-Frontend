@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { History, RefreshCw, ShieldCheck, Activity, Search, Clock, ArrowDown, Filter } from 'lucide-react';
 import { PageHeading, Button, SearchInput, Badge } from './ui';
+import { AsciiLoading } from './ascii-loading';
 import { request } from '@/lib/api';
 import { useWorkspace } from './workspace-provider';
 
@@ -299,11 +300,7 @@ export function ActivityLog() {
           );
         })}
 
-        {loading && (
-          <div style={{ padding: '36px 24px', textAlign: 'center', color: '#94a3b8' }}>
-            <p>Loading audit timeline…</p>
-          </div>
-        )}
+        {loading && <AsciiLoading label="Loading audit timeline..." cards={3} compact />}
 
         {!filteredEvents.length && !loading && (
           <div className="fleet-no-data" style={{ padding: 48 }}>

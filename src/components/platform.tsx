@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { PageHeading, Button, IconButton, Confirm, Modal, Field, Badge, SearchInput } from './ui';
+import { AsciiLoading } from './ascii-loading';
 import { useWorkspace } from './workspace-provider';
 import { request } from '@/lib/api';
 import { formatBytes } from '@/lib/model';
@@ -494,12 +495,7 @@ export function Platform() {
           );
         })}
 
-        {loading && (
-          <div style={{ padding: '36px 24px', textAlign: 'center', color: '#94a3b8' }}>
-            <RefreshCw size={24} style={{ animation: 'spin 1s linear infinite', margin: '0 auto 12px' }} />
-            <p>Loading workspaces from backend…</p>
-          </div>
-        )}
+        {loading && <AsciiLoading label="Loading workspaces from backend..." cards={3} compact />}
 
         {!loading && !filteredWorkspaces.length && (
           <div className="fleet-no-data" style={{ padding: 48 }}>

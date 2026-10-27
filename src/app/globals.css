@@ -1284,6 +1284,41 @@ td strong {
   animation: shimmer 1.8s ease-in-out infinite;
 }
 
+.ascii-loading {
+  display: grid;
+  gap: 18px;
+  width: 100%;
+  padding: 24px 0;
+}
+
+.ascii-skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+  gap: 16px;
+}
+
+.ascii-skeleton-card {
+  min-height: 150px;
+  padding: 22px;
+  overflow: hidden;
+  color: var(--muted);
+  background: var(--glass-bg-card);
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+  box-shadow: var(--glass-shadow), var(--glass-specular);
+}
+
+.ascii-loading-compact .ascii-skeleton-card {
+  min-height: 90px;
+}
+
+.ascii-loading-label {
+  color: var(--muted);
+  font-family: var(--font-stack-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
 @keyframes shimmer {
   to {
     background-position: -200% 0;

@@ -7,6 +7,7 @@ import { PageHeading, Button, Modal, Confirm, SearchInput, Badge } from './ui';
 import { apiUrl, request } from '@/lib/api';
 import { formatBytes, safeFilename } from '@/lib/model';
 import { downloadBlob } from '@/lib/clips';
+import { AsciiLoading } from './ascii-loading';
 export function Recordings() {
   const { user } = useWorkspace(),
     [data, setData] = useState<any>({ clips: [], storage: null }),
@@ -79,9 +80,7 @@ export function Recordings() {
       </div>
       {error && <p role="alert">{error}</p>}
       {loading ? (
-        <div className="fleet-no-data" role="status">
-          Loading recordings…
-        </div>
+        <AsciiLoading label="Loading recordings..." cards={3} />
       ) : !clips.length ? (
         <div className="fleet-no-data">
           <Clapperboard size={32} />

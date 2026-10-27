@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test'; 
 let fixture: any;
 test.beforeAll(async () => {
   const response = await fetch('http://127.0.0.1:8109/__acceptance/config');

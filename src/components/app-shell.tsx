@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import * as Dropdown from '@radix-ui/react-dropdown-menu';
+import { AsciiReveal } from 'ascii-reveal';
 import {
   LayoutDashboard,
   BusFront,
@@ -33,6 +34,21 @@ import { useWorkspace } from './workspace-provider';
 import { Button, Modal, IconButton, SearchInput, Badge } from './ui';
 import { canAccess } from '@/lib/model';
 import { NavigationLoader } from './navigation-loader';
+const dashboardCardSelector = [
+  '.stat-card',
+  '.bus-card',
+  '.recorder-card',
+  '.coverage-card',
+  '.activity-card',
+  '.fleet-section:has(> .fleet-details)',
+  '.journey-reading',
+  '.timeline-panel',
+  '.clip-card',
+  '.settings-panel',
+  '.admin-metric-card',
+  '.admin-card-container',
+  '.admin-health-nominal-card',
+].join(', ');
 const links = [
   { href: '/', label: 'Fleet overview', icon: LayoutDashboard },
   { href: '/buses', label: 'Buses', icon: BusFront },
@@ -317,9 +333,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </IconButton>
           </div>
         </header>
-        <main id="main-content" className="main-content" key={path}>
+        <AsciiReveal
+          as="main"
+          id="main-content"
+          className="main-content"
+          key={path}
+          preset="terminal"
+          origin="top-left"
+          speed={0.8}
+          selector={dashboardCardSelector}
+          revealOnHydrate
+          lazy
+        >
           {children}
-        </main>
+        </AsciiReveal>
         <footer className="app-footer">
           <span>
             RGU Fleet Management <i />

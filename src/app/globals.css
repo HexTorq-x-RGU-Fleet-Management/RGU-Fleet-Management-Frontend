@@ -1244,10 +1244,22 @@ td strong {
 .ascii-loading-shell {
   box-sizing: border-box;
   min-height: 100dvh;
-  padding: 42px 40px 60px calc(236px + 40px);
-  /* Keep rows at their natural height instead of stretching to 100dvh. */
+  /* Mirrors .main-shell margin + .main-content padding for a seamless hand-off. */
+  padding: 42px 32px 60px calc(236px + 32px);
   align-content: start;
   grid-auto-rows: min-content;
+}
+
+@media (min-width: 1600px) {
+  .ascii-loading-shell {
+    padding: 42px 48px 60px calc(236px + 48px);
+  }
+}
+
+@media (max-width: 1250px) {
+  .ascii-loading-shell {
+    padding: 28px 24px 40px calc(236px + 24px);
+  }
 }
 
 @media (max-width: 1050px) {

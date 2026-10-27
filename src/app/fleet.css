@@ -459,6 +459,20 @@
 .fleet-form-grid .field {
   min-width: 0;
 }
+
+.fleet-form-help {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.85rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.fleet-form-help .btn {
+  flex: 0 0 auto;
+}
 .fleet-form-grid input,
 .fleet-form-grid select {
   width: 100%;

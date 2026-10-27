@@ -412,14 +412,19 @@ function BusEditor({ bus, onClose }: { bus: Bus | null; onClose: () => void }) {
   const { state, user, saveBus } = useWorkspace(),
     [draft, setDraft] = useState<Bus | null>(null),
     [busy, setBusy] = useState(false),
-    [telemetrySources, setTelemetrySources] = useState<any[]>([]);
+    [telemetrySources, setTelemetrySources] = useState<any[]>([]),
+    [telemetryLoading, setTelemetryLoading] = useState(false),
+    [telemetryError, setTelemetryError] = useState('');
   useEffect(() => setDraft(bus), [bus]);
   useEffect(() => {
-    if (bus && user?.role === 'admin')
-      void fleetApi
-        .wheelseyeSources()
-        .then((result) => setTelemetrySources(result.sources || []))
-        .catch(() => undefined);
+    if (!bus || user?.role !== 'admin') return;
+    setTelemetryLoading(true);
+    setTelemetryError('');
+    void fleetApi
+      .wheelseyeSources()
+      .then((result) => setTelemetrySources(result.sources || []))
+      .catch((error) => setTelemetryError(error.message || 'Unable to load GPS devices.'))
+      .finally(() => setTelemetryLoading(false));
   }, [bus, user?.id]);
   if (!draft) return null;
   const set = (change: Partial<Bus>) => setDraft({ ...draft, ...change });
@@ -522,6 +527,11 @@ function BusEditor({ bus, onClose }: { bus: Bus | null; onClose: () => void }) {
               onChange={(e) => set({ telemetryDeviceId: e.target.value.trim() || null })}
             >
               <option value="">Not mapped</option>
+              {!telemetryLoading && !telemetrySources.some((source) => source.devices?.length) && (
+                <option value="" disabled>
+                  No discovered WheelsEye devices yet
+                </option>
+              )}
               {telemetrySources.flatMap((source) =>
                 (source.devices || []).map((device: any) => (
                   <option key={`${source.id}:${device.deviceNumber}`} value={device.deviceNumber}>
@@ -533,9 +543,38 @@ function BusEditor({ bus, onClose }: { bus: Bus | null; onClose: () => void }) {
             </select>
           </Field>
         </div>
+        <div className="fleet-form-help">
+          <span>
+            {telemetryLoading
+              ? 'Loading discovered WheelsEye devices…'
+              : telemetryError ||
+                'Select the provider device that belongs to this bus. Its GPS history will appear on the bus journey page.'}
+          </span>
+          <Button
+            type="button"
+            variant="ghost"
+            loading={telemetryLoading}
+            onClick={async () => {
+              setTelemetryLoading(true);
+              setTelemetryError('');
+              try {
+                const result = await fleetApi.wheelseyeSources();
+                setTelemetrySources(result.sources || []);
+                toast.success('WheelsEye device list refreshed.');
+              } catch (error) {
+                setTelemetryError((error as Error).message);
+              } finally {
+                setTelemetryLoading(false);
+              }
+            }}
+          >
+            <RefreshCw size={14} />
+            Refresh devices
+          </Button>
+        </div>
         <p className="small muted">
-          Only real imported recorders are listed. Camera availability is checked through the SDK,
-          separately from recorder status.
+          Only real imported recorders and discovered WheelsEye devices are listed. Camera
+          availability is checked through the SDK, separately from recorder status.
         </p>
         <div className="modal-footer">
           <Button type="button" onClick={onClose}>

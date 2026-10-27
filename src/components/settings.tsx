@@ -483,7 +483,11 @@ export function Settings() {
                           result.source,
                         ]);
                         form.reset();
-                        toast.success(`${result.fetched} device(s) discovered and saved.`);
+                        toast.success(
+                          result.discoveryPending
+                            ? 'Connection saved. Device discovery will run during the next poll.'
+                            : `${result.fetched} device(s) discovered and saved.`,
+                        );
                       } catch (e) {
                         toast.error((e as Error).message);
                       } finally {

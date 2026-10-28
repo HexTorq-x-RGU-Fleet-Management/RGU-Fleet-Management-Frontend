@@ -1,6 +1,7 @@
 'use client';
 
-import { AsciiSkeleton, type SkeletonVariant } from 'ascii-reveal';
+import { useEffect, useState } from 'react';
+import { AsciiReveal, AsciiSkeleton, type SkeletonVariant } from 'ascii-reveal';
 
 function SkeletonCards({
   cards,
@@ -56,11 +57,14 @@ export function AsciiLoading({
 }
 
 /**
- * Skeleton + reveal wrapper. While `loading` is true a dither ASCII skeleton is
- * shown in place of the content. When data arrives the content mounts and is
- * decoded in by the global shell reveal (decode preset), so the swap never
- * happens as a sudden jump. Deliberately not a nested AsciiReveal — nested
- * reveals would animate the same nodes twice.
+ * The ascii-reveal README pattern, so every page plays it in one wave:
+ *
+ *   <AsciiReveal loading={!data} preset="decode" duration="fast">
+ *     {data ? <Profile data={data} /> : <AsciiSkeleton variant="dither" />}
+ *   </AsciiReveal>
+ *
+ * A dither ASCII skeleton holds for at least `minMs` (1.7s) so the decode reveal
+ * always plays, and any async `loading` extends the hold until the data lands.
  */
 export function AsciiRevealArea({
   loading,
@@ -68,17 +72,34 @@ export function AsciiRevealArea({
   cards = 3,
   compact = false,
   variant = 'dither',
+  minMs = 1700,
 }: {
   loading: boolean;
   children: React.ReactNode;
   cards?: number;
   compact?: boolean;
   variant?: SkeletonVariant;
+  minMs?: number;
 }) {
-  if (!loading) return <>{children}</>;
+  const [holdDone, setHoldDone] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setHoldDone(true), minMs);
+    return () => clearTimeout(timer);
+  }, [minMs]);
+  const pending = loading || !holdDone;
   return (
-    <div className={`ascii-loading ${compact ? 'ascii-loading-compact' : ''}`} role="status" aria-busy="true">
-      <SkeletonCards cards={cards} compact={compact} variant={variant} />
-    </div>
+    <AsciiReveal loading={pending} preset="decode" duration="fast" aria-busy={pending || undefined}>
+      {pending ? (
+        <div
+          className={`ascii-loading ${compact ? 'ascii-loading-compact' : ''}`}
+          role="status"
+          aria-busy="true"
+        >
+          <SkeletonCards cards={cards} compact={compact} variant={variant} />
+        </div>
+      ) : (
+        children
+      )}
+    </AsciiReveal>
   );
 }

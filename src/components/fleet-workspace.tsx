@@ -69,9 +69,7 @@ function Metric({
         <span>{label}</span>
         <Icon size={18} />
       </div>
-      <div className="stat-value" data-ascii="skip">
-        {value}
-      </div>
+      <div className="stat-value">{value}</div>
       <p>{note}</p>
     </div>
   );

@@ -1,4 +1,10 @@
 import { Platform } from '@/components/platform';
+import { AsciiRevealArea } from '@/components/ascii-loading';
+
 export default function Page() {
-  return <Platform />;
+  return (
+    <AsciiRevealArea loading={false} cards={4} compact>
+      <Platform />
+    </AsciiRevealArea>
+  );
 }

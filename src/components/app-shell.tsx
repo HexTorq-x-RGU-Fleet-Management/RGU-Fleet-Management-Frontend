@@ -1,9 +1,8 @@
 'use client';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as Dropdown from '@radix-ui/react-dropdown-menu';
-import { AsciiReveal, type AsciiRevealHandle } from 'ascii-reveal';
 import {
   LayoutDashboard,
   BusFront,
@@ -33,21 +32,6 @@ import { toast } from 'sonner';
 import { useWorkspace } from './workspace-provider';
 import { Button, Modal, IconButton, SearchInput, Badge } from './ui';
 import { canAccess } from '@/lib/model';
-// Reveal before the browser paints so a freshly routed page is masked first
-// instead of showing for a frame and then snapping back into the decode.
-const useIsomorphicLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect;
-const dashboardCardSelector = [
-  '.stat-card',
-  '.bus-card',
-  '.recorder-card',
-  '.coverage-card',
-  '.activity-card',
-  '.journey-reading',
-  '.clip-card',
-  '.admin-metric-card',
-  '.admin-workspace-card',
-  '.admin-health-nominal-card',
-].join(', ');
 const links = [
   { href: '/', label: 'Fleet overview', icon: LayoutDashboard },
   { href: '/buses', label: 'Buses', icon: BusFront },
@@ -66,8 +50,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     [query, setQuery] = useState(''),
     [notifications, setNotifications] = useState(false),
     [currentTime, setCurrentTime] = useState('');
-  const asciiReveal = useRef<AsciiRevealHandle>(null),
-    shellRef = useRef<HTMLDivElement>(null),
+  const shellRef = useRef<HTMLDivElement>(null),
     wasMobile = useRef(false);
   useEffect(() => {
     if (mobile) {
@@ -77,67 +60,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
     wasMobile.current = mobile;
   }, [mobile]);
-  useIsomorphicLayoutEffect(() => {
-    const reveal = asciiReveal.current;
-    if (!reveal || !reveal.element) return;
-    /*
-     * Cards keep their real chrome: the decode pass no longer swaps them for
-     * surface plates (blank boxes with corner frames), which read as broken
-     * flashes on refresh. The fast timing keeps every run readable in <= 400 ms.
-     */
-    void reveal.reveal({ duration: 'fast' });
-  }, [path]);
-  useEffect(() => {
-    const root = asciiReveal.current?.element;
-    if (!root || typeof MutationObserver === 'undefined') return;
-    const observer = new MutationObserver((mutations) => {
-      const scopes: HTMLElement[] = [];
-      for (const mutation of mutations) {
-        for (const node of mutation.addedNodes) {
-          if (!(node instanceof HTMLElement)) continue;
-          const targets = [
-            ...(node.matches(dashboardCardSelector) ? [node] : []),
-            ...node.querySelectorAll<HTMLElement>(dashboardCardSelector),
-          ].filter(
-            (element) =>
-              element.isConnected &&
-              root.contains(element) &&
-              !element.closest('[data-ascii="skip"]'),
-          );
-          if (!targets.length) continue;
-          scopes.push(node);
-        }
-      }
-      if (!scopes.length) return;
-      const reveal = asciiReveal.current;
-      if (!reveal) return;
-      /*
-       * Reveal inside the mutation callback, before the browser paints, so newly
-       * rendered cards are masked by the reveal before they are first shown.
-       *
-       * A batch is revealed as ONE run under the nearest common ancestor of the
-       * added nodes. Starting a run per node spawned a canvas per card and left
-       * the cards hidden until every independent run had finished, which is what
-       * made cards blank out after the skeleton hand-off.
-       */
-      let scope: HTMLElement = scopes[0];
-      for (const node of scopes) {
-        while (scope && !scope.contains(node)) scope = scope.parentElement as HTMLElement;
-        if (!scope) break;
-      }
-      if (!scope || !root.contains(scope)) scope = root;
-      if (scope === root) {
-        for (const node of scopes) {
-          if (node.isConnected) void reveal.reveal({ within: node, duration: 'fast' });
-        }
-        return;
-      }
-      const runScope = scope;
-      void reveal.reveal({ within: runScope, duration: 'fast' });
-    });
-    observer.observe(root, { childList: true, subtree: true });
-    return () => observer.disconnect();
-  }, [path]);
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
@@ -405,22 +327,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </IconButton>
           </div>
         </header>
-        <AsciiReveal
-          ref={asciiReveal}
-          as="main"
-          id="main-content"
-          className="main-content"
-          key={path}
-          preset="decode"
-          duration="fast"
-          origin="top-left"
-          selector={dashboardCardSelector}
-          revealOnMount={false}
-          lazy
-          inert={mobile || undefined}
-        >
+        <main id="main-content" className="main-content" key={path} inert={mobile || undefined}>
           {children}
-        </AsciiReveal>
+        </main>
         <footer className="app-footer" inert={mobile || undefined}>
           <span>
             RGU Fleet Management <i />

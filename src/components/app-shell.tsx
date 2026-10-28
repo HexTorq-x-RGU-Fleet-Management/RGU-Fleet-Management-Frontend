@@ -43,13 +43,10 @@ const dashboardCardSelector = [
   '.recorder-card',
   '.coverage-card',
   '.activity-card',
-  '.fleet-section:has(> .fleet-details)',
   '.journey-reading',
-  '.timeline-panel',
   '.clip-card',
-  '.settings-panel',
   '.admin-metric-card',
-  '.admin-card-container',
+  '.admin-workspace-card',
   '.admin-health-nominal-card',
 ].join(', ');
 const links = [

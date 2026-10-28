@@ -158,7 +158,7 @@ export function FleetWorkspace({ busesOnly = false }: { busesOnly?: boolean }) {
       (b) =>
         filter === 'all' ||
         (filter === 'moving' &&
-          reading(b)?.status === 'MOVING' &&
+          (reading(b)?.speed ?? 0) > 0 &&
           telemetryAge(reading(b), now) === 'fresh') ||
         (filter === 'unmapped' && (!b.recorderId || !b.telemetryDeviceId)),
     );
@@ -237,7 +237,7 @@ export function FleetWorkspace({ busesOnly = false }: { busesOnly?: boolean }) {
                   label="Moving"
                   value={String(
                     vehicles.filter(
-                      (v) => v.status === 'MOVING' && telemetryAge(v, now) === 'fresh',
+                      (v) => (v.speed ?? 0) > 0 && telemetryAge(v, now) === 'fresh',
                     ).length,
                   )}
                   note="Fresh telemetry observations"
@@ -365,9 +365,9 @@ export function FleetWorkspace({ busesOnly = false }: { busesOnly?: boolean }) {
                           <BusFront size={26} />
                         </span>
                         <Badge
-                          tone={stale ? 'amber' : v?.status === 'MOVING' ? 'green' : 'neutral'}
+                          tone={stale ? 'amber' : (v?.speed ?? 0) > 0 ? 'green' : 'neutral'}
                         >
-                          {stale ? 'Stale GPS' : (v?.status.toLowerCase() ?? 'No GPS')}
+                          {stale ? 'Stale GPS' : v ? 'Position observed' : 'No GPS'}
                         </Badge>
                         <ArrowUpRight size={18} />
                       </div>
@@ -685,7 +685,9 @@ function BusDetail({ bus, now, onEdit }: { bus: Bus; now: number; onEdit: () => 
             v
               ? telemetryAge(v, now) === 'stale'
                 ? 'Stale observation'
-                : v.status
+                : v.speed > 0
+                  ? 'Provider speed'
+                  : 'No movement detected'
               : 'No stored reading'
           }
         />
@@ -714,6 +716,14 @@ function BusDetail({ bus, now, onEdit }: { bus: Bus; now: number; onEdit: () => 
           note={cameraChannels(bus, state.recorders).length + ' starred for bus view'}
         />
       </div>
+      {v && (
+        <div className="fleet-bus-context" aria-label="Provider telemetry metrics">
+          <span>Angle {v.angle ?? 0}°</span>
+          <span>Ignition {v.ignition ? 'On' : 'Off'}</span>
+          <span>Charge {v.chargeOn ? 'On' : 'Off'}</span>
+          <span>GPS accuracy {v.accurate ? 'Verified' : 'Unverified'}</span>
+        </div>
+      )}
       <div className="segmented fleet-tabs" role="tablist" aria-label="Bus sections">
         {[
           ['journey', 'GPS & fuel timeline'],
@@ -910,7 +920,7 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
             selectedEnd,
           );
           for (let cursor = start; cursor <= end; cursor += stepSeconds)
-            minuteSamples.push({ ...segment, gpsTime: cursor });
+            minuteSamples.push({ ...segment, gpsTime: cursor, moved: segmentIndex > 0 && cursor === start });
         });
         setSamples(minuteSamples);
         setSource(result.samples.some((sample) => sample.source === 'vendor') ? 'vendor' : undefined);
@@ -1021,7 +1031,7 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
           <Badge tone="neutral">{source === 'vendor' ? 'WheelsEye observations' : 'Provider observations'}</Badge>
           <p>
             <Navigation size={16} />
-            {v.status.toLowerCase()} · {v.speed.toFixed(1)} km/h
+            {v.speed > 0 ? 'Speed reported' : 'Stationary coordinate'} · {v.speed.toFixed(1)} km/h
           </p>
           <div className="journey-fuel">
             <Fuel size={22} />
@@ -1039,6 +1049,9 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
           <p>
             <Radio size={16} />
             Ignition {v.ignition ? 'on' : 'off'}
+          </p>
+          <p className="small muted">
+            Angle {v.angle ?? 0}° Â· Charge {v.chargeOn ? 'on' : 'off'} Â· GPS {v.accurate ? 'accurate' : 'unverified'}
           </p>
           <p className="small muted">{v.location.address}</p>
           <p className="small muted">
@@ -1139,12 +1152,12 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
           {samples.map((sample, sampleIndex) => (
             <span
               key={`${sample.gpsTime}-${sampleIndex}`}
-              title={`${timeLabel(sample.gpsTime)} · ${sample.speed > 0 || sample.ignition ? 'Moving' : 'Stationary'}`}
+              title={`${timeLabel(sample.gpsTime)} · ${sample.moved ? 'Moved >10 m' : 'Stationary coordinate'}`}
               style={{
                 flex: 1,
                 minWidth: 2,
                 borderRadius: 99,
-                background: sample.speed > 0 || sample.ignition ? 'var(--accent)' : 'var(--line-strong)',
+                background: sample.moved ? 'var(--accent)' : 'var(--line-strong)',
               }}
             />
           ))}

@@ -914,7 +914,8 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
           .sort((a, b) => a.gpsTime - b.gpsTime);
         const minuteSamples: Vehicle[] = [];
         ordered.forEach((segment, segmentIndex) => {
-          const start = Math.max(segment.gpsTime, from);
+          // Full-day replay begins at midnight even when the first segment is later.
+          const start = segmentIndex === 0 ? from : Math.max(segment.gpsTime, from);
           const end = Math.min(
             segmentIndex + 1 < ordered.length ? ordered[segmentIndex + 1].gpsTime : selectedEnd,
             selectedEnd,

@@ -15,6 +15,10 @@ export type Vehicle = {
   deviceId: string;
   status: 'MOVING' | 'STOPPED' | 'IDLE' | 'OFFLINE';
   speed: number;
+  angle?: number;
+  chargeOn?: boolean;
+  accurate?: boolean;
+  moved?: boolean;
   odometer: number;
   gpsTime: number;
   location: { latitude: number; longitude: number; address: string };

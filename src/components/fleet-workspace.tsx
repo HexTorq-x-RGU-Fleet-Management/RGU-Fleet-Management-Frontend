@@ -158,7 +158,7 @@ export function FleetWorkspace({ busesOnly = false }: { busesOnly?: boolean }) {
       (b) =>
         filter === 'all' ||
         (filter === 'moving' &&
-          reading(b)?.speed > 0 &&
+          (reading(b)?.speed ?? 0) > 0 &&
           telemetryAge(reading(b), now) === 'fresh') ||
         (filter === 'unmapped' && (!b.recorderId || !b.telemetryDeviceId)),
     );
@@ -237,7 +237,7 @@ export function FleetWorkspace({ busesOnly = false }: { busesOnly?: boolean }) {
                   label="Moving"
                   value={String(
                     vehicles.filter(
-                      (v) => v.speed > 0 && telemetryAge(v, now) === 'fresh',
+                      (v) => (v.speed ?? 0) > 0 && telemetryAge(v, now) === 'fresh',
                     ).length,
                   )}
                   note="Fresh telemetry observations"
@@ -365,7 +365,7 @@ export function FleetWorkspace({ busesOnly = false }: { busesOnly?: boolean }) {
                           <BusFront size={26} />
                         </span>
                         <Badge
-                          tone={stale ? 'amber' : v?.speed > 0 ? 'green' : 'neutral'}
+                          tone={stale ? 'amber' : (v?.speed ?? 0) > 0 ? 'green' : 'neutral'}
                         >
                           {stale ? 'Stale GPS' : v ? 'Position observed' : 'No GPS'}
                         </Badge>

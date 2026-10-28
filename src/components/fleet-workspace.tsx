@@ -23,6 +23,8 @@ import {
   Unplug,
   Play,
   Pause,
+  SkipBack,
+  SkipForward,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useWorkspace } from './workspace-provider';
@@ -868,6 +870,8 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
     [range, setRange] = useState(1440),
     [cursor, setCursor] = useState<number | null>(null),
     [playing, setPlaying] = useState(false),
+    [direction, setDirection] = useState<1 | -1>(1),
+    [speed, setSpeed] = useState(1),
     [samples, setSamples] = useState<Vehicle[]>([]),
     [source, setSource] = useState<string | undefined>(),
     [loading, setLoading] = useState(true),
@@ -931,17 +935,22 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
     const id = setInterval(
       () =>
         setCursor((i) => {
-          const n = (i ?? samples[0].gpsTime) + 60;
-          if (n >= samples.at(-1)!.gpsTime) {
+          const current = i === null
+            ? direction === 1 ? -1 : samples.length
+            : samples.reduce((best, sample, n) =>
+                Math.abs(sample.gpsTime - i) < Math.abs(samples[best].gpsTime - i) ? n : best,
+              0);
+          const next = current + direction;
+          if (next < 0 || next >= samples.length) {
             setPlaying(false);
-            return samples.at(-1)!.gpsTime;
+            return samples[direction === 1 ? samples.length - 1 : 0].gpsTime;
           }
-          return n;
+          return samples[next].gpsTime;
         }),
-      600,
+      Math.max(40, 600 / speed),
     );
     return () => clearInterval(id);
-  }, [playing, samples]);
+  }, [playing, samples, direction, speed]);
   if (loading) return <AsciiLoading label="Loading stored GPS/fuel history..." cards={2} compact />;
   if (!v)
     return (
@@ -1038,15 +1047,59 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
           </div>
           <div className="timeline-buttons">
             <Button
+              aria-label="Step backward one minute"
               onClick={() => {
-                if (!playing && (cursor === null || index === samples.length - 1))
-                  setCursor(samples[0].gpsTime);
+                const next = Math.max(0, index - 1);
+                setCursor(samples[next].gpsTime);
+                setPlaying(false);
+              }}
+            >
+              <SkipBack size={14} />
+            </Button>
+            <Button
+              onClick={() => {
+                if (!playing && cursor === null)
+                  setCursor(samples[direction === 1 ? 0 : samples.length - 1].gpsTime);
                 setPlaying(!playing);
               }}
             >
               {playing ? <Pause size={14} /> : <Play size={14} />}{' '}
-              {playing ? 'Pause replay' : 'Replay'}
+              {playing ? 'Pause' : direction === 1 ? 'Play forward' : 'Play reverse'}
             </Button>
+            <Button
+              aria-label="Step forward one minute"
+              onClick={() => {
+                const next = Math.min(samples.length - 1, index + 1);
+                setCursor(samples[next].gpsTime);
+                setPlaying(false);
+              }}
+            >
+              <SkipForward size={14} />
+            </Button>
+            <Button
+              aria-pressed={direction === -1}
+              onClick={() => {
+                setDirection(-1);
+                setPlaying(false);
+              }}
+            >
+              <SkipBack size={14} /> Reverse
+            </Button>
+            <Button
+              aria-pressed={direction === 1}
+              onClick={() => {
+                setDirection(1);
+                setPlaying(false);
+              }}
+            >
+              <SkipForward size={14} /> Forward
+            </Button>
+            <label className="compact-select">
+              Speed
+              <select aria-label="Replay speed" value={speed} onChange={(e) => setSpeed(Number(e.target.value))}>
+                {[1, 2, 4, 8, 16].map((value) => <option key={value} value={value}>{value}×</option>)}
+              </select>
+            </label>
             <Button
               onClick={() => {
                 setCursor(null);

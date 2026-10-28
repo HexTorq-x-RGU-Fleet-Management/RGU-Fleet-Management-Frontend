@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Route, ArrowRight, ShieldCheck } from 'lucide-react';
+import { ArrowRight, BusFront, Cctv, Route } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button, Field } from './ui';
 import { api } from '@/lib/api';
@@ -59,23 +59,34 @@ export function AuthScreen() {
           </span>
         </div>
         <div className="auth-story-copy">
-          <span className="auth-kicker">FLEET OPERATIONS</span>
+          <span className="auth-kicker">Fleet operations platform</span>
           <h1>
-            Every journey.
+            Your campus fleet.
             <br />
-            Every angle.
-            <br />
-            <em>One workspace.</em>
+            <em>Connected.</em>
           </h1>
-          <p>Your bus cameras, fleet and team, protected by workspace permissions.</p>
-          <div className="auth-checks">
-            <span>
-              <ShieldCheck size={16} />
-              Authenticated workspace access
-            </span>
-          </div>
+          <p>
+            A unified operations workspace for Rathinam&apos;s transport fleet, vehicle cameras, GPS
+            visibility, and fuel observations.
+          </p>
+          <ul className="auth-capabilities">
+            <li>
+              <BusFront size={17} />
+              <span>Fleet &amp; bus management</span>
+            </li>
+            <li>
+              <Cctv size={17} />
+              <span>CCTV &amp; recorder monitoring</span>
+            </li>
+            <li>
+              <Route size={17} />
+              <span>GPS &amp; fuel observations</span>
+            </li>
+          </ul>
         </div>
-        <small className="auth-image-credit">HexTorq · RGU Fleet Management</small>
+        <small className="auth-image-credit">
+          RGU Fleet Management · Engineered by HexTorq Technologies
+        </small>
       </section>
       <section className="auth-form-section">
         <div className="auth-form-card">

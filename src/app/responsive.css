@@ -4,60 +4,61 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+/* Minimum readable sizes for dense operational UI. */
 .nav-link {
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .nav-caption {
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .stat-top {
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .stat-card > p {
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .stat-value span {
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .section-heading p {
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .recorder-location {
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .recorder-card-bottom > span:last-child {
-  font-size: 9px;
+  font-size: 12px;
 }
 
 .profile-button strong {
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .profile-button small {
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .topbar-location {
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .sidebar-note p {
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .sidebar-note strong {
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .sidebar-note button {
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .icon-button.mobile-menu {
@@ -172,12 +173,12 @@
     font-size: 11px;
   }
   .camera-grid .tile-caption {
-    font-size: 9px;
+    font-size: 11px;
     left: 8px;
     bottom: 8px;
   }
   .tile-caption small {
-    font-size: 7px;
+    font-size: 10px;
   }
   .tile-top {
     left: 6px;
@@ -247,7 +248,7 @@
     display: none;
   }
   .preview-banner {
-    font-size: 9px;
+    font-size: 11px;
     padding: 8px 18px;
     line-height: 1.6;
     gap: 8px;
@@ -277,7 +278,7 @@
     margin-top: 8px;
   }
   .eyebrow {
-    font-size: 9px;
+    font-size: 11px;
     letter-spacing: 0.12em;
   }
   .stats-grid {
@@ -296,7 +297,7 @@
     margin-top: 12px;
   }
   .stat-card > p {
-    font-size: 9px;
+    font-size: 11px;
   }
   .recorder-grid {
     gap: 14px;
@@ -314,13 +315,13 @@
     padding-top: 10px;
   }
   .recorder-card-bottom > span:last-child {
-    font-size: 8px;
+    font-size: 10px;
   }
   .library-tools > .small {
     display: none;
   }
   .segmented button {
-    font-size: 9px;
+    font-size: 11px;
   }
   .section-heading h2 {
     font-size: 17px;
@@ -342,7 +343,7 @@
     padding: 18px;
     align-items: flex-start;
     flex-direction: column;
-    font-size: 9px;
+    font-size: 11px;
     gap: 8px;
   }
   .panel-toolbar {
@@ -367,7 +368,7 @@
     font-size: 24px;
   }
   .mini-stat span {
-    font-size: 9px;
+    font-size: 11px;
   }
   .mini-stat .health-value {
     font-size: 13px;
@@ -450,7 +451,7 @@
     font-size: 15px;
   }
   .monitor-title p {
-    font-size: 9px;
+    font-size: 11px;
   }
   .monitor-icon {
     width: 34px;
@@ -468,14 +469,14 @@
     gap: 4px;
   }
   .monitor-subbar .btn {
-    font-size: 9px;
+    font-size: 11px;
     padding: 5px 8px;
   }
   .monitor-subbar > div:last-child {
     margin-left: auto;
   }
   .monitor-subbar .small {
-    font-size: 9px;
+    font-size: 11px;
   }
   .camera-stage {
     padding: 10px;
@@ -498,12 +499,12 @@
     height: 22px;
   }
   .tile-caption {
-    font-size: 9px !important;
+    font-size: 11px !important;
     left: 7px;
     bottom: 7px;
   }
   .tile-status {
-    font-size: 7px;
+    font-size: 10px;
   }
   .tile-preview-label {
     font-size: 6px;
@@ -511,7 +512,7 @@
     left: 8px;
   }
   .camera-pagination {
-    font-size: 9px;
+    font-size: 11px;
     padding: 10px;
   }
   .camera-pagination .muted {
@@ -541,37 +542,37 @@
   .workspace-footnote {
     font-size: 10px;
   }
-  .auth-page {
+  .auth-page:not(.auth-ambient-page) {
     grid-template-columns: 1fr;
   }
-  .auth-story {
+  .auth-page:not(.auth-ambient-page) .auth-story {
     min-height: auto;
     padding: 28px;
   }
-  .auth-story-copy {
+  .auth-page:not(.auth-ambient-page) .auth-story-copy {
     padding: 50px 0 20px;
   }
-  .auth-story h1 {
+  .auth-page:not(.auth-ambient-page) .auth-story h1 {
     font-size: 42px;
     letter-spacing: -0.03em;
   }
-  .auth-story-copy > p {
+  .auth-page:not(.auth-ambient-page) .auth-story-copy > p {
     margin: 16px 0;
     font-size: 12px;
   }
-  .auth-checks,
-  .auth-image-credit {
+  .auth-page:not(.auth-ambient-page) .auth-checks,
+  .auth-page:not(.auth-ambient-page) .auth-image-credit {
     display: none;
   }
-  .auth-form-section {
+  .auth-page:not(.auth-ambient-page) .auth-form-section {
     padding: 28px 24px;
     min-height: 600px;
   }
-  .auth-form-card {
+  .auth-page:not(.auth-ambient-page) .auth-form-card {
     margin: 36px 0;
     max-width: 420px;
   }
-  .auth-form-card h2 {
+  .auth-page:not(.auth-ambient-page) .auth-form-card h2 {
     font-size: 28px;
   }
   .health-alert {

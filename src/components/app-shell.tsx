@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import * as Dropdown from '@radix-ui/react-dropdown-menu';
 import { AsciiReveal, type AsciiRevealHandle } from 'ascii-reveal';
 import {
@@ -33,20 +33,19 @@ import { toast } from 'sonner';
 import { useWorkspace } from './workspace-provider';
 import { Button, Modal, IconButton, SearchInput, Badge } from './ui';
 import { canAccess } from '@/lib/model';
-import { NavigationLoader } from './navigation-loader';
+// Reveal before the browser paints so a freshly routed page is masked first
+// instead of showing for a frame and then snapping back into the decode.
+const useIsomorphicLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect;
 const dashboardCardSelector = [
   '.stat-card',
   '.bus-card',
   '.recorder-card',
   '.coverage-card',
   '.activity-card',
-  '.fleet-section:has(> .fleet-details)',
   '.journey-reading',
-  '.timeline-panel',
   '.clip-card',
-  '.settings-panel',
   '.admin-metric-card',
-  '.admin-card-container',
+  '.admin-workspace-card',
   '.admin-health-nominal-card',
 ].join(', ');
 const links = [
@@ -67,18 +66,99 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     [query, setQuery] = useState(''),
     [notifications, setNotifications] = useState(false),
     [currentTime, setCurrentTime] = useState('');
-  const asciiReveal = useRef<AsciiRevealHandle>(null);
+  const asciiReveal = useRef<AsciiRevealHandle>(null),
+    shellRef = useRef<HTMLDivElement>(null),
+    wasMobile = useRef(false),
+    revealedSurfaces = useRef(new WeakSet<HTMLElement>());
   useEffect(() => {
-    const frame = requestAnimationFrame(() => {
-      const reveal = asciiReveal.current,
-        root = reveal?.element;
-      if (!reveal || !root) return;
-      root
-        .querySelectorAll<HTMLElement>(dashboardCardSelector)
-        .forEach((element) => element.setAttribute('data-ascii', 'surface'));
-      void reveal.reveal();
+    if (mobile) {
+      shellRef.current?.querySelector<HTMLElement>('.mobile-sidebar-close')?.focus();
+    } else if (wasMobile.current) {
+      shellRef.current?.querySelector<HTMLElement>('.mobile-menu')?.focus();
+    }
+    wasMobile.current = mobile;
+  }, [mobile]);
+  useIsomorphicLayoutEffect(() => {
+    revealedSurfaces.current = new WeakSet<HTMLElement>();
+    const reveal = asciiReveal.current,
+      root = reveal?.element;
+    if (!reveal || !root) return;
+    root.querySelectorAll<HTMLElement>(dashboardCardSelector).forEach((element) => {
+      if (
+        !element.closest('[data-ascii="skip"]') &&
+        !revealedSurfaces.current.has(element)
+      ) {
+        revealedSurfaces.current.add(element);
+        element.setAttribute('data-ascii', 'surface');
+      }
     });
-    return () => cancelAnimationFrame(frame);
+    void reveal.reveal();
+  }, [path]);
+  useEffect(() => {
+    const root = asciiReveal.current?.element;
+    if (!root || typeof MutationObserver === 'undefined') return;
+    const observer = new MutationObserver((mutations) => {
+      const scopes: HTMLElement[] = [];
+      for (const mutation of mutations) {
+        for (const node of mutation.addedNodes) {
+          if (!(node instanceof HTMLElement)) continue;
+          const targets = [
+            ...(node.matches(dashboardCardSelector) ? [node] : []),
+            ...node.querySelectorAll<HTMLElement>(dashboardCardSelector),
+          ].filter(
+            (element) =>
+              element.isConnected &&
+              root.contains(element) &&
+              !element.closest('[data-ascii="skip"]') &&
+              !revealedSurfaces.current.has(element),
+          );
+          if (!targets.length) continue;
+          for (const element of targets) {
+            revealedSurfaces.current.add(element);
+            element.setAttribute('data-ascii', 'surface');
+          }
+          scopes.push(node);
+        }
+      }
+      if (!scopes.length) return;
+      const reveal = asciiReveal.current;
+      if (!reveal) return;
+      /*
+       * Reveal inside the mutation callback, before the browser paints, so newly
+       * rendered cards are masked by the reveal before they are first shown.
+       *
+       * A batch is revealed as ONE run under the nearest common ancestor of the
+       * added nodes. Starting a run per node spawned a canvas per card and left
+       * the cards hidden until every independent run had finished, which is what
+       * made cards blank out after the skeleton hand-off.
+       */
+      let scope: HTMLElement = scopes[0];
+      for (const node of scopes) {
+        while (scope && !scope.contains(node)) scope = scope.parentElement as HTMLElement;
+        if (!scope) break;
+      }
+      if (!scope || !root.contains(scope)) scope = root;
+      if (scope === root) {
+        for (const node of scopes) {
+          if (node.isConnected) void reveal.reveal({ within: node, duration: 'fast' });
+        }
+        return;
+      }
+      const runScope = scope;
+      /*
+       * Data that arrives after the page is already on screen is revealed on the
+       * fast timing: the cinematic wave takes long enough that cards further
+       * down the wave stay invisible, which reads as cards vanishing after load.
+       */
+      void reveal.reveal({ within: runScope, duration: 'fast' }).then(() => {
+        if (!runScope.isConnected) return;
+        runScope
+          .querySelectorAll<HTMLElement>('[data-ascii="surface"]')
+          .forEach((element) => element.removeAttribute('data-ascii'));
+      });
+    });
+    observer.observe(root, { childList: true, subtree: true });
+    return () => observer.disconnect();
   }, [path]);
   useEffect(() => {
     const updateTime = () => {
@@ -136,8 +216,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     router.push(href);
   }
   return (
-    <div className={`app-shell ${collapsed ? 'sidebar-collapsed' : ''}`}>
-      <NavigationLoader />
+    <div className={`app-shell ${collapsed ? 'sidebar-collapsed' : ''}`} ref={shellRef}>
       <a href="#main-content" className="skip-link">
         Skip to content
       </a>
@@ -152,6 +231,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         id="workspace-sidebar"
         className={`sidebar ${mobile ? 'sidebar-open' : ''}`}
         aria-label="Workspace sidebar"
+        role={mobile ? 'dialog' : undefined}
+        aria-modal={mobile || undefined}
         data-lenis-prevent
       >
         <IconButton
@@ -324,7 +405,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
           <div className="topbar-actions">
             {currentTime && (
-              <span className="topbar-clock-badge" title="Live IST Server Time">
+              <span className="topbar-clock-badge" title="Local time (Asia/Kolkata)">
                 <Clock size={13} style={{ display: 'inline', marginRight: 5, verticalAlign: 'middle' }} />
                 {currentTime}
               </span>
@@ -352,17 +433,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           id="main-content"
           className="main-content"
           key={path}
-          preset="terminal"
+          preset="decode"
           duration="cinematic"
           origin="top-left"
           speed={0.8}
           selector={dashboardCardSelector}
           revealOnMount={false}
           lazy
+          inert={mobile || undefined}
         >
           {children}
         </AsciiReveal>
-        <footer className="app-footer">
+        <footer className="app-footer" inert={mobile || undefined}>
           <span>
             RGU Fleet Management <i />
             By HexTorq for Rathinam Global University

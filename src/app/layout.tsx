@@ -15,6 +15,7 @@ import './map.css';
 import './bus-directory.css';
 import './live.css';
 import './admin.css';
+import '@/components/gradient-ascii.css';
 export const metadata: Metadata = {
   title: { default: 'RGU Fleet Management | HexTorq', template: '%s | RGU Fleet' },
   description:
@@ -36,10 +37,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body>
-        <div className="bg-blob blob-1" aria-hidden="true" />
-        <div className="bg-blob blob-2" aria-hidden="true" />
-        <div className="bg-blob blob-3" aria-hidden="true" />
-        <div className="bg-blob blob-4" aria-hidden="true" />
         <WorkspaceProvider>
           <MotionProvider>
             {children}

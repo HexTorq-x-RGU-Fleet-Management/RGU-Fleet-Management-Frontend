@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { PageHeading, Button, IconButton, Confirm, Modal, Field, Badge, SearchInput } from './ui';
-import { AsciiLoading } from './ascii-loading';
+import { AsciiRevealArea } from './ascii-loading';
 import { useWorkspace } from './workspace-provider';
 import { request } from '@/lib/api';
 import { formatBytes } from '@/lib/model';
@@ -412,6 +412,7 @@ export function Platform() {
       </div>
 
       {/* Glass Data Cards */}
+      <AsciiRevealArea loading={loading} cards={3} compact>
       <div className="admin-card-container">
         {paginatedWorkspaces.map((w, index) => {
           const serialNumber = (page - 1) * PAGE_SIZE + index + 1;
@@ -495,8 +496,6 @@ export function Platform() {
           );
         })}
 
-        {loading && <AsciiLoading label="Loading workspaces from backend..." cards={3} compact />}
-
         {!loading && !filteredWorkspaces.length && (
           <div className="fleet-no-data" style={{ padding: 48 }}>
             <HardDrive size={32} />
@@ -509,6 +508,7 @@ export function Platform() {
           </div>
         )}
       </div>
+      </AsciiRevealArea>
 
       {/* Workspaces Pagination */}
       <div className="activity-pagination-deck" style={{ marginTop: 16 }}>
@@ -753,6 +753,7 @@ export function Health() {
 
       {error && <p role="alert">{error}</p>}
 
+      <AsciiRevealArea loading={!data && loading} cards={4} compact>
       {data && (
         <>
           {/* Bento Metric Cards */}
@@ -796,7 +797,15 @@ export function Health() {
                 {formatBytes(data.metrics.recordingStorage.maxBytes)}
               </div>
               <div className="telemetry-gauge-wrap">
-                <div className="gauge-track">
+                <div
+                  className="gauge-track"
+                  role="progressbar"
+                  aria-label="Recording storage used"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={Math.round(Math.min(storageUsedPercent, 100))}
+                  aria-valuetext={`${storageUsedPercent.toFixed(1)} percent used`}
+                >
                   <div
                     className={`gauge-fill ${isStorageWarning ? 'warning-gradient' : 'primary-gradient'}`}
                     style={{ width: `${Math.min(storageUsedPercent, 100)}%` }}
@@ -910,6 +919,7 @@ export function Health() {
           </div>
         </>
       )}
+      </AsciiRevealArea>
     </div>
   );
 }

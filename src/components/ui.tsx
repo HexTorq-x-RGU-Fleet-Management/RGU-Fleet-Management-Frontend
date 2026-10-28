@@ -4,7 +4,7 @@ import * as Alert from '@radix-ui/react-alert-dialog';
 import { motion, useReducedMotion } from 'framer-motion';
 import { X, LoaderCircle, ArrowUpRight, Search } from 'lucide-react';
 import type { ReactNode, ButtonHTMLAttributes } from 'react';
-import { useId, isValidElement, cloneElement } from 'react';
+import { useId, useState, isValidElement, cloneElement } from 'react';
 export function Button({
   children,
   variant = 'secondary',
@@ -107,6 +107,7 @@ export function Confirm({
   action?: string;
   danger?: boolean;
 }) {
+  const [busy, setBusy] = useState(false);
   return (
     <Alert.Root open={open} onOpenChange={onOpenChange}>
       <Alert.Portal>
@@ -116,10 +117,23 @@ export function Confirm({
           <Alert.Description className="modal-description">{description}</Alert.Description>
           <div className="modal-footer">
             <Alert.Cancel asChild>
-              <Button>Cancel</Button>
+              <Button disabled={busy}>Cancel</Button>
             </Alert.Cancel>
             <Alert.Action asChild>
-              <Button variant={danger ? 'danger' : 'primary'} onClick={() => void onConfirm()}>
+              <Button
+                variant={danger ? 'danger' : 'primary'}
+                loading={busy}
+                onClick={(event) => {
+                  event.preventDefault();
+                  if (busy) return;
+                  setBusy(true);
+                  Promise.resolve()
+                    .then(() => onConfirm())
+                    .then(() => onOpenChange(false))
+                    .catch(() => {})
+                    .finally(() => setBusy(false));
+                }}
+              >
                 {action}
               </Button>
             </Alert.Action>

@@ -105,7 +105,7 @@
 }
 
 .brand small {
-  font-size: 7px;
+  font-size: 10px;
   letter-spacing: 0.14em;
   color: var(--accent);
   display: block;
@@ -166,7 +166,7 @@
 }
 
 .workspace-switch small {
-  font-size: 9px;
+  font-size: 11px;
   color: var(--muted);
 }
 
@@ -180,7 +180,7 @@
 }
 
 .nav-caption {
-  font-size: 9px;
+  font-size: 11px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--subtle);
@@ -242,7 +242,7 @@
 
 .nav-count {
   margin-left: auto;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 600;
   min-width: 20px;
   padding: 1px 6px;
@@ -461,7 +461,7 @@
   background: var(--bg);
   border: 1px solid var(--line);
   border-radius: 5px;
-  font-size: 9px;
+  font-size: 11px;
   font-family: var(--font-stack-mono);
   padding: 2px 5px;
   margin-left: 18px;
@@ -669,7 +669,7 @@
 }
 
 .stat-value span {
-  font-size: 9px;
+  font-size: 11px;
   letter-spacing: 0.02em;
   font-weight: 600;
   color: var(--accent);
@@ -843,7 +843,7 @@
   position: absolute;
   top: 12px;
   left: 12px;
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.12em;
   color: #df6be0;
@@ -946,7 +946,7 @@
 }
 
 .recorder-card-bottom > .badge {
-  font-size: 9px;
+  font-size: 11px;
   padding: 3px 7px;
 }
 
@@ -955,7 +955,7 @@
   align-items: center;
   gap: 6px;
   color: var(--subtle);
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 500;
 }
 
@@ -978,7 +978,7 @@
 }
 
 .recorder-preview-symbol span {
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.18em;
   color: var(--muted);
@@ -1035,7 +1035,7 @@
   position: absolute;
   bottom: 8px;
   left: 10px;
-  font-size: 7px;
+  font-size: 10px;
   font-weight: 700;
   color: var(--subtle);
   letter-spacing: 0.12em;
@@ -1059,7 +1059,7 @@
 }
 
 .coverage-card > p {
-  font-size: 9px;
+  font-size: 11px;
   line-height: 1.6;
 }
 
@@ -1099,7 +1099,7 @@
 }
 
 .activity-item small {
-  font-size: 9px;
+  font-size: 11px;
   color: var(--subtle);
 }
 

@@ -854,7 +854,9 @@ function BusDetail({ bus, now, onEdit }: { bus: Bus; now: number; onEdit: () => 
 }
 function Journey({ bus, now }: { bus: Bus; now: number }) {
   const { user } = useWorkspace();
-  const [range, setRange] = useState(120),
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date()),
+    [date, setDate] = useState(today),
+    [range, setRange] = useState(1440),
     [cursor, setCursor] = useState<number | null>(null),
     [playing, setPlaying] = useState(false),
     [samples, setSamples] = useState<Vehicle[]>([]),
@@ -870,14 +872,17 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
       setLoading(false);
       return;
     }
+    const dayStart = Math.floor(new Date(`${date}T00:00:00+05:30`).getTime() / 1000),
+      dayEnd = dayStart + 86400,
+      selectedEnd = Math.min(dayEnd, Math.floor(Date.now() / 1000)),
+      from = Math.max(dayStart, selectedEnd - range * 60);
     let first = true;
     const readHistory = async () => {
       try {
-        const currentNow = Math.floor(Date.now() / 1000);
         const result = await fleetApi.history(
           bus.id,
-          Math.max(0, currentNow - range * 60),
-          currentNow,
+          from,
+          selectedEnd,
           abort.signal,
         );
         const ordered = result.samples
@@ -900,19 +905,18 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
       clearInterval(timer);
       abort.abort();
     };
-  }, [bus.id, bus.telemetryDeviceId, range, user?.id]);
+  }, [bus.id, bus.telemetryDeviceId, range, date, user?.id]);
   const index =
       cursor === null
         ? samples.length - 1
-        : Math.max(
-            0,
-            Math.min(samples.length - 1, Math.round((cursor - (samples[0]?.gpsTime ?? 0)) / 60)),
-          ),
+        : samples.reduce((best, sample, i) =>
+            Math.abs(sample.gpsTime - cursor) < Math.abs(samples[best].gpsTime - cursor) ? i : best,
+          0),
     v = samples[index];
   useEffect(() => {
     setCursor(null);
     setPlaying(false);
-  }, [bus.id, range, bus.telemetryDeviceId]);
+  }, [bus.id, range, date, bus.telemetryDeviceId]);
   useEffect(() => {
     if (!playing || !samples.length) return;
     const id = setInterval(
@@ -948,8 +952,18 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
       <div className="fleet-toolbar">
         <div>
           <h2>Journey explorer</h2>
-          <p className="muted">Persisted WheelsEye GPS, speed, ignition and fuel samples for the mapped device.</p>
+          <p className="muted">Persisted one-minute WheelsEye GPS, speed, ignition and fuel samples.</p>
         </div>
+        <label className="compact-select">
+          Date
+          <input
+            type="date"
+            aria-label="Timeline date"
+            value={date}
+            max={today}
+            onChange={(e) => setDate(e.target.value)}
+          />
+        </label>
         <label className="compact-select">
           Window
           <select
@@ -960,6 +974,7 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
             <option value={30}>Last 30 minutes</option>
             <option value={120}>Last 2 hours</option>
             <option value={360}>Last 6 hours</option>
+            <option value={1440}>Full day</option>
           </select>
         </label>
       </div>

@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import * as Dropdown from '@radix-ui/react-dropdown-menu';
 import { AsciiReveal, type AsciiRevealHandle } from 'ascii-reveal';
 import {
@@ -34,6 +34,9 @@ import { useWorkspace } from './workspace-provider';
 import { Button, Modal, IconButton, SearchInput, Badge } from './ui';
 import { canAccess } from '@/lib/model';
 import { NavigationLoader } from './navigation-loader';
+// Reveal before the browser paints so a freshly routed page is masked first
+// instead of showing for a frame and then snapping back into the decode.
+const useIsomorphicLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect;
 const dashboardCardSelector = [
   '.stat-card',
   '.bus-card',
@@ -70,8 +73,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const asciiReveal = useRef<AsciiRevealHandle>(null),
     shellRef = useRef<HTMLDivElement>(null),
     wasMobile = useRef(false),
-    revealedSurfaces = useRef(new WeakSet<HTMLElement>()),
-    revealTimer = useRef<number | undefined>(undefined);
+    revealedSurfaces = useRef(new WeakSet<HTMLElement>());
   useEffect(() => {
     if (mobile) {
       shellRef.current?.querySelector<HTMLElement>('.mobile-sidebar-close')?.focus();
@@ -80,66 +82,65 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
     wasMobile.current = mobile;
   }, [mobile]);
-  useEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     revealedSurfaces.current = new WeakSet<HTMLElement>();
-    const frame = requestAnimationFrame(() => {
-      const reveal = asciiReveal.current,
-        root = reveal?.element;
-      if (!reveal || !root) return;
-      root.querySelectorAll<HTMLElement>(dashboardCardSelector).forEach((element) => {
-        if (
-          !element.closest('[data-ascii="skip"]') &&
-          !revealedSurfaces.current.has(element)
-        ) {
-          revealedSurfaces.current.add(element);
-          element.setAttribute('data-ascii', 'surface');
-        }
-      });
-      void reveal.reveal();
+    const reveal = asciiReveal.current,
+      root = reveal?.element;
+    if (!reveal || !root) return;
+    root.querySelectorAll<HTMLElement>(dashboardCardSelector).forEach((element) => {
+      if (
+        !element.closest('[data-ascii="skip"]') &&
+        !revealedSurfaces.current.has(element)
+      ) {
+        revealedSurfaces.current.add(element);
+        element.setAttribute('data-ascii', 'surface');
+      }
     });
-    return () => cancelAnimationFrame(frame);
+    void reveal.reveal();
   }, [path]);
   useEffect(() => {
     const root = asciiReveal.current?.element;
     if (!root || typeof MutationObserver === 'undefined') return;
     const observer = new MutationObserver((mutations) => {
-      const pending: HTMLElement[] = [];
+      const scopes: HTMLElement[] = [];
       for (const mutation of mutations) {
         for (const node of mutation.addedNodes) {
           if (!(node instanceof HTMLElement)) continue;
-          node
-            .querySelectorAll<HTMLElement>(dashboardCardSelector)
-            .forEach((element) => {
-              if (
-                element.isConnected &&
-                root.contains(element) &&
-                !element.closest('[data-ascii="skip"]') &&
-                !revealedSurfaces.current.has(element)
-              ) {
-                revealedSurfaces.current.add(element);
-                element.setAttribute('data-ascii', 'surface');
-                pending.push(element);
-              }
-            });
+          const targets = [
+            ...(node.matches(dashboardCardSelector) ? [node] : []),
+            ...node.querySelectorAll<HTMLElement>(dashboardCardSelector),
+          ].filter(
+            (element) =>
+              element.isConnected &&
+              root.contains(element) &&
+              !element.closest('[data-ascii="skip"]') &&
+              !revealedSurfaces.current.has(element),
+          );
+          if (!targets.length) continue;
+          for (const element of targets) {
+            revealedSurfaces.current.add(element);
+            element.setAttribute('data-ascii', 'surface');
+          }
+          scopes.push(node);
         }
       }
-      if (!pending.length) return;
+      if (!scopes.length) return;
       const reveal = asciiReveal.current;
       if (!reveal) return;
-      window.clearTimeout(revealTimer.current);
-      revealTimer.current = window.setTimeout(() => {
-        for (const element of pending) {
-          if (element.isConnected && root.contains(element)) {
-            void reveal.reveal({ within: element });
-          }
+      /*
+       * Reveal inside the mutation callback, before the browser paints, so newly
+       * rendered cards are masked by the reveal before they are first shown.
+       * Deferring this (e.g. with a timeout) lets the content flash visible for
+       * a frame and then snap back to the decode, which reads as a broken loader.
+       */
+      for (const scope of scopes) {
+        if (scope.isConnected && root.contains(scope)) {
+          void reveal.reveal({ within: scope });
         }
-      }, 120);
+      }
     });
     observer.observe(root, { childList: true, subtree: true });
-    return () => {
-      observer.disconnect();
-      window.clearTimeout(revealTimer.current);
-    };
+    return () => observer.disconnect();
   }, [path]);
   useEffect(() => {
     const updateTime = () => {

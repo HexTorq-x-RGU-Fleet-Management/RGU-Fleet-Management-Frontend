@@ -604,8 +604,15 @@ body:has(.auth-ambient-page) {
 }
 
 :root .auth-page.auth-ambient-page .google-auth-button iframe {
-  width: 100% !important;
+  width: calc(100% + 20px) !important;
+  max-width: none !important;
   height: 48px !important;
+  margin: 0 -10px !important;
+}
+
+/* Google caps its internal wrapper (~280px); release it so the widget is full width */
+:root .auth-page.auth-ambient-page .google-auth-button > div {
+  width: 100% !important;
 }
 
 /* Password visibility toggle inside the see-through input bar */

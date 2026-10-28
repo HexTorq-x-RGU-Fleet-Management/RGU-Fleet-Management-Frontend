@@ -69,7 +69,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     [currentTime, setCurrentTime] = useState('');
   const asciiReveal = useRef<AsciiRevealHandle>(null),
     shellRef = useRef<HTMLDivElement>(null),
-    wasMobile = useRef(false);
+    wasMobile = useRef(false),
+    revealedSurfaces = useRef(new WeakSet<HTMLElement>()),
+    revealTimer = useRef<number | undefined>(undefined);
   useEffect(() => {
     if (mobile) {
       shellRef.current?.querySelector<HTMLElement>('.mobile-sidebar-close')?.focus();
@@ -79,16 +81,61 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     wasMobile.current = mobile;
   }, [mobile]);
   useEffect(() => {
+    revealedSurfaces.current = new WeakSet<HTMLElement>();
     const frame = requestAnimationFrame(() => {
       const reveal = asciiReveal.current,
         root = reveal?.element;
       if (!reveal || !root) return;
-      root
-        .querySelectorAll<HTMLElement>(dashboardCardSelector)
-        .forEach((element) => element.setAttribute('data-ascii', 'surface'));
+      root.querySelectorAll<HTMLElement>(dashboardCardSelector).forEach((element) => {
+        if (!revealedSurfaces.current.has(element)) {
+          revealedSurfaces.current.add(element);
+          element.setAttribute('data-ascii', 'surface');
+        }
+      });
       void reveal.reveal();
     });
     return () => cancelAnimationFrame(frame);
+  }, [path]);
+  useEffect(() => {
+    const root = asciiReveal.current?.element;
+    if (!root || typeof MutationObserver === 'undefined') return;
+    const observer = new MutationObserver((mutations) => {
+      const pending: HTMLElement[] = [];
+      for (const mutation of mutations) {
+        for (const node of mutation.addedNodes) {
+          if (!(node instanceof HTMLElement)) continue;
+          node
+            .querySelectorAll<HTMLElement>(dashboardCardSelector)
+            .forEach((element) => {
+              if (
+                element.isConnected &&
+                root.contains(element) &&
+                !revealedSurfaces.current.has(element)
+              ) {
+                revealedSurfaces.current.add(element);
+                element.setAttribute('data-ascii', 'surface');
+                pending.push(element);
+              }
+            });
+        }
+      }
+      if (!pending.length) return;
+      const reveal = asciiReveal.current;
+      if (!reveal) return;
+      window.clearTimeout(revealTimer.current);
+      revealTimer.current = window.setTimeout(() => {
+        for (const element of pending) {
+          if (element.isConnected && root.contains(element)) {
+            void reveal.reveal({ within: element });
+          }
+        }
+      }, 120);
+    });
+    observer.observe(root, { childList: true, subtree: true });
+    return () => {
+      observer.disconnect();
+      window.clearTimeout(revealTimer.current);
+    };
   }, [path]);
   useEffect(() => {
     const updateTime = () => {

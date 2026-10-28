@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, BusFront, Cctv, Fuel, Route, ShieldCheck } from 'lucide-react';
+import { ArrowRight, BusFront, Cctv, Eye, EyeOff, Fuel, Route, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button, Field } from './ui';
 import { api } from '@/lib/api';
@@ -16,7 +16,8 @@ export function AuthScreen() {
     [pending, setPending] = useState(false),
     [busy, setBusy] = useState(false),
     [email, setEmail] = useState(''),
-    [password, setPassword] = useState('');
+    [password, setPassword] = useState(''),
+    [showPassword, setShowPassword] = useState(false);
 
   async function signInWithGoogle(credential: string) {
     setBusy(true);
@@ -237,15 +238,26 @@ export function AuthScreen() {
                   />
                 </Field>
                 <Field label="Password">
-                  <input
-                    type="password"
-                    name="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    minLength={signup || setupRequired ? 12 : 1}
-                    autoComplete={signup || setupRequired ? 'new-password' : 'current-password'}
-                    required
-                  />
+                  <div className="password-input">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      name="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      minLength={signup || setupRequired ? 12 : 1}
+                      autoComplete={signup || setupRequired ? 'new-password' : 'current-password'}
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="password-toggle"
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      aria-pressed={showPassword}
+                      onClick={() => setShowPassword((v) => !v)}
+                    >
+                      {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                    </button>
+                  </div>
                 </Field>
                 <Button
                   variant="primary"

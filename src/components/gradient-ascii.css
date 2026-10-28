@@ -111,12 +111,20 @@ body:has(.auth-ambient-page) {
 }
 
 .auth-page.auth-ambient-page .auth-powered {
-  color: rgba(232, 240, 255, 0.64);
+  color: rgba(240, 246, 255, 0.92);
   font-size: 10px;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.05em;
   text-align: right;
   text-transform: uppercase;
+  /* Chip backdrop: the ambient glyph wall is bright, so the plain text washed out */
+  background: rgba(6, 10, 24, 0.58);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  padding: 8px 14px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  text-shadow: 0 1px 10px rgba(2, 6, 18, 0.8);
 }
 
 .auth-page.auth-ambient-page .auth-story > .brand .brand-symbol {
@@ -135,6 +143,40 @@ body:has(.auth-ambient-page) {
   margin-bottom: auto;
   padding: 0;
   max-width: 790px;
+}
+
+/* Hero story slides down into place, each block trailing the one above it. */
+.auth-page.auth-ambient-page .auth-story-copy > * {
+  animation: auth-story-drop 850ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.auth-page.auth-ambient-page .auth-story-copy > :nth-child(2) {
+  animation-delay: 70ms;
+}
+
+.auth-page.auth-ambient-page .auth-story-copy > :nth-child(3) {
+  animation-delay: 140ms;
+}
+
+.auth-page.auth-ambient-page .auth-story-copy > :nth-child(4) {
+  animation-delay: 210ms;
+}
+
+@keyframes auth-story-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-32px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-page.auth-ambient-page .auth-story-copy > * {
+    animation: none;
+  }
 }
 
 .auth-page.auth-ambient-page .auth-kicker {
@@ -321,6 +363,13 @@ body:has(.auth-ambient-page) {
   line-height: 1.45;
 }
 
+/* The RGU/HexTorq credit sits bottom-right of the hero — give it 12px so it reads. */
+.auth-page.auth-ambient-page .auth-image-credit > small:last-child {
+  font-size: 12px;
+  color: rgba(242, 248, 255, 0.72);
+  text-shadow: 0 1px 8px rgba(2, 6, 18, 0.7);
+}
+
 .auth-page.auth-ambient-page .auth-image-credit > span {
   display: flex;
   align-items: center;
@@ -384,26 +433,27 @@ body:has(.auth-ambient-page) {
   display: none;
 }
 
-/* Transparent Minimal Card */
+/* Transparent Minimal Card — see-through glass so the glyph wall shows through */
 :root .auth-page.auth-ambient-page .auth-form-card {
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  background: linear-gradient(145deg, rgba(21, 35, 62, 0.82), rgba(7, 12, 27, 0.76)) !important;
-  border: 1px solid rgba(143, 181, 255, 0.42) !important;
+  background: linear-gradient(145deg, rgba(16, 28, 56, 0.4), rgba(6, 10, 24, 0.32)) !important;
+  border: 1px solid rgba(143, 181, 255, 0.4) !important;
   box-shadow:
     0 0 0 1px rgba(199, 90, 255, 0.13),
-    0 22px 72px -18px rgba(0, 0, 0, 0.78),
-    0 0 52px rgba(116, 57, 255, 0.32),
+    0 22px 72px -18px rgba(0, 0, 0, 0.66),
+    0 0 52px rgba(116, 57, 255, 0.26),
     inset 0 1px 0 0 rgba(255, 255, 255, 0.18) !important;
   color: #e8edf3 !important;
-  backdrop-filter: blur(12px) saturate(115%) !important;
-  -webkit-backdrop-filter: blur(12px) saturate(115%) !important;
+  backdrop-filter: blur(18px) saturate(130%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(130%) !important;
   border-radius: 24px !important;
   width: 100% !important;
   max-width: 500px !important;
-  padding: clamp(24px, 3.1vh, 38px) clamp(26px, 2.8vw, 42px) !important;
-  margin: 0 !important;
+  padding: clamp(18px, 2.4vh, 28px) clamp(24px, 2.6vw, 38px) !important;
+  /* Pin the card to the bottom of the column: free space above, snug bottom offset */
+  margin: auto 0 clamp(16px, 4.5vh, 52px) !important;
 }
 
 :root .auth-page.auth-ambient-page .auth-form-card::before {
@@ -444,15 +494,15 @@ body:has(.auth-ambient-page) {
 }
 
 :root .auth-page.auth-ambient-page .auth-form-card > p:not(.eyebrow):not(.auth-switch) {
-  font-size: 14px !important;
-  color: rgba(215, 225, 240, 0.72) !important;
-  margin: 6px 0 22px !important;
-  line-height: 1.5 !important;
+  font-size: 13.5px !important;
+  color: rgba(215, 225, 240, 0.75) !important;
+  margin: 4px 0 14px !important;
+  line-height: 1.45 !important;
   max-width: 380px !important;
 }
 
 :root .auth-page.auth-ambient-page .auth-form-card .field {
-  margin-bottom: 16px !important;
+  margin-bottom: 10px !important;
 }
 
 :root .auth-page.auth-ambient-page .auth-form-card .field > span:first-child:not(.password-input) {
@@ -471,9 +521,9 @@ body:has(.auth-ambient-page) {
   background: rgba(255, 255, 255, 0.04) !important;
   border: 1px solid rgba(255, 255, 255, 0.16) !important;
   color: #ffffff !important;
-  min-height: 52px !important;
-  height: 52px !important;
-  padding: 10px 15px !important;
+  min-height: 46px !important;
+  height: 46px !important;
+  padding: 8px 14px !important;
   border-radius: 12px !important;
   font-size: 13.5px !important;
   backdrop-filter: blur(4px) !important;
@@ -517,10 +567,10 @@ body:has(.auth-ambient-page) {
 
 /* Submit Action Button */
 :root .auth-page.auth-ambient-page .auth-submit {
-  min-height: 54px !important;
-  height: 54px !important;
+  min-height: 48px !important;
+  height: 48px !important;
   border-radius: 13px !important;
-  margin-top: 10px !important;
+  margin-top: 8px !important;
   font-size: 14px !important;
   font-weight: 600 !important;
   background: linear-gradient(100deg, #4d46f5 0%, #943cff 48%, #de22d8 100%) !important;
@@ -544,8 +594,8 @@ body:has(.auth-ambient-page) {
 :root .auth-page.auth-ambient-page .google-auth-divider {
   display: grid;
   gap: 8px;
-  margin-top: 12px !important;
-  padding-top: 12px !important;
+  margin-top: 10px !important;
+  padding-top: 10px !important;
   border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 
@@ -557,10 +607,65 @@ body:has(.auth-ambient-page) {
   text-align: center;
 }
 
+/* Oval sticker: the Google widget renders inside an iframe, so the pill
+   shape comes from clipping the container and floating it like a sticker. */
 :root .auth-page.auth-ambient-page .google-auth-button {
   min-height: 40px;
+  width: min(100%, 264px);
+  margin: 0 auto;
   display: flex;
   justify-content: center;
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow:
+    0 10px 26px -12px rgba(9, 14, 35, 0.8),
+    0 0 0 4px rgba(255, 255, 255, 0.06);
+  transform: translateZ(0);
+}
+
+:root .auth-page.auth-ambient-page .google-auth-button iframe {
+  width: 100% !important;
+  height: 40px !important;
+}
+
+/* Password visibility toggle inside the see-through input bar */
+:root .auth-page.auth-ambient-page .password-input {
+  position: relative;
+}
+
+:root .auth-page.auth-ambient-page .password-input input {
+  padding-right: 46px !important;
+}
+
+:root .auth-page.auth-ambient-page .password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.62);
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease;
+}
+
+:root .auth-page.auth-ambient-page .password-toggle:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+:root .auth-page.auth-ambient-page .password-toggle:focus-visible {
+  outline: 2px solid rgba(169, 91, 184, 0.75);
+  outline-offset: 1px;
+  color: #ffffff;
 }
 
 /* Secondary Actions */

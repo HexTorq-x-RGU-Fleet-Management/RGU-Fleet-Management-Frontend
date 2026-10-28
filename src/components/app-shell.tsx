@@ -140,12 +140,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       if (!scope || !root.contains(scope)) scope = root;
       if (scope === root) {
         for (const node of scopes) {
-          if (node.isConnected) void reveal.reveal({ within: node });
+          if (node.isConnected) void reveal.reveal({ within: node, duration: 'fast' });
         }
         return;
       }
       const runScope = scope;
-      void reveal.reveal({ within: runScope }).then(() => {
+      /*
+       * Data that arrives after the page is already on screen is revealed on the
+       * fast timing: the cinematic wave takes long enough that cards further
+       * down the wave stay invisible, which reads as cards vanishing after load.
+       */
+      void reveal.reveal({ within: runScope, duration: 'fast' }).then(() => {
         if (!runScope.isConnected) return;
         runScope
           .querySelectorAll<HTMLElement>('[data-ascii="surface"]')

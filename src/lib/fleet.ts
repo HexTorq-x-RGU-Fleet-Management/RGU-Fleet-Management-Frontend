@@ -21,6 +21,7 @@ export type Vehicle = {
   moved?: boolean;
   odometer: number;
   gpsTime: number;
+  providerGpsTime?: number;
   location: { latitude: number; longitude: number; address: string };
   ignition: boolean;
   fuelData: { currentLiters: number; fuelPercentage: number } | null;

@@ -994,7 +994,7 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
       </div>
     );
   return (
-    <section className="journey">
+    <section className="journey" data-ascii="skip">
       <div className="fleet-toolbar">
         <div>
           <h2>Journey explorer</h2>

@@ -36,17 +36,15 @@ export function AuthScreen() {
     <main className="auth-page auth-ambient-page">
       <div className="auth-ambient" aria-hidden="true">
         <GradientASCII
-          colors={['#06080e', '#71307e', '#2096db', '#f6f8ff']}
+          colors={['#ed22c6', '#f6f8ff', '#a5d8ff', '#38bdf8']}
           shape="horizon"
+          characters=" =+xX0S8#@"
           cellSize={18}
-          density={0.74}
-          glyphOpacity={0.8}
-          glow={0.5}
-          softness={0.55}
-          flow={0.6}
-          speed={0.9}
-          gradientOpacity={0.78}
-          grain={0.07}
+          density={0.8}
+          glow={0.25}
+          flicker={0.14}
+          scale={1.15}
+          flow={0}
         />
       </div>
       <section className="auth-story">

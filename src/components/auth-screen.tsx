@@ -58,7 +58,6 @@ export function AuthScreen() {
               RGU / Fleet<small>RATHINAM GROUP OF INSTITUTIONS</small>
             </span>
           </div>
-          <span className="auth-powered">Powered by HexTorq Technologies</span>
         </div>
         <div className="auth-story-copy">
           <div className="auth-heading-lockup">
@@ -114,12 +113,6 @@ export function AuthScreen() {
               </span>
             </li>
           </ul>
-          <div className="auth-capability-rail" aria-label="Fleet workspace capabilities">
-            <span>Fleet-ready</span>
-            <span>Camera-aware</span>
-            <span>Route-visible</span>
-            <span>Audit-ready</span>
-          </div>
         </div>
         <div className="auth-image-credit">
           <span>
@@ -130,11 +123,7 @@ export function AuthScreen() {
               For authorized institution staff only
             </small>
           </span>
-          <small>
-            RGU Fleet Management
-            <br />
-            Engineered by HexTorq Technologies
-          </small>
+          <small>Powered by HexTorq Technologies</small>
         </div>
       </section>
       <section className="auth-form-section">

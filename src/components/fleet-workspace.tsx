@@ -975,10 +975,12 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
           playbackIndex.current = next;
           return samples[next].gpsTime;
         }),
-      Math.max(40, 600 / speed),
+      // One playback tick advances exactly one selected timeline step.
+      // Speed scales simulated time without making telemetry flicker randomly.
+      Math.max(100, (stepSeconds * 1000) / speed),
     );
     return () => clearInterval(id);
-  }, [playing, samples, direction, speed]);
+  }, [playing, samples, direction, speed, stepSeconds]);
   if (loading) return <AsciiLoading label="Loading stored GPS/fuel history..." cards={2} compact />;
   if (!v)
     return (

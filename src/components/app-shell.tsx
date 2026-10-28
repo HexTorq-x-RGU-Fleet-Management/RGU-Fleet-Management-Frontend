@@ -33,7 +33,6 @@ import { toast } from 'sonner';
 import { useWorkspace } from './workspace-provider';
 import { Button, Modal, IconButton, SearchInput, Badge } from './ui';
 import { canAccess } from '@/lib/model';
-import { NavigationLoader } from './navigation-loader';
 // Reveal before the browser paints so a freshly routed page is masked first
 // instead of showing for a frame and then snapping back into the decode.
 const useIsomorphicLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect;
@@ -127,14 +126,31 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       /*
        * Reveal inside the mutation callback, before the browser paints, so newly
        * rendered cards are masked by the reveal before they are first shown.
-       * Deferring this (e.g. with a timeout) lets the content flash visible for
-       * a frame and then snap back to the decode, which reads as a broken loader.
+       *
+       * A batch is revealed as ONE run under the nearest common ancestor of the
+       * added nodes. Starting a run per node spawned a canvas per card and left
+       * the cards hidden until every independent run had finished, which is what
+       * made cards blank out after the skeleton hand-off.
        */
-      for (const scope of scopes) {
-        if (scope.isConnected && root.contains(scope)) {
-          void reveal.reveal({ within: scope });
-        }
+      let scope: HTMLElement = scopes[0];
+      for (const node of scopes) {
+        while (scope && !scope.contains(node)) scope = scope.parentElement as HTMLElement;
+        if (!scope) break;
       }
+      if (!scope || !root.contains(scope)) scope = root;
+      if (scope === root) {
+        for (const node of scopes) {
+          if (node.isConnected) void reveal.reveal({ within: node });
+        }
+        return;
+      }
+      const runScope = scope;
+      void reveal.reveal({ within: runScope }).then(() => {
+        if (!runScope.isConnected) return;
+        runScope
+          .querySelectorAll<HTMLElement>('[data-ascii="surface"]')
+          .forEach((element) => element.removeAttribute('data-ascii'));
+      });
     });
     observer.observe(root, { childList: true, subtree: true });
     return () => observer.disconnect();
@@ -196,7 +212,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
   return (
     <div className={`app-shell ${collapsed ? 'sidebar-collapsed' : ''}`} ref={shellRef}>
-      <NavigationLoader />
       <a href="#main-content" className="skip-link">
         Skip to content
       </a>

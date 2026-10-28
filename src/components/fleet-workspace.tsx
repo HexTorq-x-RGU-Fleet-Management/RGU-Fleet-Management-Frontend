@@ -872,6 +872,7 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
     [playing, setPlaying] = useState(false),
     [direction, setDirection] = useState<1 | -1>(1),
     [speed, setSpeed] = useState(1),
+    [stepSeconds, setStepSeconds] = useState(60),
     [samples, setSamples] = useState<Vehicle[]>([]),
     [source, setSource] = useState<string | undefined>(),
     [loading, setLoading] = useState(true),
@@ -908,7 +909,7 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
             segmentIndex + 1 < ordered.length ? ordered[segmentIndex + 1].gpsTime : selectedEnd,
             selectedEnd,
           );
-          for (let cursor = start; cursor <= end; cursor += 60)
+          for (let cursor = start; cursor <= end; cursor += stepSeconds)
             minuteSamples.push({ ...segment, gpsTime: cursor });
         });
         setSamples(minuteSamples);
@@ -928,7 +929,7 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
       clearInterval(timer);
       abort.abort();
     };
-  }, [bus.id, bus.telemetryDeviceId, range, date, user?.id]);
+  }, [bus.id, bus.telemetryDeviceId, range, date, user?.id, stepSeconds]);
   const index =
       cursor === null
         ? samples.length - 1
@@ -1108,6 +1109,16 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
               Speed
               <select aria-label="Replay speed" value={speed} onChange={(e) => setSpeed(Number(e.target.value))}>
                 {[1, 2, 4, 8, 16].map((value) => <option key={value} value={value}>{value}×</option>)}
+              </select>
+            </label>
+            <label className="compact-select">
+              Step
+              <select aria-label="Replay step interval" value={stepSeconds} onChange={(e) => setStepSeconds(Number(e.target.value))}>
+                <option value={10}>10 seconds</option>
+                <option value={30}>30 seconds</option>
+                <option value={60}>1 minute</option>
+                <option value={120}>2 minutes</option>
+                <option value={300}>5 minutes</option>
               </select>
             </label>
             <Button

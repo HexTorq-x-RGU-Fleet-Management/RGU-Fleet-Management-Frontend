@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, BusFront, Cctv, Route } from 'lucide-react';
+import { ArrowRight, BusFront, Cctv, Fuel, Route, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button, Field } from './ui';
 import { api } from '@/lib/api';
@@ -50,55 +50,109 @@ export function AuthScreen() {
         />
       </div>
       <section className="auth-story">
-        <div className="brand">
-          <span className="brand-symbol">
-            <img src="/rathinam-logo.svg" alt="Rathinam Logo" width={34} height={34} />
-          </span>
-          <span>
-            RGU / Fleet<small>RATHINAM GLOBAL UNIVERSITY</small>
-          </span>
+        <div className="auth-story-top">
+          <div className="brand">
+            <span className="brand-symbol">
+              <img src="/rathinam-logo.svg" alt="Rathinam Logo" width={34} height={34} />
+            </span>
+            <span>
+              RGU / Fleet<small>RATHINAM GROUP OF INSTITUTIONS</small>
+            </span>
+          </div>
+          <span className="auth-powered">Powered by HexTorq Technologies</span>
         </div>
         <div className="auth-story-copy">
-          <span className="auth-kicker">Fleet operations platform</span>
-          <h1>
-            Your campus fleet.
-            <br />
-            <em>Connected.</em>
-          </h1>
+          <div className="auth-heading-lockup">
+            <span className="auth-heading-rule" aria-hidden="true" />
+            <div>
+              <span className="auth-kicker">Fleet operations platform</span>
+              <h1>
+                Your campus fleet.
+                <br />
+                <em>Connected.</em>
+              </h1>
+            </div>
+          </div>
           <p>
             A unified operations workspace for Rathinam&apos;s transport fleet, vehicle cameras, GPS
             visibility, and fuel observations.
           </p>
           <ul className="auth-capabilities">
             <li>
-              <BusFront size={17} />
-              <span>Fleet &amp; bus management</span>
+              <span className="auth-capability-icon fleet">
+                <BusFront size={22} />
+              </span>
+              <span>
+                <strong>Fleet &amp; Bus Management</strong>
+                <small>Monitor and manage your institution&apos;s fleet</small>
+              </span>
             </li>
             <li>
-              <Cctv size={17} />
-              <span>CCTV &amp; recorder monitoring</span>
+              <span className="auth-capability-icon camera">
+                <Cctv size={22} />
+              </span>
+              <span>
+                <strong>CCTV &amp; Recorder Monitoring</strong>
+                <small>Access live and recorded camera feeds</small>
+              </span>
             </li>
             <li>
-              <Route size={17} />
-              <span>GPS &amp; fuel observations</span>
+              <span className="auth-capability-icon route">
+                <Route size={22} />
+              </span>
+              <span>
+                <strong>GPS Tracking &amp; Route Visibility</strong>
+                <small>Track movement and stored observations</small>
+              </span>
+            </li>
+            <li>
+              <span className="auth-capability-icon fuel">
+                <Fuel size={22} />
+              </span>
+              <span>
+                <strong>Fuel Analytics &amp; Observations</strong>
+                <small>View fuel usage and stored data</small>
+              </span>
             </li>
           </ul>
+          <div className="auth-capability-rail" aria-label="Fleet workspace capabilities">
+            <span>Fleet-ready</span>
+            <span>Camera-aware</span>
+            <span>Route-visible</span>
+            <span>Audit-ready</span>
+          </div>
         </div>
-        <small className="auth-image-credit">
-          RGU Fleet Management · Engineered by HexTorq Technologies
-        </small>
+        <div className="auth-image-credit">
+          <span>
+            <ShieldCheck size={18} />
+            <small>
+              Secure &amp; authorized access
+              <br />
+              For authorized institution staff only
+            </small>
+          </span>
+          <small>
+            RGU Fleet Management
+            <br />
+            Engineered by HexTorq Technologies
+          </small>
+        </div>
       </section>
       <section className="auth-form-section">
         <div className="auth-form-card">
           <p className="eyebrow">RGU FLEET MANAGEMENT</p>
-          <h2>
-            {setupRequired
-              ? 'Create the platform owner'
-              : pending
-                ? 'Approval requested'
-                : signup
-                  ? 'Request a workspace'
-                  : 'Sign in to your workspace'}
+          <h2 className="auth-card-title">
+            {setupRequired ? (
+              'Create the platform owner'
+            ) : pending ? (
+              'Approval requested'
+            ) : signup ? (
+              'Request a workspace'
+            ) : (
+              <>
+                <span>Welcome</span> back
+              </>
+            )}
           </h2>
           {!ready ? (
             <p role="status">Checking account setup…</p>
@@ -121,7 +175,7 @@ export function AuthScreen() {
                   ? 'One initial platform owner account is allowed. This is separate from Hik-Connect.'
                   : signup
                     ? 'The superadmin must approve your workspace before you can sign in.'
-                    : 'Use your verified administrator credentials to access the fleet command deck.'}
+                    : 'Sign in to your authorized fleet workspace.'}
               </p>
               {error && (
                 <div className="info-box" role="status">

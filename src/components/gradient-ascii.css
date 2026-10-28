@@ -35,7 +35,7 @@ body:has(.auth-ambient-page) {
   isolation: isolate;
   background: #06080e;
   display: grid;
-  grid-template-columns: minmax(0, 1.12fr) minmax(380px, 0.88fr);
+  grid-template-columns: minmax(0, 1.2fr) minmax(420px, 0.8fr);
   z-index: 10;
 }
 
@@ -75,8 +75,9 @@ body:has(.auth-ambient-page) {
   z-index: 0;
   pointer-events: none;
   background:
-    radial-gradient(ellipse 90% 70% at 24% 45%, rgba(113, 48, 126, 0.16), transparent 62%),
-    linear-gradient(180deg, rgba(4, 6, 11, 0.16) 0%, rgba(4, 6, 11, 0.42) 100%);
+    radial-gradient(ellipse 70% 58% at 68% 45%, rgba(46, 104, 222, 0.16), transparent 68%),
+    radial-gradient(ellipse 80% 70% at 24% 45%, rgba(113, 48, 126, 0.2), transparent 62%),
+    linear-gradient(180deg, rgba(4, 6, 11, 0.18) 0%, rgba(4, 6, 11, 0.46) 100%);
 }
 
 .auth-page.auth-ambient-page > section {
@@ -102,6 +103,22 @@ body:has(.auth-ambient-page) {
   gap: 12px;
 }
 
+.auth-page.auth-ambient-page .auth-story-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.auth-page.auth-ambient-page .auth-powered {
+  color: rgba(232, 240, 255, 0.64);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-align: right;
+  text-transform: uppercase;
+}
+
 .auth-page.auth-ambient-page .auth-story > .brand .brand-symbol {
   width: 38px;
   height: 38px;
@@ -117,21 +134,35 @@ body:has(.auth-ambient-page) {
   margin-top: auto;
   margin-bottom: auto;
   padding: 0;
-  max-width: 580px;
+  max-width: 790px;
 }
 
 .auth-page.auth-ambient-page .auth-kicker {
+  display: block;
   font-size: 10px;
   letter-spacing: 0.15em;
   font-weight: 700;
   text-transform: uppercase;
   color: #c471ed;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
+}
+
+.auth-page.auth-ambient-page .auth-heading-lockup {
+  display: flex;
+  align-items: stretch;
+  gap: 18px;
+}
+
+.auth-page.auth-ambient-page .auth-heading-rule {
+  width: 4px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #e66bff 0%, #9b52ff 45%, #26b8ff 100%);
+  box-shadow: 0 0 18px rgba(63, 177, 255, 0.65);
 }
 
 .auth-page.auth-ambient-page .auth-story h1 {
-  font-size: clamp(32px, 3.8vw, 54px);
-  line-height: 1.05;
+  font-size: clamp(38px, 4.15vw, 64px);
+  line-height: 0.98;
   letter-spacing: -0.035em;
   font-weight: 700;
   color: #ffffff;
@@ -140,16 +171,19 @@ body:has(.auth-ambient-page) {
 
 .auth-page.auth-ambient-page .auth-story h1 em {
   font-style: normal;
-  color: #c471ed;
-  text-shadow: 0 0 24px rgba(196, 113, 237, 0.4);
+  background: linear-gradient(100deg, #3ba9ff 0%, #b54cff 54%, #f16bd7 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: none;
 }
 
 .auth-page.auth-ambient-page .auth-story-copy > p {
-  font-size: clamp(13px, 1.1vw, 15px);
-  color: #b5c4d0;
-  max-width: 410px;
-  line-height: 1.6;
-  margin: 12px 0 18px;
+  font-size: clamp(14px, 1.1vw, 17px);
+  color: rgba(218, 230, 246, 0.82);
+  max-width: 650px;
+  line-height: 1.65;
+  margin: 16px 0 28px 22px;
 }
 
 .auth-page.auth-ambient-page .auth-checks {
@@ -172,21 +206,20 @@ body:has(.auth-ambient-page) {
 
 /* Capability highlights under the hero copy */
 .auth-page.auth-ambient-page .auth-capabilities {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin: 0 0 22px 22px;
   padding: 0;
   list-style: none;
 }
 
 .auth-page.auth-ambient-page .auth-capabilities li {
   display: flex;
-  align-items: center;
-  gap: 11px;
-  font-size: 12.5px;
-  font-weight: 500;
-  color: #c8d8e5;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+  color: #dce7f6;
   transition:
     color 0.18s ease,
     transform 0.18s ease;
@@ -194,8 +227,56 @@ body:has(.auth-ambient-page) {
 
 .auth-page.auth-ambient-page .auth-capabilities svg {
   flex: none;
-  color: #38bdf8;
   transition: color 0.18s ease;
+}
+
+.auth-page.auth-ambient-page .auth-capabilities li > span:last-child {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.auth-page.auth-ambient-page .auth-capabilities strong {
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.32;
+}
+
+.auth-page.auth-ambient-page .auth-capabilities small {
+  color: rgba(209, 223, 240, 0.62);
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.auth-page.auth-ambient-page .auth-capability-icon {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  flex: none;
+  place-items: center;
+  border: 1px solid currentColor;
+  border-radius: 14px;
+  background: rgba(4, 10, 24, 0.42);
+}
+
+.auth-page.auth-ambient-page .auth-capability-icon.fleet {
+  color: #dc73ff;
+  box-shadow: 0 0 20px rgba(207, 72, 255, 0.2);
+}
+
+.auth-page.auth-ambient-page .auth-capability-icon.camera {
+  color: #37aaff;
+  box-shadow: 0 0 20px rgba(37, 152, 255, 0.2);
+}
+
+.auth-page.auth-ambient-page .auth-capability-icon.route {
+  color: #54e59b;
+  box-shadow: 0 0 20px rgba(55, 216, 133, 0.18);
+}
+
+.auth-page.auth-ambient-page .auth-capability-icon.fuel {
+  color: #ffad56;
+  box-shadow: 0 0 20px rgba(255, 143, 44, 0.18);
 }
 
 .auth-page.auth-ambient-page .auth-capabilities li:hover {
@@ -204,12 +285,50 @@ body:has(.auth-ambient-page) {
 }
 
 .auth-page.auth-ambient-page .auth-capabilities li:hover svg {
-  color: #c471ed;
+  color: currentColor;
+}
+
+.auth-page.auth-ambient-page .auth-capability-rail {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-left: 22px;
+  max-width: 760px;
+  border: 1px solid rgba(187, 210, 242, 0.16);
+  border-radius: 16px;
+  background: rgba(4, 11, 24, 0.42);
+  backdrop-filter: blur(10px);
+}
+
+.auth-page.auth-ambient-page .auth-capability-rail span {
+  padding: 15px 12px;
+  color: rgba(233, 242, 255, 0.9);
+  font-size: 11px;
+  font-weight: 650;
+  text-align: center;
+}
+
+.auth-page.auth-ambient-page .auth-capability-rail span + span {
+  border-left: 1px solid rgba(187, 210, 242, 0.16);
 }
 
 .auth-page.auth-ambient-page .auth-image-credit {
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  color: rgba(235, 242, 255, 0.5);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.auth-page.auth-ambient-page .auth-image-credit > span {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.auth-page.auth-ambient-page .auth-image-credit svg {
+  color: #5db5ff;
 }
 
 /* Keep the taller hero (extra capability rows) inside short desktop viewports. */
@@ -267,19 +386,36 @@ body:has(.auth-ambient-page) {
 
 /* Transparent Minimal Card */
 :root .auth-page.auth-ambient-page .auth-form-card {
-  background: rgba(10, 14, 26, 0.18) !important;
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: linear-gradient(145deg, rgba(21, 35, 62, 0.82), rgba(7, 12, 27, 0.76)) !important;
+  border: 1px solid rgba(143, 181, 255, 0.42) !important;
   box-shadow:
-    0 24px 60px -15px rgba(0, 0, 0, 0.5),
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.08) !important;
+    0 0 0 1px rgba(199, 90, 255, 0.13),
+    0 22px 72px -18px rgba(0, 0, 0, 0.78),
+    0 0 52px rgba(116, 57, 255, 0.32),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.18) !important;
   color: #e8edf3 !important;
   backdrop-filter: blur(12px) saturate(115%) !important;
   -webkit-backdrop-filter: blur(12px) saturate(115%) !important;
-  border-radius: 22px !important;
+  border-radius: 24px !important;
   width: 100% !important;
-  max-width: 400px !important;
-  padding: clamp(20px, 2.5vh, 28px) clamp(22px, 2.2vw, 30px) !important;
+  max-width: 500px !important;
+  padding: clamp(24px, 3.1vh, 38px) clamp(26px, 2.8vw, 42px) !important;
   margin: 0 !important;
+}
+
+:root .auth-page.auth-ambient-page .auth-form-card::before {
+  position: absolute;
+  z-index: -1;
+  inset: -45% 14% auto;
+  height: 150px;
+  border-radius: 50%;
+  background: rgba(91, 57, 255, 0.42);
+  content: '';
+  filter: blur(46px);
+  pointer-events: none;
 }
 
 :root .auth-page.auth-ambient-page .auth-form-card .eyebrow {
@@ -292,24 +428,31 @@ body:has(.auth-ambient-page) {
 }
 
 :root .auth-page.auth-ambient-page .auth-form-card h2 {
-  font-size: clamp(21px, 2.2vw, 27px) !important;
+  font-size: clamp(27px, 2.7vw, 39px) !important;
   line-height: 1.2 !important;
   font-weight: 700 !important;
   letter-spacing: -0.03em !important;
   color: #ffffff !important;
-  margin: 0 0 4px !important;
+  margin: 0 0 7px !important;
+}
+
+:root .auth-page.auth-ambient-page .auth-form-card .auth-card-title > span {
+  background: linear-gradient(100deg, #3db6ff, #a063ff 50%, #f16bdf);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 :root .auth-page.auth-ambient-page .auth-form-card > p:not(.eyebrow):not(.auth-switch) {
-  font-size: 12.5px !important;
+  font-size: 14px !important;
   color: rgba(215, 225, 240, 0.72) !important;
-  margin: 4px 0 16px !important;
+  margin: 6px 0 22px !important;
   line-height: 1.5 !important;
   max-width: 380px !important;
 }
 
 :root .auth-page.auth-ambient-page .auth-form-card .field {
-  margin-bottom: 12px !important;
+  margin-bottom: 16px !important;
 }
 
 :root .auth-page.auth-ambient-page .auth-form-card .field > span:first-child:not(.password-input) {
@@ -328,10 +471,10 @@ body:has(.auth-ambient-page) {
   background: rgba(255, 255, 255, 0.04) !important;
   border: 1px solid rgba(255, 255, 255, 0.16) !important;
   color: #ffffff !important;
-  min-height: 42px !important;
-  height: 42px !important;
-  padding: 8px 14px !important;
-  border-radius: 10px !important;
+  min-height: 52px !important;
+  height: 52px !important;
+  padding: 10px 15px !important;
+  border-radius: 12px !important;
   font-size: 13.5px !important;
   backdrop-filter: blur(4px) !important;
   -webkit-backdrop-filter: blur(4px) !important;
@@ -374,22 +517,22 @@ body:has(.auth-ambient-page) {
 
 /* Submit Action Button */
 :root .auth-page.auth-ambient-page .auth-submit {
-  min-height: 42px !important;
-  height: 42px !important;
-  border-radius: 10px !important;
-  margin-top: 8px !important;
-  font-size: 13px !important;
+  min-height: 54px !important;
+  height: 54px !important;
+  border-radius: 13px !important;
+  margin-top: 10px !important;
+  font-size: 14px !important;
   font-weight: 600 !important;
-  background: linear-gradient(135deg, #71307e 0%, #8a3d99 100%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.18) !important;
-  box-shadow: 0 4px 16px rgba(113, 48, 126, 0.4) !important;
+  background: linear-gradient(100deg, #4d46f5 0%, #943cff 48%, #de22d8 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.32) !important;
+  box-shadow: 0 8px 24px rgba(147, 60, 255, 0.52) !important;
   color: #ffffff !important;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
 :root .auth-page.auth-ambient-page .auth-submit:hover:not(:disabled) {
-  background: linear-gradient(135deg, #8a3d99 0%, #a95bb8 100%) !important;
-  box-shadow: 0 6px 22px rgba(113, 48, 126, 0.55) !important;
+  background: linear-gradient(100deg, #5e58ff 0%, #a94dff 48%, #ed37e7 100%) !important;
+  box-shadow: 0 10px 30px rgba(147, 60, 255, 0.65) !important;
   transform: translateY(-1px);
 }
 
@@ -501,8 +644,53 @@ body:has(.auth-ambient-page) {
     padding: 24px 0 16px;
   }
 
+  .auth-page.auth-ambient-page .auth-story-top {
+    gap: 12px;
+  }
+
+  .auth-page.auth-ambient-page .auth-powered {
+    display: none;
+  }
+
+  .auth-page.auth-ambient-page .auth-heading-lockup {
+    gap: 12px;
+  }
+
+  .auth-page.auth-ambient-page .auth-heading-rule {
+    width: 3px;
+  }
+
   .auth-page.auth-ambient-page .auth-story h1 {
     font-size: clamp(30px, 8vw, 44px);
+  }
+
+  .auth-page.auth-ambient-page .auth-story-copy > p {
+    margin-left: 15px;
+  }
+
+  .auth-page.auth-ambient-page .auth-capabilities {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-left: 15px;
+  }
+
+  .auth-page.auth-ambient-page .auth-capability-rail {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-left: 15px;
+  }
+
+  .auth-page.auth-ambient-page .auth-capability-rail span:nth-child(3) {
+    border-left: 0;
+    border-top: 1px solid rgba(187, 210, 242, 0.16);
+  }
+
+  .auth-page.auth-ambient-page .auth-capability-rail span:nth-child(4) {
+    border-top: 1px solid rgba(187, 210, 242, 0.16);
+  }
+
+  .auth-page.auth-ambient-page .auth-image-credit {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
   }
 
   :root .auth-page.auth-ambient-page .auth-form-section {

@@ -888,6 +888,7 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
     [loading, setLoading] = useState(true),
     [error, setError] = useState('');
   const timelineRef = useRef<HTMLDivElement>(null);
+  const playbackIndex = useRef(0);
   useEffect(() => {
     const abort = new AbortController();
     setSamples([]);
@@ -952,7 +953,11 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
   useEffect(() => {
     setCursor(null);
     setPlaying(false);
+    playbackIndex.current = 0;
   }, [bus.id, range, date, bus.telemetryDeviceId]);
+  useEffect(() => {
+    if (!playing) playbackIndex.current = index;
+  }, [index, playing]);
   useEffect(() => {
     const active = timelineRef.current?.querySelector<HTMLElement>('[data-active="true"]');
     active?.scrollIntoView({ behavior: playing ? 'smooth' : 'auto', block: 'nearest', inline: 'center' });
@@ -961,17 +966,13 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
     if (!playing || !samples.length) return;
     const id = setInterval(
       () =>
-        setCursor((i) => {
-          const current = i === null
-            ? direction === 1 ? -1 : samples.length
-            : samples.reduce((best, sample, n) =>
-                Math.abs(sample.gpsTime - i) < Math.abs(samples[best].gpsTime - i) ? n : best,
-              0);
-          const next = current + direction;
+        setCursor(() => {
+          const next = playbackIndex.current + direction;
           if (next < 0 || next >= samples.length) {
             setPlaying(false);
             return samples[direction === 1 ? samples.length - 1 : 0].gpsTime;
           }
+          playbackIndex.current = next;
           return samples[next].gpsTime;
         }),
       Math.max(40, 600 / speed),
@@ -1088,8 +1089,12 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
             </Button>
             <Button
               onClick={() => {
-                if (!playing && cursor === null)
-                  setCursor(samples[direction === 1 ? 0 : samples.length - 1].gpsTime);
+                if (!playing) {
+                  playbackIndex.current = cursor === null
+                    ? direction === 1 ? 0 : samples.length - 1
+                    : index;
+                  setCursor(samples[playbackIndex.current].gpsTime);
+                }
                 setPlaying(!playing);
               }}
             >

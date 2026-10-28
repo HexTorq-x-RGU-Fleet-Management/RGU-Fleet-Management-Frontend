@@ -58,7 +58,6 @@ export function GoogleAuthButton({ onCredential, text = 'signin_with' }: GoogleB
           size: 'large',
           text,
           shape: 'rectangular',
-          width: 320,
         });
       })
       .catch(() => undefined);

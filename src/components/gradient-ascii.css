@@ -77,7 +77,7 @@ body:has(.auth-ambient-page) {
   background:
     radial-gradient(ellipse 70% 58% at 68% 45%, rgba(46, 104, 222, 0.16), transparent 68%),
     radial-gradient(ellipse 80% 70% at 24% 45%, rgba(113, 48, 126, 0.2), transparent 62%),
-    linear-gradient(180deg, rgba(4, 6, 11, 0.18) 0%, rgba(4, 6, 11, 0.46) 100%);
+    linear-gradient(180deg, rgba(4, 6, 11, 0.3) 0%, rgba(4, 6, 11, 0.58) 100%);
 }
 
 .auth-page.auth-ambient-page > section {
@@ -180,6 +180,7 @@ body:has(.auth-ambient-page) {
   text-transform: uppercase;
   color: #e5e7eb;
   margin-bottom: 14px;
+  text-shadow: 0 1px 14px rgba(2, 6, 18, 0.9);
 }
 
 .auth-page.auth-ambient-page .auth-heading-lockup {

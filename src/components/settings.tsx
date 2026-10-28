@@ -921,7 +921,7 @@ export function Settings() {
             <div className="settings-list-row">
               <div>
                 <strong>{sourceInspect.label}</strong>
-                <small>{sourceInspect.devices?.length || sourceInspect.devices?.length === 0 ? `${sourceInspect.devices.length} discovered device(s)` : 'Loading source details'}</small>
+                <small>{sourceInspect.endpointUrl || 'https://api.wheelseye.com/currentLoc'} · {sourceInspect.devices?.length || sourceInspect.devices?.length === 0 ? `${sourceInspect.devices.length} discovered device(s)` : 'Loading source details'}</small>
               </div>
               <div className="settings-source-actions">
                 <Button
@@ -972,6 +972,10 @@ export function Settings() {
                 <div className="settings-subsection">
                   <div className="settings-subsection-heading"><span><HardDrive size={17} /></span><div><h3>Persisted telemetry rows</h3><p>Latest raw observations stored by the server.</p></div></div>
                   <div className="table-scroll"><table className="data-table"><thead><tr><th>Received</th><th>Device</th><th>Coordinates</th><th>Speed</th><th>Ignition</th><th>Fuel</th></tr></thead><tbody>{(sourceDiagnostics.logs || []).map((row: any, index: number) => <tr key={`${row.device_number}-${row.gps_time}-${index}`}><td>{row.received_at ? new Date(row.received_at).toLocaleString('en-IN') : '—'}</td><td>{row.device_number}</td><td>{Number(row.latitude).toFixed(5)}, {Number(row.longitude).toFixed(5)}</td><td>{row.speed} km/h</td><td>{row.ignition ? 'On' : 'Off'}</td><td>{row.payload?.fuelData?.currentLiters ?? '—'}</td></tr>)}</tbody></table>{!sourceDiagnostics.logs?.length && <p className="small muted">No telemetry rows have been stored for this source yet.</p>}</div>
+                </div>
+                <div className="settings-subsection">
+                  <div className="settings-subsection-heading"><span><Route size={17} /></span><div><h3>Normalized movement segments</h3><p>Database segments created only when the position moves more than 10 meters.</p></div></div>
+                  <div className="table-scroll"><table className="data-table"><thead><tr><th>Start</th><th>Device</th><th>Coordinates</th><th>Speed</th><th>Ignition</th><th>Fuel</th></tr></thead><tbody>{(sourceDiagnostics.segments || []).map((row: any, index: number) => <tr key={`${row.device_number}-${row.segment_start}-${index}`}><td>{row.segment_start ? new Date(row.segment_start).toLocaleString('en-IN') : '—'}</td><td>{row.device_number}</td><td>{Number(row.latitude).toFixed(5)}, {Number(row.longitude).toFixed(5)}</td><td>{row.speed} km/h</td><td>{row.ignition ? 'On' : 'Off'}</td><td>{row.fuel_litres ?? '—'}</td></tr>)}</tbody></table>{!sourceDiagnostics.segments?.length && <p className="small muted">No normalized movement segments have been stored yet.</p>}</div>
                 </div>
                 <div className="settings-subsection">
                   <div className="settings-subsection-heading"><span><Info size={17} /></span><div><h3>Latest provider response</h3><p>Safe vehicle data returned by the last manual trigger; access tokens are excluded.</p></div></div>

@@ -16,6 +16,7 @@ export function MapLibreJourneyMap({ samples, index, source }: { samples: Vehicl
   const element = useRef<HTMLDivElement>(null);
   const map = useRef<MapLibreMap | null>(null);
   const [ready, setReady] = useState(false);
+  const [mapError, setMapError] = useState('');
   const [following, setFollowing] = useState(false);
   const current = samples[index];
 
@@ -32,7 +33,11 @@ export function MapLibreJourneyMap({ samples, index, source }: { samples: Vehicl
         sources: { protomaps: { type: 'vector', url: `pmtiles://${tilesUrl}`, attribution: '&copy; OpenStreetMap contributors' } },
         layers: layers('protomaps', namedFlavor('light')),
       },
-      bounds: tamilNaduBounds as [[number, number], [number, number]],
+      // MapLibre expects [longitude, latitude]; the shared bounds are [latitude, longitude].
+      bounds: [
+        [tamilNaduBounds[0][1], tamilNaduBounds[0][0]],
+        [tamilNaduBounds[1][1], tamilNaduBounds[1][0]],
+      ],
       fitBoundsOptions: { padding: 20 },
       minZoom: 6,
       maxZoom: 18,
@@ -51,6 +56,10 @@ export function MapLibreJourneyMap({ samples, index, source }: { samples: Vehicl
       });
       instance.addLayer({ id: 'journey-position-dot', type: 'circle', source: 'journey-position', paint: { 'circle-radius': 8, 'circle-color': '#852482', 'circle-stroke-color': '#ffffff', 'circle-stroke-width': 3 } });
       setReady(true);
+    });
+    instance.on('error', (event) => {
+      const message = event.error?.message || 'Map tiles could not be loaded.';
+      setMapError(message);
     });
     instance.on('dragstart', () => setFollowing(false));
     return () => {
@@ -76,6 +85,7 @@ export function MapLibreJourneyMap({ samples, index, source }: { samples: Vehicl
       <div className="map-topline"><span><MapPin size={14} /> MAPLIBRE / PMTILES</span><Badge tone="neutral">{source === 'vendor' ? 'WheelsEye GPS' : 'Stored GPS'}</Badge></div>
       <div className="map-view-actions"><Button disabled={!ready || !current} aria-pressed={following} onClick={() => setFollowing(true)}><Navigation size={14} /> Follow bus</Button></div>
       <div ref={element} className="road-map-canvas" role="region" aria-label="MapLibre Tamil Nadu road map" data-lenis-prevent />
+      {mapError && <p className="map-network-state" role="status">MapLibre tile error: {mapError}</p>}
       <div className="map-coordinate"><MapPin size={15} /><strong>{current?.location.latitude.toFixed(5)}, {current?.location.longitude.toFixed(5)}</strong></div>
       <p className="map-source-note">Self-hosted Protomaps vector tiles · OpenStreetMap attribution required.</p>
     </div>

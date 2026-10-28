@@ -901,7 +901,17 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
         const ordered = result.samples
           .map((sample) => sample.vehicle)
           .sort((a, b) => a.gpsTime - b.gpsTime);
-        setSamples(ordered);
+        const minuteSamples: Vehicle[] = [];
+        ordered.forEach((segment, segmentIndex) => {
+          const start = Math.max(segment.gpsTime, from);
+          const end = Math.min(
+            segmentIndex + 1 < ordered.length ? ordered[segmentIndex + 1].gpsTime : selectedEnd,
+            selectedEnd,
+          );
+          for (let cursor = start; cursor <= end; cursor += 60)
+            minuteSamples.push({ ...segment, gpsTime: cursor });
+        });
+        setSamples(minuteSamples);
         setSource(result.samples.some((sample) => sample.source === 'vendor') ? 'vendor' : undefined);
       } catch (e) {
         if ((e as Error).name !== 'AbortError') setError((e as Error).message);
@@ -1109,6 +1119,24 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
               Latest
             </Button>
           </div>
+        </div>
+        <div
+          className="journey-activity"
+          aria-label="Movement activity"
+          style={{ display: 'flex', gap: 2, height: 8, margin: '8px 0' }}
+        >
+          {samples.map((sample, sampleIndex) => (
+            <span
+              key={`${sample.gpsTime}-${sampleIndex}`}
+              title={`${timeLabel(sample.gpsTime)} · ${sample.speed > 0 || sample.ignition ? 'Moving' : 'Stationary'}`}
+              style={{
+                flex: 1,
+                minWidth: 2,
+                borderRadius: 99,
+                background: sample.speed > 0 || sample.ignition ? 'var(--accent)' : 'var(--line-strong)',
+              }}
+            />
+          ))}
         </div>
         <svg
           className="fuel-chart"

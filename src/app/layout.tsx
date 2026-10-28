@@ -17,6 +17,7 @@ import './map.css';
 import './bus-directory.css';
 import './live.css';
 import './admin.css';
+import './settings.css';
 import '@/components/gradient-ascii.css';
 export const metadata: Metadata = {
   title: { default: 'RGU Fleet Management | HexTorq', template: '%s | RGU Fleet' },
@@ -41,9 +42,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <WorkspaceProvider>
           <MotionProvider>
-            <TextAsciiReveal
-              className="site-ascii-reveal"
-            >
+            <TextAsciiReveal className="site-ascii-reveal">
               {children}
               <Toaster
                 position="bottom-right"

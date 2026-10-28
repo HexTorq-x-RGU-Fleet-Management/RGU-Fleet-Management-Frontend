@@ -26,7 +26,6 @@
   border-radius: 18px;
   padding: 32px;
   z-index: 101;
-  animation: modal-in 0.26s var(--ease-spring);
 }
 
 .modal-wide {

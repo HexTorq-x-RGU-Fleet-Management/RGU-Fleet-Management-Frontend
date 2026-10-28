@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import {
   Link2,
   Settings as SettingsIcon,
@@ -15,13 +15,150 @@ import {
   Maximize2,
   Minimize2,
   Check,
+  Cctv,
+  Play,
+  KeyRound,
+  Monitor,
+  Timer,
+  Sparkles,
+  Plus,
+  Satellite,
+  Database,
+  Shield,
+  Info,
+  type LucideIcon,
 } from 'lucide-react';
+import { AsciiSkeleton } from 'ascii-reveal';
 import { toast } from 'sonner';
 import { useWorkspace } from './workspace-provider';
 import { PageHeading, Button, Modal, Field, Badge, Confirm } from './ui';
 import { api, request, fleetApi } from '@/lib/api';
 import { GoogleAuthButton } from './google-auth-button';
 import { formatBytes } from '@/lib/model';
+
+function SectionHeader({
+  icon: Icon,
+  title,
+  description,
+  badge,
+}: {
+  icon: LucideIcon;
+  title: string;
+  description: string;
+  badge?: ReactNode;
+}) {
+  return (
+    <header className="settings-section-header">
+      <span className="settings-section-icon">
+        <Icon size={22} />
+      </span>
+      <div>
+        <h2>{title}</h2>
+        <p>{description}</p>
+      </div>
+      {badge}
+    </header>
+  );
+}
+
+function SettingGroup({
+  icon: Icon,
+  title,
+  description,
+  children,
+}: {
+  icon: LucideIcon;
+  title: string;
+  description: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="settings-group">
+      <div className="settings-group-heading">
+        <Icon size={18} aria-hidden="true" />
+        <div>
+          <h3>{title}</h3>
+          <p>{description}</p>
+        </div>
+      </div>
+      <div className="settings-group-controls">{children}</div>
+    </div>
+  );
+}
+
+type ChoiceValue = string | number | boolean;
+type Choice = { value: ChoiceValue; label: string; description?: string; icon?: LucideIcon };
+function Choices({
+  label,
+  value,
+  options,
+  onChange,
+  theme = false,
+}: {
+  label: string;
+  value: ChoiceValue;
+  options: Choice[];
+  onChange: (value: ChoiceValue) => void;
+  theme?: boolean;
+}) {
+  return (
+    <div
+      className={`settings-choices ${theme ? 'settings-theme-choices' : ''}`}
+      role="radiogroup"
+      aria-label={label}
+      onKeyDown={(event) => {
+        if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key))
+          return;
+        event.preventDefault();
+        const buttons = [
+          ...event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="radio"]'),
+        ];
+        const index = buttons.indexOf(document.activeElement as HTMLButtonElement);
+        const next =
+          event.key === 'Home'
+            ? 0
+            : event.key === 'End'
+              ? buttons.length - 1
+              : (index + (['ArrowLeft', 'ArrowUp'].includes(event.key) ? -1 : 1) + buttons.length) %
+                buttons.length;
+        buttons[next]?.focus();
+        buttons[next]?.click();
+      }}
+    >
+      {options.map(({ value: option, label: text, description, icon: Icon }) => (
+        <button
+          key={String(option)}
+          type="button"
+          role="radio"
+          aria-checked={value === option}
+          tabIndex={value === option ? 0 : -1}
+          className={`settings-choice ${value === option ? 'active' : ''}`}
+          data-value={String(option)}
+          onClick={() => onChange(option)}
+        >
+          {theme && (
+            <span className="settings-theme-preview" aria-hidden="true">
+              <i />
+              <i />
+              <i />
+            </span>
+          )}
+          <span className="settings-choice-content">
+            {Icon && <Icon size={16} aria-hidden="true" />}
+            <span>
+              <strong>{text}</strong>
+              {description && <small>{description}</small>}
+            </span>
+            <span className="settings-choice-check" aria-hidden="true">
+              {value === option && <Check size={12} />}
+            </span>
+          </span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function Settings() {
   const { state, user, provider, patch, refresh, refreshDevices, signOut } = useWorkspace();
   const [tab, setTab] = useState<string>(user?.role === 'superadmin' ? 'viewing' : 'account'),
@@ -35,26 +172,38 @@ export function Settings() {
     [wheelseyeBusy, setWheelseyeBusy] = useState(false),
     [deviceView, setDeviceView] = useState<{ sourceId: string; device: any } | null>(null),
     [deviceDetail, setDeviceDetail] = useState<any>(null),
-    [deviceBusy, setDeviceBusy] = useState(false);
+    [deviceBusy, setDeviceBusy] = useState(false),
+    [storageLoading, setStorageLoading] = useState(false),
+    [sourcesLoading, setSourcesLoading] = useState(false);
   useEffect(() => {
-    if (tab === 'storage' && user?.role !== 'superadmin')
+    if (tab === 'storage' && user?.role !== 'superadmin') {
+      setStorageLoading(true);
       void request('/api/recordings/storage')
         .then((d) => setStorage(d.storage))
-        .catch((e) => toast.error(e.message));
+        .catch((e) => toast.error(e.message))
+        .finally(() => setStorageLoading(false));
+    }
   }, [tab, user?.id]);
   useEffect(() => {
-    if (tab === 'fleet' && user?.role === 'admin')
+    if (tab === 'fleet' && user?.role === 'admin') {
+      setSourcesLoading(true);
       void fleetApi
         .wheelseyeSources()
         .then((result) => setWheelseyeSources(result.sources || []))
-        .catch((e) => toast.error(e.message));
+        .catch((e) => toast.error(e.message))
+        .finally(() => setSourcesLoading(false));
+    }
   }, [tab, user?.id]);
   useEffect(() => {
     if (!deviceView) return;
     const controller = new AbortController();
     setDeviceBusy(true);
     void fleetApi
-      .wheelseyeDevice(deviceView.sourceId, String(deviceView.device.deviceNumber), controller.signal)
+      .wheelseyeDevice(
+        deviceView.sourceId,
+        String(deviceView.device.deviceNumber),
+        controller.signal,
+      )
       .then(setDeviceDetail)
       .catch((e) => {
         if (e.name !== 'AbortError') toast.error(e.message);
@@ -96,12 +245,16 @@ export function Settings() {
     }
   }
   return (
-    <div>
+    <div className="workspace-settings">
       <PageHeading
         eyebrow="WORKSPACE SETTINGS"
         title="Your workspace, your way."
         description="Manage provider access and your saved viewing preferences."
-      />
+      >
+        <span className="settings-workspace-tag">
+          <SettingsIcon size={15} /> Workspace controls
+        </span>
+      </PageHeading>
       <div className="settings-layout">
         <nav className="settings-tabs" aria-label="Settings sections">
           {[
@@ -117,11 +270,16 @@ export function Settings() {
             .map(([id, label, description, Icon]) => (
               <button
                 key={String(id)}
+                type="button"
+                id={`settings-tab-${id}`}
+                aria-controls={`settings-section-${id}`}
                 className={tab === id ? 'active' : ''}
                 aria-current={tab === id ? 'page' : undefined}
                 onClick={() => setTab(String(id))}
               >
-                <Icon size={17} aria-hidden="true" />
+                <span className="settings-tab-icon">
+                  <Icon size={18} aria-hidden="true" />
+                </span>
                 <span className="settings-tab-copy">
                   <strong>{String(label)}</strong>
                   <small>{String(description)}</small>
@@ -130,464 +288,520 @@ export function Settings() {
               </button>
             ))}
         </nav>
-        <div>
+        <div
+          className="settings-content"
+          id={`settings-section-${tab}`}
+          aria-labelledby={`settings-tab-${tab}`}
+        >
           {tab === 'account' && user?.role !== 'superadmin' && (
             <section className="panel settings-panel">
-              <h2>Hik-Connect account</h2>
-              <Badge tone={provider?.connected ? 'green' : 'amber'}>
-                {provider?.authorizationState || 'Disconnected'}
-              </Badge>
-              <p>
-                {provider?.user?.email ||
-                  provider?.user?.username ||
-                  (provider?.connected
-                    ? 'Workspace camera connection active'
-                    : 'No provider account connected')}
-              </p>
-              {googleLinked && <Badge tone="green">Google sign-in linked</Badge>}
-              <p className="muted">
-                {provider?.playbackReady
-                  ? 'Playback authorization saved.'
-                  : provider?.connected
-                    ? 'Device access is connected. Playback authorization is still required.'
-                    : 'Sign in to load your owned and shared recorders.'}
-              </p>
+              <SectionHeader
+                icon={Link2}
+                title="Hik-Connect account"
+                description="Manage camera access, playback authorization, and account recovery."
+                badge={
+                  <Badge tone={provider?.connected ? 'green' : 'amber'}>
+                    {provider?.authorizationState || 'Disconnected'}
+                  </Badge>
+                }
+              />
+              <div className="settings-connection-summary">
+                <span className="settings-connection-symbol">
+                  <Cctv size={24} />
+                </span>
+                <div>
+                  <small>CONNECTED PROVIDER</small>
+                  <strong>
+                    {provider?.user?.email ||
+                      provider?.user?.username ||
+                      (provider?.connected
+                        ? 'Workspace camera connection active'
+                        : 'No provider account connected')}
+                  </strong>
+                  <p>
+                    {provider?.playbackReady
+                      ? 'Camera access and playback authorization are ready.'
+                      : provider?.connected
+                        ? 'Device access is connected. Playback authorization is still required.'
+                        : 'Sign in to load your owned and shared recorders.'}
+                  </p>
+                </div>
+              </div>
               {user?.role === 'admin' ? (
-                <div className="control-actions mt-4">
-                  <Button variant="primary" onClick={() => setConnection(true)}>
-                    <Link2 size={15} />
-                    Sign in to Hik-Connect
-                  </Button>
-                  <Button
-                    loading={busy}
-                    onClick={() =>
-                      provider?.playbackRecovery === 'external-authorization'
-                        ? setPlaybackImport(true)
-                        : void action(() => request('/api/connect/desktop', {}))
+                <div className="settings-groups">
+                  <SettingGroup
+                    icon={Cctv}
+                    title="Camera access"
+                    description="Connect the account that owns or shares your recorders."
+                  >
+                    <Button variant="primary" onClick={() => setConnection(true)}>
+                      <Link2 size={15} />
+                      Sign in to Hik-Connect
+                    </Button>
+                    <Button disabled={!provider?.connected} onClick={() => setDisconnect(true)}>
+                      <LogOut size={14} /> Disconnect Hik-Connect
+                    </Button>
+                  </SettingGroup>
+                  <SettingGroup
+                    icon={Play}
+                    title="Playback authorization"
+                    description={
+                      provider?.playbackReady
+                        ? 'Your playback authorization is saved.'
+                        : 'Authorize recorded playback separately from live device access.'
                     }
                   >
-                    {provider?.playbackRecovery === 'external-authorization'
-                      ? 'Import playback authorization'
-                      : 'Use iVMS playback sign-in'}
-                  </Button>
-                  {googleLinked ? (
+                    <Badge tone={provider?.playbackReady ? 'green' : 'amber'}>
+                      {provider?.playbackReady ? 'Authorized' : 'Authorization required'}
+                    </Badge>
                     <Button
                       loading={busy}
                       onClick={() =>
-                        void action(async () => {
-                          await api.unlinkGoogle();
-                          setGoogleLinked(false);
-                        })
+                        provider?.playbackRecovery === 'external-authorization'
+                          ? setPlaybackImport(true)
+                          : void action(() => request('/api/connect/desktop', {}))
                       }
                     >
-                      Disconnect Google sign-in
+                      {provider?.playbackRecovery === 'external-authorization'
+                        ? 'Import playback authorization'
+                        : 'Use iVMS playback sign-in'}
                     </Button>
-                  ) : (
-                    <GoogleAuthButton
-                      text="signin_with"
-                      onCredential={(credential) =>
-                        void action(async () => {
-                          await api.linkGoogle(credential);
-                          setGoogleLinked(true);
-                        })
-                      }
-                    />
-                  )}
-                  <Button disabled={!provider?.connected} onClick={() => setDisconnect(true)}>
-                    Disconnect Hik-Connect
-                  </Button>
-                  <Button
-                    loading={busy}
-                    onClick={() => void action(() => request('/api/provider/recovery/retry', {}))}
+                  </SettingGroup>
+                  <SettingGroup
+                    icon={ShieldCheck}
+                    title="Google sign-in"
+                    description="Link or manage Google sign-in for your viewer account."
                   >
-                    <RefreshCw size={14} />
-                    Retry saved recovery
-                  </Button>
-                  {provider?.automaticReconnect && (
+                    {googleLinked && <Badge tone="green">Linked</Badge>}
+                    {googleLinked ? (
+                      <Button
+                        loading={busy}
+                        onClick={() =>
+                          void action(async () => {
+                            await api.unlinkGoogle();
+                            setGoogleLinked(false);
+                          })
+                        }
+                      >
+                        Disconnect Google sign-in
+                      </Button>
+                    ) : (
+                      <GoogleAuthButton
+                        text="signin_with"
+                        onCredential={(credential) =>
+                          void action(async () => {
+                            await api.linkGoogle(credential);
+                            setGoogleLinked(true);
+                          })
+                        }
+                      />
+                    )}
+                  </SettingGroup>
+                  <SettingGroup
+                    icon={RefreshCw}
+                    title="Connection recovery"
+                    description={
+                      provider?.automaticReconnect
+                        ? 'Automatic recovery is enabled for this provider account.'
+                        : 'Retry a previously saved provider authorization.'
+                    }
+                  >
                     <Button
                       loading={busy}
-                      onClick={() =>
-                        void action(() => request('/api/provider/recovery/disable', {}))
-                      }
+                      onClick={() => void action(() => request('/api/provider/recovery/retry', {}))}
                     >
-                      Disable automatic recovery
+                      <RefreshCw size={14} />
+                      Retry saved recovery
                     </Button>
-                  )}
+                    {provider?.automaticReconnect && (
+                      <Button
+                        loading={busy}
+                        onClick={() =>
+                          void action(() => request('/api/provider/recovery/disable', {}))
+                        }
+                      >
+                        Disable automatic recovery
+                      </Button>
+                    )}
+                  </SettingGroup>
                 </div>
               ) : (
                 <p>Your workspace administrator manages this connection.</p>
               )}
-              <p className="small muted mt-4">
-                Provider credentials stay on the backend. Verification challenges must be completed
-                as required by Hik-Connect; playback may need separate iVMS authorization.
+              <p className="settings-note">
+                <Shield size={16} aria-hidden="true" />
+                <span>
+                  Provider credentials stay on the backend. Verification challenges must be
+                  completed as required by Hik-Connect; playback may need separate iVMS
+                  authorization.
+                </span>
               </p>
             </section>
           )}
           {tab === 'viewing' && (
             <section className="panel settings-panel">
-              <h2>Viewing preferences</h2>
-              <p className="muted" style={{ marginBottom: 20 }}>
-                Preferences update instantly across your session and are automatically saved to your
-                account.
+              <SectionHeader
+                icon={SlidersHorizontal}
+                title="Viewing preferences"
+                description="Make the workspace feel right for the way you work."
+                badge={
+                  <span className="settings-save-hint">
+                    <Check size={14} /> Auto-saved
+                  </span>
+                }
+              />
+              <div className="settings-groups">
+                <SettingGroup
+                  icon={Sun}
+                  title="Appearance"
+                  description="Choose a light or dark workspace."
+                >
+                  <Choices
+                    label="Appearance"
+                    theme
+                    value={state.settings.theme}
+                    options={[
+                      { value: 'light', label: 'Light theme', icon: Sun },
+                      { value: 'dark', label: 'Dark theme', icon: Moon },
+                    ]}
+                    onChange={(value) => void updatePreference('theme', value)}
+                  />
+                </SettingGroup>
+                <SettingGroup
+                  icon={Monitor}
+                  title="Default video quality"
+                  description="Balance playback detail and available bandwidth."
+                >
+                  <Choices
+                    label="Video quality"
+                    value={state.settings.quality}
+                    options={[
+                      { value: 'auto', label: 'Adaptive', description: 'Auto' },
+                      { value: 'sd', label: 'SD', description: 'Standard' },
+                      { value: 'hd', label: 'HD', description: 'High definition' },
+                    ]}
+                    onChange={(value) => void updatePreference('quality', value)}
+                  />
+                </SettingGroup>
+                <SettingGroup
+                  icon={Timer}
+                  title="Camera rotation interval"
+                  description="How long each camera stays on screen during rotation."
+                >
+                  <Choices
+                    label="Rotation interval"
+                    value={state.settings.rotation}
+                    options={[15, 30, 60, 120].map((value) => ({
+                      value,
+                      label: `${value} seconds`,
+                    }))}
+                    onChange={(value) => void updatePreference('rotation', value)}
+                  />
+                </SettingGroup>
+                <SettingGroup
+                  icon={Maximize2}
+                  title="Command deck view mode"
+                  description="Choose the space available to your camera workspace."
+                >
+                  <Choices
+                    label="Command deck view mode"
+                    value={state.settings.pureSite ?? true}
+                    options={[
+                      { value: true, label: 'Pure Site View', icon: Maximize2 },
+                      { value: false, label: 'Standard View', icon: Minimize2 },
+                    ]}
+                    onChange={(value) => void updatePreference('pureSite', value)}
+                  />
+                </SettingGroup>
+                <SettingGroup
+                  icon={Sparkles}
+                  title="Interface animation motion"
+                  description="Control the motion used for page and card reveals."
+                >
+                  <Choices
+                    label="Interface motion"
+                    value={Boolean(state.settings.reduceMotion)}
+                    options={[
+                      { value: false, label: 'Full animations' },
+                      { value: true, label: 'Reduced motion' },
+                    ]}
+                    onChange={(value) => void updatePreference('reduceMotion', value)}
+                  />
+                </SettingGroup>
+              </div>
+              <p className="settings-note">
+                <Info size={16} />
+                <span>
+                  Preferences update across your session and are automatically saved to your
+                  account.
+                </span>
               </p>
-
-              <div className="setting-block" style={{ marginBottom: 22 }}>
-                <span
-                  className="setting-label-bold"
-                  style={{
-                    display: 'block',
-                    fontSize: 13,
-                    fontWeight: 700,
-                    color: 'var(--text)',
-                    marginBottom: 8,
-                  }}
-                >
-                  Appearance
-                </span>
-                <div className="settings-button-group" role="radiogroup" aria-label="Appearance">
-                  {[
-                    { id: 'dark', label: 'Dark theme', icon: Moon },
-                    { id: 'light', label: 'Light theme', icon: Sun },
-                  ].map((opt) => {
-                    const active = state.settings.theme === opt.id;
-                    const Icon = opt.icon;
-                    return (
-                      <button
-                        key={opt.id}
-                        type="button"
-                        role="radio"
-                        aria-checked={active}
-                        className={`settings-option-btn ${active ? 'active' : ''}`}
-                        onClick={() => void updatePreference('theme', opt.id)}
-                      >
-                        <Icon size={15} />
-                        <span>{opt.label}</span>
-                        {active && <Check size={14} className="active-check" />}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="setting-block" style={{ marginBottom: 22 }}>
-                <span
-                  className="setting-label-bold"
-                  style={{
-                    display: 'block',
-                    fontSize: 13,
-                    fontWeight: 700,
-                    color: 'var(--text)',
-                    marginBottom: 8,
-                  }}
-                >
-                  Default video quality
-                </span>
-                <div className="settings-button-group" role="radiogroup" aria-label="Video quality">
-                  {[
-                    { id: 'auto', label: 'Adaptive (Auto)' },
-                    { id: 'sd', label: 'SD (Standard Def)' },
-                    { id: 'hd', label: 'HD (High Def)' },
-                  ].map((opt) => {
-                    const active = state.settings.quality === opt.id;
-                    return (
-                      <button
-                        key={opt.id}
-                        type="button"
-                        role="radio"
-                        aria-checked={active}
-                        className={`settings-option-btn ${active ? 'active' : ''}`}
-                        onClick={() => void updatePreference('quality', opt.id)}
-                      >
-                        <span>{opt.label}</span>
-                        {active && <Check size={14} className="active-check" />}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="setting-block" style={{ marginBottom: 22 }}>
-                <span
-                  className="setting-label-bold"
-                  style={{
-                    display: 'block',
-                    fontSize: 13,
-                    fontWeight: 700,
-                    color: 'var(--text)',
-                    marginBottom: 8,
-                  }}
-                >
-                  Camera rotation interval
-                </span>
-                <div
-                  className="settings-button-group"
-                  role="radiogroup"
-                  aria-label="Rotation interval"
-                >
-                  {[
-                    { id: 15, label: '15 seconds' },
-                    { id: 30, label: '30 seconds' },
-                    { id: 60, label: '60 seconds' },
-                    { id: 120, label: '120 seconds' },
-                  ].map((opt) => {
-                    const active = state.settings.rotation === opt.id;
-                    return (
-                      <button
-                        key={opt.id}
-                        type="button"
-                        role="radio"
-                        aria-checked={active}
-                        className={`settings-option-btn ${active ? 'active' : ''}`}
-                        onClick={() => void updatePreference('rotation', opt.id)}
-                      >
-                        <span>{opt.label}</span>
-                        {active && <Check size={14} className="active-check" />}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="setting-block" style={{ marginBottom: 22 }}>
-                <span
-                  className="setting-label-bold"
-                  style={{
-                    display: 'block',
-                    fontSize: 13,
-                    fontWeight: 700,
-                    color: 'var(--text)',
-                    marginBottom: 8,
-                  }}
-                >
-                  Command deck view mode
-                </span>
-                <div
-                  className="settings-button-group"
-                  role="radiogroup"
-                  aria-label="Command deck view mode"
-                >
-                  {[
-                    { id: true, label: 'Pure Site View', icon: Maximize2 },
-                    { id: false, label: 'Standard View', icon: Minimize2 },
-                  ].map((opt) => {
-                    const isPure = state.settings.pureSite ?? true;
-                    const active = isPure === opt.id;
-                    const Icon = opt.icon;
-                    return (
-                      <button
-                        key={String(opt.id)}
-                        type="button"
-                        role="radio"
-                        aria-checked={active}
-                        className={`settings-option-btn ${active ? 'active' : ''}`}
-                        onClick={() => void updatePreference('pureSite', opt.id)}
-                      >
-                        <Icon size={14} />
-                        <span>{opt.label}</span>
-                        {active && <Check size={14} className="active-check" />}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="setting-block" style={{ marginBottom: 12 }}>
-                <span
-                  className="setting-label-bold"
-                  style={{
-                    display: 'block',
-                    fontSize: 13,
-                    fontWeight: 700,
-                    color: 'var(--text)',
-                    marginBottom: 8,
-                  }}
-                >
-                  Interface animation motion
-                </span>
-                <div
-                  className="settings-button-group"
-                  role="radiogroup"
-                  aria-label="Interface motion"
-                >
-                  {[
-                    { id: false, label: 'Full animations' },
-                    { id: true, label: 'Reduced motion' },
-                  ].map((opt) => {
-                    const active = !state.settings.reduceMotion === !opt.id;
-                    return (
-                      <button
-                        key={String(opt.id)}
-                        type="button"
-                        role="radio"
-                        aria-checked={active}
-                        className={`settings-option-btn ${active ? 'active' : ''}`}
-                        onClick={() => void updatePreference('reduceMotion', opt.id)}
-                      >
-                        <span>{opt.label}</span>
-                        {active && <Check size={14} className="active-check" />}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
             </section>
           )}
           {tab === 'storage' && (
             <section className="panel settings-panel">
-              <h2>Server recording storage</h2>
-              {storage ? (
+              <SectionHeader
+                icon={HardDrive}
+                title="Server recording storage"
+                description="Keep track of saved clips, capacity, and your retention policy."
+              />
+              {storageLoading ? (
+                <div
+                  className="settings-loading"
+                  aria-label="Loading recording storage"
+                  aria-busy="true"
+                >
+                  <AsciiSkeleton lines={4} variant="dither" />
+                </div>
+              ) : storage ? (
                 <>
-                  <p>
-                    {formatBytes(storage.usedBytes)} / {formatBytes(storage.maxBytes)}
-                  </p>
-                  <p>{storage.clipCount} stored clips</p>
+                  <div className="settings-storage-stats">
+                    <div>
+                      <span>
+                        <Database size={16} /> Space used
+                      </span>
+                      <strong>{formatBytes(storage.usedBytes)}</strong>
+                      <small>of {formatBytes(storage.maxBytes)} available</small>
+                    </div>
+                    <div>
+                      <span>
+                        <Play size={16} /> Stored clips
+                      </span>
+                      <strong>{storage.clipCount}</strong>
+                      <small>saved in your workspace</small>
+                    </div>
+                    <div>
+                      <span>
+                        <Timer size={16} /> Retention
+                      </span>
+                      <strong>
+                        {storage.retentionDays}
+                        <em> days</em>
+                      </strong>
+                      <small>current recording policy</small>
+                    </div>
+                  </div>
+                  <div className="settings-capacity">
+                    <div>
+                      <strong>Storage capacity</strong>
+                      <span>
+                        {storage.maxBytes > 0
+                          ? Math.round((storage.usedBytes / storage.maxBytes) * 100)
+                          : 0}
+                        % used
+                      </span>
+                    </div>
+                    <progress
+                      aria-label="Recording storage used"
+                      max={100}
+                      value={
+                        storage.maxBytes > 0
+                          ? Math.min(100, (storage.usedBytes / storage.maxBytes) * 100)
+                          : 0
+                      }
+                    />
+                    <p>
+                      {formatBytes(storage.usedBytes)} of {formatBytes(storage.maxBytes)}
+                    </p>
+                  </div>
                   {user?.role === 'admin' && (
-                    <Field label="Retention period">
-                      <select
-                        value={storage.retentionDays}
-                        onChange={async (e) => {
-                          try {
-                            const d = await request('/api/recordings/settings', {
-                              retentionDays: Number(e.target.value),
-                              maxBytes: storage.maxBytes,
-                            });
-                            setStorage(d.storage || d);
-                            toast.success('Retention saved.');
-                          } catch (e) {
-                            toast.error((e as Error).message);
-                          }
-                        }}
-                      >
-                        {[1, 7, 30, 90].map((n) => (
-                          <option value={n} key={n}>
-                            {n} days
-                          </option>
-                        ))}
-                      </select>
-                    </Field>
+                    <SettingGroup
+                      icon={Timer}
+                      title="Retention period"
+                      description="Choose how long server recordings are kept in this workspace."
+                    >
+                      <Field label="Retention period">
+                        <select
+                          value={storage.retentionDays}
+                          onChange={async (e) => {
+                            try {
+                              const d = await request('/api/recordings/settings', {
+                                retentionDays: Number(e.target.value),
+                                maxBytes: storage.maxBytes,
+                              });
+                              setStorage(d.storage || d);
+                              toast.success('Retention saved.');
+                            } catch (e) {
+                              toast.error((e as Error).message);
+                            }
+                          }}
+                        >
+                          {[1, 7, 30, 90].map((n) => (
+                            <option value={n} key={n}>
+                              {n} days
+                            </option>
+                          ))}
+                        </select>
+                      </Field>
+                    </SettingGroup>
                   )}
                 </>
               ) : (
-                <p>Storage summary unavailable or not permitted.</p>
+                <p className="settings-note">
+                  <Info size={16} />
+                  <span>Storage summary unavailable or not permitted.</span>
+                </p>
               )}
             </section>
           )}
           {tab === 'fleet' && (
             <section className="panel settings-panel">
-              <div className="settings-section-heading">
-                <Route size={20} />
-                <div>
-                  <h2>Fleet telemetry</h2>
-                  <p>Add WheelsEye accounts and discover their vehicle devices.</p>
-                </div>
-              </div>
+              <SectionHeader
+                icon={Route}
+                title="Fleet telemetry"
+                description="Connect WheelsEye accounts and manage GPS and fuel devices."
+              />
               {user?.role === 'admin' ? (
                 <>
-                  <form
-                    onSubmit={async (e) => {
-                      e.preventDefault();
-                      const form = e.currentTarget,
-                        data = new FormData(form);
-                      setWheelseyeBusy(true);
-                      try {
-                        const result = await fleetApi.addWheelseyeSource(
-                          String(data.get('label')),
-                          String(data.get('url')),
-                        );
-                        setWheelseyeSources((current) => [
-                          ...current.filter((item) => item.id !== result.source.id),
-                          result.source,
-                        ]);
-                        form.reset();
-                        toast.success(
-                          result.discoveryPending
-                            ? 'Connection saved. Device discovery will run during the next poll.'
-                            : `${result.fetched} device(s) discovered and saved.`,
-                        );
-                      } catch (e) {
-                        toast.error((e as Error).message);
-                      } finally {
-                        setWheelseyeBusy(false);
-                      }
-                    }}
-                  >
-                    <Field label="Connection name">
-                      <input name="label" placeholder="Main WheelsEye account" required />
-                    </Field>
-                    <Field label="WheelsEye currentLoc URL">
-                      <input
-                        name="url"
-                        type="url"
-                        placeholder="https://api.wheelseye.com/currentLoc?accessToken=…"
-                        required
-                      />
-                    </Field>
-                    <Button type="submit" variant="primary" loading={wheelseyeBusy}>
-                      Save WheelsEye connection
-                    </Button>
-                  </form>
-                  <div className="settings-list mt-6">
-                    {wheelseyeSources.map((source) => (
-                      <div className="settings-list-row" key={source.id}>
-                        <div>
-                          <strong>{source.label}</strong>
-                          <small>
-                            {source.devices?.length || 0} devices · polls every{' '}
-                            {source.pollIntervalSeconds || 60}s
-                          </small>
-                        </div>
-                        <div className="control-actions">
-                          <Button
-                            onClick={() => {
-                              const first = source.devices?.[0];
-                              if (first) {
-                                setDeviceView({ sourceId: source.id, device: first });
-                                setDeviceDetail(null);
-                              } else toast.error('No devices have been discovered for this source yet.');
-                            }}
-                          >
-                            View devices
-                          </Button>
-                          <Button
-                            onClick={() =>
-                              void fleetApi
-                                .removeWheelseyeSource(source.id)
-                                .then(() =>
-                                  setWheelseyeSources((items) =>
-                                    items.filter((item) => item.id !== source.id),
-                                  ),
-                                )
-                                .catch((e) => toast.error(e.message))
-                            }
-                          >
-                            Remove
-                          </Button>
-                        </div>
+                  <div className="settings-subsection">
+                    <div className="settings-subsection-heading">
+                      <span>
+                        <Plus size={17} />
+                      </span>
+                      <div>
+                        <h3>Add a connection</h3>
+                        <p>Discover vehicles using your WheelsEye currentLoc endpoint.</p>
                       </div>
-                    ))}
+                    </div>
+                    <form
+                      className="settings-telemetry-form"
+                      onSubmit={async (e) => {
+                        e.preventDefault();
+                        const form = e.currentTarget,
+                          data = new FormData(form);
+                        setWheelseyeBusy(true);
+                        try {
+                          const result = await fleetApi.addWheelseyeSource(
+                            String(data.get('label')),
+                            String(data.get('url')),
+                          );
+                          setWheelseyeSources((current) => [
+                            ...current.filter((item) => item.id !== result.source.id),
+                            result.source,
+                          ]);
+                          form.reset();
+                          toast.success(
+                            result.discoveryPending
+                              ? 'Connection saved. Device discovery will run during the next poll.'
+                              : `${result.fetched} device(s) discovered and saved.`,
+                          );
+                        } catch (e) {
+                          toast.error((e as Error).message);
+                        } finally {
+                          setWheelseyeBusy(false);
+                        }
+                      }}
+                    >
+                      <Field label="Connection name">
+                        <input name="label" placeholder="Main WheelsEye account" required />
+                      </Field>
+                      <Field label="WheelsEye currentLoc URL">
+                        <input
+                          name="url"
+                          type="url"
+                          placeholder="https://api.wheelseye.com/currentLoc?accessToken=…"
+                          required
+                        />
+                      </Field>
+                      <Button type="submit" variant="primary" loading={wheelseyeBusy}>
+                        Save WheelsEye connection
+                      </Button>
+                    </form>
                   </div>
-                  <Button
-                    variant="primary"
-                    loading={wheelseyeBusy}
-                    onClick={async () => {
-                      setWheelseyeBusy(true);
-                      try {
-                        const result = await fleetApi.refreshWheelseye();
-                        setWheelseyeSources(result.sources || []);
-                        await refresh();
-                        toast.success('WheelsEye devices and latest GPS data refreshed.');
-                      } catch (e) {
-                        toast.error((e as Error).message);
-                      } finally {
-                        setWheelseyeBusy(false);
-                      }
-                    }}
-                  >
-                    Refresh WheelsEye devices
-                  </Button>
-                  <p className="small muted mt-4">
-                    WheelsEye locations are stored in the backend every minute. Select “View
-                    devices” to inspect the latest provider response and stored samples.
+                  <div className="settings-subsection settings-sources">
+                    <div className="settings-subsection-heading">
+                      <span>
+                        <Satellite size={17} />
+                      </span>
+                      <div>
+                        <h3>Connected accounts</h3>
+                        <p>Inspect devices or manage an existing provider connection.</p>
+                      </div>
+                    </div>
+                    <div className="settings-list" aria-busy={sourcesLoading || undefined}>
+                      {sourcesLoading && (
+                        <div className="settings-loading">
+                          <AsciiSkeleton lines={2} />
+                        </div>
+                      )}
+                      {!sourcesLoading && !wheelseyeSources.length && (
+                        <p className="settings-empty">
+                          No WheelsEye accounts connected yet. Add a connection above to discover
+                          your devices.
+                        </p>
+                      )}
+                      {wheelseyeSources.map((source) => (
+                        <div className="settings-list-row settings-source" key={source.id}>
+                          <span className="settings-source-icon">
+                            <Satellite size={20} />
+                          </span>
+                          <div className="settings-source-copy">
+                            <strong>{source.label}</strong>
+                            <small>
+                              {source.devices?.length || 0} devices · polls every{' '}
+                              {source.pollIntervalSeconds || 60}s
+                            </small>
+                          </div>
+                          <div className="settings-source-actions">
+                            <Button
+                              onClick={() => {
+                                const first = source.devices?.[0];
+                                if (first) {
+                                  setDeviceView({ sourceId: source.id, device: first });
+                                  setDeviceDetail(null);
+                                } else
+                                  toast.error(
+                                    'No devices have been discovered for this source yet.',
+                                  );
+                              }}
+                            >
+                              View devices
+                            </Button>
+                            <Button
+                              onClick={() =>
+                                void fleetApi
+                                  .removeWheelseyeSource(source.id)
+                                  .then(() =>
+                                    setWheelseyeSources((items) =>
+                                      items.filter((item) => item.id !== source.id),
+                                    ),
+                                  )
+                                  .catch((e) => toast.error(e.message))
+                              }
+                            >
+                              Remove
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <Button
+                      className="settings-refresh"
+                      loading={wheelseyeBusy}
+                      onClick={async () => {
+                        setWheelseyeBusy(true);
+                        try {
+                          const result = await fleetApi.refreshWheelseye();
+                          setWheelseyeSources(result.sources || []);
+                          await refresh();
+                          toast.success('WheelsEye devices and latest GPS data refreshed.');
+                        } catch (e) {
+                          toast.error((e as Error).message);
+                        } finally {
+                          setWheelseyeBusy(false);
+                        }
+                      }}
+                    >
+                      <RefreshCw size={15} />
+                      Refresh WheelsEye devices
+                    </Button>
+                  </div>
+                  <p className="settings-note">
+                    <Info size={16} />
+                    <span>
+                      WheelsEye locations are stored in the backend every minute. Select “View
+                      devices” to inspect the latest provider response and stored samples.
+                    </span>
                   </p>
                 </>
               ) : (
@@ -597,8 +811,25 @@ export function Settings() {
           )}
           {tab === 'security' && (
             <section className="panel settings-panel">
-              <h2>Change viewer password</h2>
+              <SectionHeader
+                icon={ShieldCheck}
+                title="Viewer password"
+                description="Keep your viewer account and workspace access protected."
+              />
+              <div className="settings-security-summary">
+                <span>
+                  <KeyRound size={24} />
+                </span>
+                <div>
+                  <h3>Change your password</h3>
+                  <p>
+                    Use at least 12 characters. Updating your password signs out other viewer
+                    sessions.
+                  </p>
+                </div>
+              </div>
               <form
+                className="settings-password-form"
                 onSubmit={async (e) => {
                   e.preventDefault();
                   const form = e.currentTarget,
@@ -616,26 +847,40 @@ export function Settings() {
                   }
                 }}
               >
-                <Field label="Current password">
-                  <input type="password" name="current" autoComplete="current-password" required />
-                </Field>
-                <Field label="New password">
-                  <input
-                    type="password"
-                    name="new"
-                    autoComplete="new-password"
-                    minLength={12}
-                    required
-                  />
-                </Field>
-                <Button type="submit" loading={busy}>
+                <div className="settings-form-fields">
+                  <Field label="Current password">
+                    <input
+                      type="password"
+                      name="current"
+                      autoComplete="current-password"
+                      required
+                    />
+                  </Field>
+                  <Field label="New password">
+                    <input
+                      type="password"
+                      name="new"
+                      autoComplete="new-password"
+                      minLength={12}
+                      required
+                    />
+                  </Field>
+                </div>
+                <Button type="submit" variant="primary" loading={busy}>
+                  <KeyRound size={15} />
                   Save new password
                 </Button>
               </form>
-              <Button className="mt-4" onClick={() => void signOut()}>
-                <LogOut size={15} />
-                Sign out
-              </Button>
+              <div className="settings-signout">
+                <div>
+                  <h3>Current session</h3>
+                  <p>Sign out of the fleet workspace on this device.</p>
+                </div>
+                <Button onClick={() => void signOut()}>
+                  <LogOut size={15} />
+                  Sign out
+                </Button>
+              </div>
             </section>
           )}
         </div>
@@ -749,7 +994,11 @@ export function Settings() {
             setDeviceDetail(null);
           }
         }}
-        title={deviceView ? `WheelsEye · ${deviceView.device.vehicleNumber || deviceView.device.deviceNumber}` : 'WheelsEye device'}
+        title={
+          deviceView
+            ? `WheelsEye · ${deviceView.device.vehicleNumber || deviceView.device.deviceNumber}`
+            : 'WheelsEye device'
+        }
         description="Latest live provider reading and persisted one-minute location samples."
         wide
       >
@@ -760,23 +1009,41 @@ export function Settings() {
                 <strong>{deviceView.device.vehicleNumber || 'Unregistered vehicle'}</strong>
                 <small>Device {deviceView.device.deviceNumber}</small>
               </div>
-              <Badge tone={deviceDetail ? 'green' : 'neutral'}>{deviceBusy ? 'Loading live data' : deviceDetail ? 'Live checked' : 'Waiting'}</Badge>
+              <Badge tone={deviceDetail ? 'green' : 'neutral'}>
+                {deviceBusy ? 'Loading live data' : deviceDetail ? 'Live checked' : 'Waiting'}
+              </Badge>
             </div>
             {deviceDetail && (
               <>
                 <div className="telemetry-device-live">
                   <strong>{deviceDetail.vehicle.speed} km/h</strong>
-                  <span>{deviceDetail.vehicle.status} · {deviceDetail.vehicle.location?.address || 'Location unavailable'}</span>
-                  <span>GPS {new Date(deviceDetail.vehicle.gpsTime * 1000).toLocaleString('en-IN')}</span>
+                  <span>
+                    {deviceDetail.vehicle.status} ·{' '}
+                    {deviceDetail.vehicle.location?.address || 'Location unavailable'}
+                  </span>
+                  <span>
+                    GPS {new Date(deviceDetail.vehicle.gpsTime * 1000).toLocaleString('en-IN')}
+                  </span>
                 </div>
                 <div className="table-scroll">
                   <table className="data-table">
-                    <thead><tr><th>Time</th><th>Location</th><th>Speed</th><th>Ignition</th><th>Fuel</th></tr></thead>
+                    <thead>
+                      <tr>
+                        <th>Time</th>
+                        <th>Location</th>
+                        <th>Speed</th>
+                        <th>Ignition</th>
+                        <th>Fuel</th>
+                      </tr>
+                    </thead>
                     <tbody>
                       {deviceDetail.samples.map((sample: any, index: number) => (
                         <tr key={`${sample.vehicle.gpsTime}-${index}`}>
                           <td>{new Date(sample.vehicle.gpsTime * 1000).toLocaleString('en-IN')}</td>
-                          <td>{sample.vehicle.location?.address || `${sample.vehicle.location?.latitude}, ${sample.vehicle.location?.longitude}`}</td>
+                          <td>
+                            {sample.vehicle.location?.address ||
+                              `${sample.vehicle.location?.latitude}, ${sample.vehicle.location?.longitude}`}
+                          </td>
                           <td>{sample.vehicle.speed} km/h</td>
                           <td>{sample.vehicle.ignition ? 'On' : 'Off'}</td>
                           <td>{sample.vehicle.fuelData?.currentLiters ?? '—'}</td>
@@ -784,7 +1051,11 @@ export function Settings() {
                       ))}
                     </tbody>
                   </table>
-                  {!deviceDetail.samples.length && <p className="small muted">No stored samples yet; the next server poll will appear here.</p>}
+                  {!deviceDetail.samples.length && (
+                    <p className="small muted">
+                      No stored samples yet; the next server poll will appear here.
+                    </p>
+                  )}
                 </div>
               </>
             )}

@@ -61,6 +61,32 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     wasMobile.current = mobile;
   }, [mobile]);
   useEffect(() => {
+    if (!mobile) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const trapFocus = (event: KeyboardEvent) => {
+      if (event.key !== 'Tab') return;
+      const controls = shellRef.current?.querySelectorAll<HTMLElement>(
+        '.sidebar a[href], .sidebar button:not([disabled])',
+      );
+      if (!controls?.length) return;
+      const first = controls[0],
+        last = controls[controls.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener('keydown', trapFocus);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', trapFocus);
+    };
+  }, [mobile]);
+  useEffect(() => {
     const updateTime = () => {
       const now = new Date();
       setCurrentTime(
@@ -133,6 +159,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         aria-label="Workspace sidebar"
         role={mobile ? 'dialog' : undefined}
         aria-modal={mobile || undefined}
+        data-ascii-trigger={`${mobile}-${collapsed}`}
         data-lenis-prevent
       >
         <IconButton
@@ -305,8 +332,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
           <div className="topbar-actions">
             {currentTime && (
-              <span className="topbar-clock-badge" title="Local time (Asia/Kolkata)">
-                <Clock size={13} style={{ display: 'inline', marginRight: 5, verticalAlign: 'middle' }} />
+              <span
+                className="topbar-clock-badge"
+                title="Local time (Asia/Kolkata)"
+                data-ascii-live
+              >
+                <Clock
+                  size={13}
+                  style={{ display: 'inline', marginRight: 5, verticalAlign: 'middle' }}
+                />
                 {currentTime}
               </span>
             )}

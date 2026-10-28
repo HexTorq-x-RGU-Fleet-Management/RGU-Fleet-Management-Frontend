@@ -1,7 +1,6 @@
 'use client';
 
 import { AsciiSkeleton, type SkeletonVariant } from 'ascii-reveal';
-import { TextAsciiReveal } from './text-ascii-reveal';
 
 function SkeletonCards({
   cards,
@@ -13,7 +12,10 @@ function SkeletonCards({
   variant: SkeletonVariant;
 }) {
   return (
-    <div className={`ascii-skeleton-grid ${compact ? 'ascii-skeleton-grid-compact' : ''}`} aria-hidden="true">
+    <div
+      className={`ascii-skeleton-grid ${compact ? 'ascii-skeleton-grid-compact' : ''}`}
+      aria-hidden="true"
+    >
       {Array.from({ length: cards }, (_, index) => (
         <div className="ascii-skeleton-card" key={index}>
           <AsciiSkeleton
@@ -49,6 +51,7 @@ export function AsciiLoading({
       }`}
       role="status"
       aria-busy="true"
+      data-ascii="skip"
     >
       <SkeletonCards cards={cards} compact={compact} variant={variant} />
       <span className="ascii-loading-label">{label}</span>
@@ -58,7 +61,13 @@ export function AsciiLoading({
 
 export function WorkspaceShellLoading() {
   return (
-    <div className="workspace-shell-loading" role="status" aria-label="Checking account session" aria-busy="true">
+    <div
+      className="workspace-shell-loading"
+      data-ascii="skip"
+      role="status"
+      aria-label="Checking account session"
+      aria-busy="true"
+    >
       <aside className="workspace-shell-loading-sidebar" aria-hidden="true">
         <div className="workspace-shell-loading-brand">
           <span className="skeleton" />
@@ -99,12 +108,21 @@ export function WorkspaceShellLoading() {
           <div className="workspace-shell-loading-stats" aria-hidden="true">
             {Array.from({ length: 4 }, (_, index) => (
               <div className="workspace-shell-loading-stat" key={index}>
-                <AsciiSkeleton variant="dither" lines={2} widths={['54%', '28%']} seed={index + 1} />
+                <AsciiSkeleton
+                  variant="dither"
+                  lines={2}
+                  widths={['54%', '28%']}
+                  seed={index + 1}
+                />
               </div>
             ))}
           </div>
           <div className="workspace-shell-loading-table" aria-hidden="true">
-            <AsciiSkeleton variant="dither" lines={7} widths={['22%', '96%', '92%', '94%', '88%', '92%', '76%']} />
+            <AsciiSkeleton
+              variant="dither"
+              lines={7}
+              widths={['22%', '96%', '92%', '94%', '88%', '92%', '76%']}
+            />
           </div>
         </section>
       </main>
@@ -113,13 +131,8 @@ export function WorkspaceShellLoading() {
 }
 
 /**
- * The same decode treatment used by the shared application reveal, with a
- * skeleton kept in place until asynchronous data is actually available.
- *
- *   <TextAsciiReveal loading={!data}>
- *     {data ? <Profile data={data} /> : <AsciiSkeleton variant="dither" />}
- *   </TextAsciiReveal>
- *
+ * Keep the real loading placeholder until data arrives. The shared site
+ * controller reveals the arriving content, avoiding nested decode waves.
  */
 export function AsciiRevealArea({
   loading,
@@ -135,18 +148,19 @@ export function AsciiRevealArea({
   variant?: SkeletonVariant;
 }) {
   return (
-    <TextAsciiReveal loading={loading}>
+    <div aria-busy={loading || undefined}>
       {loading ? (
         <div
           className={`ascii-loading ${compact ? 'ascii-loading-compact' : ''}`}
           role="status"
           aria-busy="true"
+          data-ascii="skip"
         >
           <SkeletonCards cards={cards} compact={compact} variant={variant} />
         </div>
       ) : (
         children
       )}
-    </TextAsciiReveal>
+    </div>
   );
 }

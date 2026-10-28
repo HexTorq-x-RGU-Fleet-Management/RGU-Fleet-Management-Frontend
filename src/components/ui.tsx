@@ -1,7 +1,6 @@
 'use client';
 import * as Dialog from '@radix-ui/react-dialog';
 import * as Alert from '@radix-ui/react-alert-dialog';
-import { motion, useReducedMotion } from 'framer-motion';
 import { X, LoaderCircle, ArrowUpRight, Search } from 'lucide-react';
 import type { ReactNode, ButtonHTMLAttributes } from 'react';
 import { useId, useState, isValidElement, cloneElement } from 'react';
@@ -18,6 +17,7 @@ export function Button({
   return (
     <button
       {...props}
+      data-ascii="fade"
       className={`btn btn-${variant} ${className}`}
       disabled={props.disabled || loading}
     >
@@ -146,24 +146,12 @@ export function Confirm({
 export function Reveal({
   children,
   className = '',
-  delay = 0,
 }: {
   children: ReactNode;
   className?: string;
   delay?: number;
 }) {
-  const reduced = useReducedMotion();
-  return (
-    <motion.div
-      className={className}
-      initial={reduced ? false : { opacity: 0, y: 16, filter: 'blur(4px)' }}
-      whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-      viewport={{ once: true, amount: 0.06 }}
-      transition={{ duration: 0.5, delay, ease: [0.16, 1, 0.3, 1] }}
-    >
-      {children}
-    </motion.div>
-  );
+  return <div className={className}>{children}</div>;
 }
 export function PageHeading({
   eyebrow,

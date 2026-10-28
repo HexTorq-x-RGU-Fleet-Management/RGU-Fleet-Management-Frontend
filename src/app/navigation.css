@@ -5,6 +5,10 @@
   flex-shrink: 0;
 }
 .sidebar {
+  max-height: 100dvh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
   overscroll-behavior-y: contain;
   scrollbar-width: thin;
   scrollbar-color: var(--subtle) transparent;
@@ -15,6 +19,56 @@
 }
 .sidebar .brand {
   margin-bottom: 24px;
+  min-width: 0;
+  width: 100%;
+}
+.sidebar .brand > span:last-child {
+  flex: 1;
+  min-width: 0;
+}
+.sidebar .brand small {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.6;
+}
+.sidebar nav,
+.sidebar-lower {
+  width: 100%;
+  min-width: 0;
+}
+.sidebar .nav-link {
+  min-width: 0;
+  max-width: 100%;
+}
+.sidebar .nav-link > svg,
+.sidebar .profile-button > svg {
+  flex-shrink: 0;
+}
+.sidebar .nav-link > span:not(.nav-active-dot) {
+  min-width: 0;
+  white-space: normal;
+}
+.sidebar .profile-button {
+  min-width: 0;
+}
+.sidebar .profile-button small {
+  white-space: normal;
+}
+.main-shell,
+.main-content {
+  min-width: 0;
+}
+.topbar-location {
+  min-width: 0;
+}
+.topbar-location .breadcrumb-root {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 180px;
+}
+.topbar-page-topic {
+  white-space: nowrap;
 }
 .sidebar::-webkit-scrollbar {
   width: 6px;
@@ -220,6 +274,25 @@
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
 @media (max-width: 760px) {
+  .sidebar {
+    width: min(280px, calc(100vw - 48px));
+    height: 100dvh;
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+  }
+  .topbar-clock-badge {
+    display: none;
+  }
+  .topbar-page-topic {
+    font-size: 13px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .topbar-location {
+    flex: 1;
+  }
+  .topbar-actions {
+    flex-shrink: 0;
+  }
   .icon-button.sidebar-toggle {
     display: none;
   }

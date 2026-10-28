@@ -1,8 +1,6 @@
 'use client';
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
-import { gsap } from 'gsap';
-import { useGSAP } from '@gsap/react';
 import { Cctv, HardDrive, Radio, Star, ArrowUpRight, Link2, RefreshCw } from 'lucide-react';
 import { workingChannels } from '@/lib/fleet';
 import { useWorkspace } from './workspace-provider';
@@ -12,22 +10,7 @@ import { toast } from 'sonner';
 export function RecorderLibrary() {
   const { state, provider, refreshDevices } = useWorkspace(),
     [filter, setFilter] = useState('all'),
-    [busy, setBusy] = useState(false),
-    scope = useRef<HTMLDivElement>(null);
-  useGSAP(
-    () => {
-      if (state.settings.reduceMotion || matchMedia('(prefers-reduced-motion: reduce)').matches)
-        return;
-      gsap.from('.stat-card', {
-        y: 14,
-        opacity: 0,
-        stagger: 0.07,
-        duration: 0.5,
-        ease: 'power2.out',
-      });
-    },
-    { scope, dependencies: [state.settings.reduceMotion] },
-  );
+    [busy, setBusy] = useState(false);
   const recorders = state.recorders,
     list = recorders.filter(
       (r) =>
@@ -36,7 +19,7 @@ export function RecorderLibrary() {
         (filter === 'favourites' && state.favorites.includes(r.id)),
     );
   return (
-    <div ref={scope}>
+    <div>
       <PageHeading
         eyebrow="CAMERA HARDWARE"
         title="Recorder library"

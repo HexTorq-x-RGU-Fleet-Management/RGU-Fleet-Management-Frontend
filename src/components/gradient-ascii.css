@@ -44,6 +44,28 @@ body:has(.auth-ambient-page) {
   inset: 0;
   z-index: 0;
   pointer-events: none;
+  /*
+   * On a hard refresh the WebGL glyph canvas boots hundreds of milliseconds after
+   * first paint, and the ASCII wall used to pop in as one harsh flash. Ramp the
+   * whole ambient layer in with a one-shot keyframe instead of a transition, so
+   * it also plays on elements that start fully opaque at SSR.
+   */
+  animation: auth-ambient-in 720ms ease-out both;
+}
+
+@keyframes auth-ambient-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-ambient {
+    animation: none;
+  }
 }
 
 .auth-page.auth-ambient-page::after {

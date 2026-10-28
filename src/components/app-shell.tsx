@@ -68,8 +68,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     [currentTime, setCurrentTime] = useState('');
   const asciiReveal = useRef<AsciiRevealHandle>(null),
     shellRef = useRef<HTMLDivElement>(null),
-    wasMobile = useRef(false),
-    revealedSurfaces = useRef(new WeakSet<HTMLElement>());
+    wasMobile = useRef(false);
   useEffect(() => {
     if (mobile) {
       shellRef.current?.querySelector<HTMLElement>('.mobile-sidebar-close')?.focus();
@@ -79,20 +78,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     wasMobile.current = mobile;
   }, [mobile]);
   useIsomorphicLayoutEffect(() => {
-    revealedSurfaces.current = new WeakSet<HTMLElement>();
-    const reveal = asciiReveal.current,
-      root = reveal?.element;
-    if (!reveal || !root) return;
-    root.querySelectorAll<HTMLElement>(dashboardCardSelector).forEach((element) => {
-      if (
-        !element.closest('[data-ascii="skip"]') &&
-        !revealedSurfaces.current.has(element)
-      ) {
-        revealedSurfaces.current.add(element);
-        element.setAttribute('data-ascii', 'surface');
-      }
-    });
-    void reveal.reveal();
+    const reveal = asciiReveal.current;
+    if (!reveal || !reveal.element) return;
+    /*
+     * Cards keep their real chrome: the decode pass no longer swaps them for
+     * surface plates (blank boxes with corner frames), which read as broken
+     * flashes on refresh. The fast timing keeps every run readable in <= 400 ms.
+     */
+    void reveal.reveal({ duration: 'fast' });
   }, [path]);
   useEffect(() => {
     const root = asciiReveal.current?.element;
@@ -109,14 +102,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             (element) =>
               element.isConnected &&
               root.contains(element) &&
-              !element.closest('[data-ascii="skip"]') &&
-              !revealedSurfaces.current.has(element),
+              !element.closest('[data-ascii="skip"]'),
           );
           if (!targets.length) continue;
-          for (const element of targets) {
-            revealedSurfaces.current.add(element);
-            element.setAttribute('data-ascii', 'surface');
-          }
           scopes.push(node);
         }
       }
@@ -145,17 +133,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         return;
       }
       const runScope = scope;
-      /*
-       * Data that arrives after the page is already on screen is revealed on the
-       * fast timing: the cinematic wave takes long enough that cards further
-       * down the wave stay invisible, which reads as cards vanishing after load.
-       */
-      void reveal.reveal({ within: runScope, duration: 'fast' }).then(() => {
-        if (!runScope.isConnected) return;
-        runScope
-          .querySelectorAll<HTMLElement>('[data-ascii="surface"]')
-          .forEach((element) => element.removeAttribute('data-ascii'));
-      });
+      void reveal.reveal({ within: runScope, duration: 'fast' });
     });
     observer.observe(root, { childList: true, subtree: true });
     return () => observer.disconnect();
@@ -434,9 +412,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           className="main-content"
           key={path}
           preset="decode"
-          duration="cinematic"
+          duration="fast"
           origin="top-left"
-          speed={0.8}
           selector={dashboardCardSelector}
           revealOnMount={false}
           lazy

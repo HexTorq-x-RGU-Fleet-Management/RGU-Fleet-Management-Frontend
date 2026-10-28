@@ -79,7 +79,9 @@ export function RecorderLibrary() {
               <span>{item.label}</span>
               <item.icon size={18} />
             </div>
-            <div className="stat-value">{item.value}</div>
+            <div className="stat-value" data-ascii="skip">
+              {item.value}
+            </div>
           </div>
         ))}
       </div>

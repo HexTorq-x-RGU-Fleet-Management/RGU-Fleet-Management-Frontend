@@ -573,7 +573,7 @@
   max-width: 100%;
 }
 
-@media (max-width: 1450px) {
+@media (max-width: 900px) {
   .settings-group {
     grid-template-columns: minmax(0, 1fr);
     gap: 16px;

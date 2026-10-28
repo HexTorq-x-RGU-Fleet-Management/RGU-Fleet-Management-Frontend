@@ -274,6 +274,9 @@
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
 @media (max-width: 760px) {
+  :root[data-theme] .sidebar {
+    background: var(--sidebar);
+  }
   .sidebar {
     width: min(280px, calc(100vw - 48px));
     height: 100dvh;

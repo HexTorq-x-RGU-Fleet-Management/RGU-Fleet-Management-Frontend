@@ -994,7 +994,7 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
       </div>
     );
   return (
-    <section className="journey" data-ascii="skip">
+    <section className="journey">
       <div className="fleet-toolbar">
         <div>
           <h2>Journey explorer</h2>
@@ -1026,7 +1026,7 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
       </div>
       <div className="journey-grid">
         <JourneyMap samples={samples} index={index} source={source} />
-        <aside className="journey-reading">
+        <aside className="journey-reading" data-ascii-live>
           <div>
             <span className="eyebrow">
               {cursor === null ? 'LATEST STORED SAMPLE' : 'HISTORY CURSOR'}

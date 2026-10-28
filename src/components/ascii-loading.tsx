@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { AsciiReveal, AsciiSkeleton, type SkeletonVariant } from 'ascii-reveal';
+import { AsciiSkeleton, type SkeletonVariant } from 'ascii-reveal';
+import { TextAsciiReveal } from './text-ascii-reveal';
 
 function SkeletonCards({
   cards,
@@ -57,14 +57,13 @@ export function AsciiLoading({
 }
 
 /**
- * The ascii-reveal README pattern, so every page plays it in one wave:
+ * The same decode treatment used by the shared application reveal, with a
+ * skeleton kept in place until asynchronous data is actually available.
  *
- *   <AsciiReveal loading={!data} preset="decode" duration="fast">
+ *   <TextAsciiReveal loading={!data}>
  *     {data ? <Profile data={data} /> : <AsciiSkeleton variant="dither" />}
- *   </AsciiReveal>
+ *   </TextAsciiReveal>
  *
- * A dither ASCII skeleton holds for at least `minMs` (1.7s) so the decode reveal
- * always plays, and any async `loading` extends the hold until the data lands.
  */
 export function AsciiRevealArea({
   loading,
@@ -72,24 +71,16 @@ export function AsciiRevealArea({
   cards = 3,
   compact = false,
   variant = 'dither',
-  minMs = 1700,
 }: {
   loading: boolean;
   children: React.ReactNode;
   cards?: number;
   compact?: boolean;
   variant?: SkeletonVariant;
-  minMs?: number;
 }) {
-  const [holdDone, setHoldDone] = useState(false);
-  useEffect(() => {
-    const timer = setTimeout(() => setHoldDone(true), minMs);
-    return () => clearTimeout(timer);
-  }, [minMs]);
-  const pending = loading || !holdDone;
   return (
-    <AsciiReveal loading={pending} preset="decode" duration="fast" aria-busy={pending || undefined}>
-      {pending ? (
+    <TextAsciiReveal loading={loading}>
+      {loading ? (
         <div
           className={`ascii-loading ${compact ? 'ascii-loading-compact' : ''}`}
           role="status"
@@ -100,6 +91,6 @@ export function AsciiRevealArea({
       ) : (
         children
       )}
-    </AsciiReveal>
+    </TextAsciiReveal>
   );
 }

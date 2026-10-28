@@ -926,7 +926,12 @@ export default function GradientASCII({
       style={style}
       {...rest}
     >
-      <canvas ref={canvasRef} className="gradient-ascii-canvas" aria-hidden="true" />
+      <canvas
+        ref={canvasRef}
+        className="gradient-ascii-canvas"
+        aria-hidden="true"
+        data-ascii="skip"
+      />
     </div>
   );
 }

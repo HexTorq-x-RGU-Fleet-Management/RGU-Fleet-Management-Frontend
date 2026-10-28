@@ -3,6 +3,7 @@ import { Toaster } from 'sonner';
 import { CircleCheck, CircleX, Info, TriangleAlert } from 'lucide-react';
 import { WorkspaceProvider } from '@/components/workspace-provider';
 import { MotionProvider } from '@/components/motion-provider';
+import { TextAsciiReveal } from '@/components/text-ascii-reveal';
 import './globals.css';
 import './shell.css';
 import './workspace.css';
@@ -39,19 +40,23 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <WorkspaceProvider>
           <MotionProvider>
-            {children}
-            <Toaster
-              position="bottom-right"
-              closeButton
-              richColors
-              icons={{
-                success: <CircleCheck size={18} />,
-                error: <CircleX size={18} />,
-                info: <Info size={18} />,
-                warning: <TriangleAlert size={18} />,
-              }}
-              toastOptions={{ className: 'rgu-toast' }}
-            />
+            <TextAsciiReveal
+              className="site-ascii-reveal"
+            >
+              {children}
+              <Toaster
+                position="bottom-right"
+                closeButton
+                richColors
+                icons={{
+                  success: <CircleCheck size={18} />,
+                  error: <CircleX size={18} />,
+                  info: <Info size={18} />,
+                  warning: <TriangleAlert size={18} />,
+                }}
+                toastOptions={{ className: 'rgu-toast' }}
+              />
+            </TextAsciiReveal>
           </MotionProvider>
         </WorkspaceProvider>
       </body>

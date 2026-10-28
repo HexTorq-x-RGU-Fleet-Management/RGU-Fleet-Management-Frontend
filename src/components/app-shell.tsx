@@ -87,7 +87,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         root = reveal?.element;
       if (!reveal || !root) return;
       root.querySelectorAll<HTMLElement>(dashboardCardSelector).forEach((element) => {
-        if (!revealedSurfaces.current.has(element)) {
+        if (
+          !element.closest('[data-ascii="skip"]') &&
+          !revealedSurfaces.current.has(element)
+        ) {
           revealedSurfaces.current.add(element);
           element.setAttribute('data-ascii', 'surface');
         }
@@ -110,6 +113,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               if (
                 element.isConnected &&
                 root.contains(element) &&
+                !element.closest('[data-ascii="skip"]') &&
                 !revealedSurfaces.current.has(element)
               ) {
                 revealedSurfaces.current.add(element);
@@ -411,7 +415,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           id="main-content"
           className="main-content"
           key={path}
-          preset="terminal"
+          preset="decode"
           duration="cinematic"
           origin="top-left"
           speed={0.8}

@@ -164,7 +164,7 @@ export function JourneyMap({
         <div className="map-network-state" role="status">
           <AsciiSkeleton
             as="div"
-            variant="terminal"
+            variant="dither"
             rows={2}
             width="100%"
             height={22}

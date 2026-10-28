@@ -12,7 +12,6 @@ import './responsive.css';
 import './fleet.css';
 import './navigation.css';
 import 'leaflet/dist/leaflet.css';
-import 'maplibre-gl/dist/maplibre-gl.css';
 import './map.css';
 import './bus-directory.css';
 import './live.css';

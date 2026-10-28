@@ -129,7 +129,8 @@ export function JourneyMap({
         </span>
         <Badge tone="neutral">{source === 'vendor' ? 'WheelsEye GPS' : 'Stored GPS'}</Badge>
         <Button variant="ghost" onClick={() => setEngine(engine === 'leaflet' ? 'maplibre' : 'leaflet')}>
-          {engine === 'leaflet' ? 'Try MapLibre' : 'Use Leaflet'}
+          <Map size={14} />
+          {engine === 'leaflet' ? 'Switch to MapLibre' : 'Switch to Leaflet'}
         </Button>
       </div>
       {engine === 'maplibre' ? (

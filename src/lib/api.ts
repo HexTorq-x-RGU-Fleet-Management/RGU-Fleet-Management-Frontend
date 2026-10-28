@@ -130,6 +130,10 @@ export const fleetApi = {
       undefined,
       signal,
     ),
+  wheelseyeSource: (sourceId: string, live = false, signal?: AbortSignal) =>
+    request(`/api/fleet/wheelseye/source?${new URLSearchParams({ sourceId, ...(live ? { live: '1' } : {}) })}`, undefined, signal),
+  pollWheelseyeSource: (sourceId: string) =>
+    request('/api/fleet/wheelseye/source/poll', { sourceId }),
   addWheelseyeSource: (label: string, url: string) =>
     request('/api/fleet/wheelseye/sources', { label, url }),
   removeWheelseyeSource: (id: string) =>

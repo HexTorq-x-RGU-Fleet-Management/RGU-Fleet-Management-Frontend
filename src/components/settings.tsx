@@ -172,6 +172,9 @@ export function Settings() {
     [wheelseyeBusy, setWheelseyeBusy] = useState(false),
     [deviceView, setDeviceView] = useState<{ sourceId: string; device: any } | null>(null),
     [deviceDetail, setDeviceDetail] = useState<any>(null),
+    [sourceInspect, setSourceInspect] = useState<any>(null),
+    [sourceDiagnostics, setSourceDiagnostics] = useState<any>(null),
+    [sourceInspectBusy, setSourceInspectBusy] = useState(false),
     [deviceBusy, setDeviceBusy] = useState(false),
     [storageLoading, setStorageLoading] = useState(false),
     [sourcesLoading, setSourcesLoading] = useState(false);
@@ -744,6 +747,22 @@ export function Settings() {
                           </div>
                           <div className="settings-source-actions">
                             <Button
+                              onClick={async () => {
+                                setSourceInspect(source);
+                                setSourceDiagnostics(null);
+                                setSourceInspectBusy(true);
+                                try {
+                                  setSourceDiagnostics(await fleetApi.wheelseyeSource(source.id));
+                                } catch (e) {
+                                  toast.error((e as Error).message);
+                                } finally {
+                                  setSourceInspectBusy(false);
+                                }
+                              }}
+                            >
+                              Inspect data
+                            </Button>
+                            <Button
                               onClick={() => {
                                 const first = source.devices?.[0];
                                 if (first) {
@@ -885,6 +904,84 @@ export function Settings() {
           )}
         </div>
       </div>
+      <Modal
+        open={Boolean(sourceInspect)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSourceInspect(null);
+            setSourceDiagnostics(null);
+          }
+        }}
+        title={sourceInspect ? `Telemetry diagnostics · ${sourceInspect.label}` : 'Telemetry diagnostics'}
+        description="Admin-only provider response, discovered devices and persisted database observations. Secrets are never returned."
+        wide
+      >
+        {sourceInspect && (
+          <div className="telemetry-admin-dialog">
+            <div className="settings-list-row">
+              <div>
+                <strong>{sourceInspect.label}</strong>
+                <small>{sourceInspect.devices?.length || sourceInspect.devices?.length === 0 ? `${sourceInspect.devices.length} discovered device(s)` : 'Loading source details'}</small>
+              </div>
+              <div className="settings-source-actions">
+                <Button
+                  loading={sourceInspectBusy}
+                  onClick={async () => {
+                    setSourceInspectBusy(true);
+                    try {
+                      const result = await fleetApi.pollWheelseyeSource(sourceInspect.id);
+                      setSourceDiagnostics(result);
+                      setSourceInspect(result.source);
+                      setWheelseyeSources((items) => items.map((item) => item.id === result.source.id ? { ...item, ...result.source, devices: result.devices } : item));
+                      toast.success('Live API triggered and telemetry was persisted.');
+                    } catch (e) {
+                      toast.error((e as Error).message);
+                    } finally {
+                      setSourceInspectBusy(false);
+                    }
+                  }}
+                >
+                  <Play size={15} /> Trigger live API
+                </Button>
+                <Button
+                  onClick={async () => {
+                    setSourceInspectBusy(true);
+                    try { setSourceDiagnostics(await fleetApi.wheelseyeSource(sourceInspect.id)); }
+                    catch (e) { toast.error((e as Error).message); }
+                    finally { setSourceInspectBusy(false); }
+                  }}
+                >
+                  <RefreshCw size={15} /> Refresh database view
+                </Button>
+              </div>
+            </div>
+            {sourceInspectBusy && !sourceDiagnostics && <div className="settings-loading"><AsciiSkeleton lines={4} /></div>}
+            {sourceDiagnostics && (
+              <>
+                <div className="telemetry-admin-summary">
+                  <Badge tone={sourceDiagnostics.source?.lastError ? 'amber' : 'green'}>{sourceDiagnostics.source?.lastError ? 'Last poll failed' : 'Source healthy'}</Badge>
+                  <span>{sourceDiagnostics.devices?.length || 0} devices</span>
+                  <span>{sourceDiagnostics.logs?.length || 0} recent database rows</span>
+                  <span>Poll every {sourceDiagnostics.source?.pollIntervalSeconds || 60}s</span>
+                </div>
+                {sourceDiagnostics.source?.lastError && <p className="settings-error">{sourceDiagnostics.source.lastError}</p>}
+                <div className="settings-subsection">
+                  <div className="settings-subsection-heading"><span><Database size={17} /></span><div><h3>Configured devices</h3><p>Devices discovered from this provider account.</p></div></div>
+                  <div className="table-scroll"><table className="data-table"><thead><tr><th>Device</th><th>Vehicle</th><th>Vendor</th><th>Last seen</th></tr></thead><tbody>{(sourceDiagnostics.devices || []).map((device: any) => <tr key={device.device_number}><td>{device.device_number}</td><td>{device.vehicle_number || '—'}</td><td>{device.vendor_name || device.vendor_code || device.provider || '—'}</td><td>{device.last_seen_at ? new Date(device.last_seen_at).toLocaleString('en-IN') : '—'}</td></tr>)}</tbody></table></div>
+                </div>
+                <div className="settings-subsection">
+                  <div className="settings-subsection-heading"><span><HardDrive size={17} /></span><div><h3>Persisted telemetry rows</h3><p>Latest raw observations stored by the server.</p></div></div>
+                  <div className="table-scroll"><table className="data-table"><thead><tr><th>Received</th><th>Device</th><th>Coordinates</th><th>Speed</th><th>Ignition</th><th>Fuel</th></tr></thead><tbody>{(sourceDiagnostics.logs || []).map((row: any, index: number) => <tr key={`${row.device_number}-${row.gps_time}-${index}`}><td>{row.received_at ? new Date(row.received_at).toLocaleString('en-IN') : '—'}</td><td>{row.device_number}</td><td>{Number(row.latitude).toFixed(5)}, {Number(row.longitude).toFixed(5)}</td><td>{row.speed} km/h</td><td>{row.ignition ? 'On' : 'Off'}</td><td>{row.payload?.fuelData?.currentLiters ?? '—'}</td></tr>)}</tbody></table>{!sourceDiagnostics.logs?.length && <p className="small muted">No telemetry rows have been stored for this source yet.</p>}</div>
+                </div>
+                <div className="settings-subsection">
+                  <div className="settings-subsection-heading"><span><Info size={17} /></span><div><h3>Latest provider response</h3><p>Safe vehicle data returned by the last manual trigger; access tokens are excluded.</p></div></div>
+                  <pre className="telemetry-json">{JSON.stringify(sourceDiagnostics.liveResponse || { note: 'Trigger the live API to capture a response.' }, null, 2)}</pre>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </Modal>
       <Modal
         open={connection}
         onOpenChange={setConnection}

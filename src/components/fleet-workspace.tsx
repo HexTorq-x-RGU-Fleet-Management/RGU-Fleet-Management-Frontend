@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useMemo, type ReactNode, type CSSProperties } from 'react';
+import { useState, useEffect, useMemo, useRef, type ReactNode, type CSSProperties } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
@@ -887,6 +887,7 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
     [source, setSource] = useState<string | undefined>(),
     [loading, setLoading] = useState(true),
     [error, setError] = useState('');
+  const timelineRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const abort = new AbortController();
     setSamples([]);
@@ -952,6 +953,10 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
     setCursor(null);
     setPlaying(false);
   }, [bus.id, range, date, bus.telemetryDeviceId]);
+  useEffect(() => {
+    const active = timelineRef.current?.querySelector<HTMLElement>('[data-active="true"]');
+    active?.scrollIntoView({ behavior: playing ? 'smooth' : 'auto', block: 'nearest', inline: 'center' });
+  }, [index, playing]);
   useEffect(() => {
     if (!playing || !samples.length) return;
     const id = setInterval(
@@ -1145,23 +1150,24 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
             </Button>
           </div>
         </div>
+        <div className="journey-activity-scroll" ref={timelineRef} aria-label="Movement activity timeline">
         <div
           className="journey-activity"
-          aria-label="Movement activity"
-          style={{ display: 'flex', gap: 2, height: 8, margin: '8px 0' }}
+          style={{ display: 'flex', gap: 2, height: 8, margin: '8px 0', minWidth: Math.max(100, samples.length * 3) }}
         >
           {samples.map((sample, sampleIndex) => (
             <span
               key={`${sample.gpsTime}-${sampleIndex}`}
+              data-active={sampleIndex === index ? 'true' : 'false'}
               title={`${timeLabel(sample.gpsTime)} · ${sample.moved ? 'Moved >10 m' : 'Stationary coordinate'}`}
               style={{
-                flex: 1,
-                minWidth: 2,
+                flex: '0 0 3px',
                 borderRadius: 99,
                 background: sample.moved ? 'var(--accent)' : 'var(--line-strong)',
               }}
             />
           ))}
+        </div>
         </div>
         <svg
           className="fuel-chart"

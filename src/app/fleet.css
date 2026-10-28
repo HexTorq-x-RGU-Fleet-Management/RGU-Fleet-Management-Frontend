@@ -623,6 +623,17 @@
   border-top: 1px solid var(--line);
   padding-top: 4px;
 }
+.journey-activity-scroll {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 2px 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent) var(--line);
+}
+.journey-activity-scroll::-webkit-scrollbar { height: 7px; }
+.journey-activity-scroll::-webkit-scrollbar-track { background: var(--line); border-radius: 99px; }
+.journey-activity-scroll::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 99px; }
 .timeline-title,
 .timeline-buttons {
   display: flex;

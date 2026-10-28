@@ -41,11 +41,11 @@ export function AuthScreen() {
           cellSize={18}
           density={0.74}
           glyphOpacity={0.8}
-          glow={0.38}
+          glow={0.5}
           softness={0.55}
           flow={0.6}
           speed={0.9}
-          gradientOpacity={0.86}
+          gradientOpacity={0.78}
           grain={0.07}
         />
       </div>

@@ -16,9 +16,7 @@
 .auth-page.auth-ambient-page {
   position: relative;
   isolation: isolate;
-  background:
-    radial-gradient(ellipse 120% 80% at 12% 8%, rgba(113, 48, 126, 0.32), transparent 58%),
-    radial-gradient(ellipse 100% 70% at 88% 92%, rgba(32, 150, 219, 0.24), transparent 62%), #06080e;
+  background: #06080e;
 }
 
 .auth-ambient {
@@ -26,6 +24,17 @@
   inset: 0;
   z-index: 0;
   pointer-events: none;
+}
+
+.auth-page.auth-ambient-page::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 90% 70% at 24% 45%, rgba(113, 48, 126, 0.16), transparent 62%),
+    linear-gradient(180deg, rgba(4, 6, 11, 0.16) 0%, rgba(4, 6, 11, 0.42) 100%);
 }
 
 .auth-page.auth-ambient-page > section {
@@ -37,38 +46,83 @@
   background: transparent;
 }
 
-.auth-page.auth-ambient-page .auth-story::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background:
-    linear-gradient(
-      90deg,
-      rgba(5, 7, 12, 0.82) 0%,
-      rgba(5, 7, 12, 0.52) 58%,
-      rgba(5, 7, 12, 0.18) 100%
-    ),
-    radial-gradient(ellipse 76% 58% at 22% 68%, rgba(113, 48, 126, 0.34) 0%, transparent 72%);
+:root .auth-page.auth-ambient-page .auth-form-section {
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-left: 0;
 }
 
-.auth-page.auth-ambient-page .auth-form-section {
-  border-left: 1px solid rgba(255, 255, 255, 0.24);
-  background:
-    radial-gradient(circle at 80% 15%, rgba(32, 150, 219, 0.14), transparent 36%),
-    linear-gradient(145deg, rgba(250, 252, 255, 0.9) 0%, rgba(242, 246, 252, 0.93) 100%);
-  backdrop-filter: blur(22px);
-  -webkit-backdrop-filter: blur(22px);
+:root .auth-page.auth-ambient-page .auth-form-card {
+  background: rgba(8, 11, 18, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.5);
+  color: #e8edf3;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+:root .auth-page.auth-ambient-page .auth-form-card h2 {
+  color: #f4f7fb;
+}
+
+:root .auth-page.auth-ambient-page .auth-form-card > p:not(.eyebrow):not(.auth-switch) {
+  color: #a7b4c4;
+}
+
+:root .auth-page.auth-ambient-page .auth-form-card .field > span:first-child:not(.password-input) {
+  color: #d5dde8;
+}
+
+:root
+  .auth-page.auth-ambient-page
+  .auth-form-card
+  input:not([type='checkbox']):not([type='radio']) {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: #f2f5f9;
+}
+
+:root .auth-page.auth-ambient-page .auth-form-card input::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+:root .auth-page.auth-ambient-page .google-auth-divider {
+  border-top-color: rgba(255, 255, 255, 0.14);
+}
+
+:root .auth-page.auth-ambient-page .google-auth-divider > span {
+  color: #9aa7b6;
+}
+
+:root .auth-page.auth-ambient-page .info-box {
+  background: rgba(169, 91, 184, 0.12);
+  border-color: rgba(169, 91, 184, 0.35);
+  color: #c8d4e2;
+}
+
+:root .auth-page.auth-ambient-page .btn-secondary {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: #e8edf3;
+}
+
+:root .auth-page.auth-ambient-page .btn-secondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+:root .auth-page.auth-ambient-page .btn-ghost {
+  color: #9aa7b6;
+}
+
+:root .auth-page.auth-ambient-page .btn-ghost:hover:not(:disabled) {
+  color: #e8edf3;
+  background: rgba(255, 255, 255, 0.06);
 }
 
 @media (max-width: 900px) {
-  .auth-page.auth-ambient-page .auth-form-section {
-    border-left: 0;
-    border-top: 1px solid rgba(255, 255, 255, 0.24);
-  }
-
-  .auth-page.auth-ambient-page .auth-story::before {
-    background: linear-gradient(180deg, rgba(5, 7, 12, 0.78) 0%, rgba(5, 7, 12, 0.42) 100%);
+  :root .auth-page.auth-ambient-page .auth-form-section {
+    border-top: 0;
   }
 }

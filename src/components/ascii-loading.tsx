@@ -56,6 +56,62 @@ export function AsciiLoading({
   );
 }
 
+export function WorkspaceShellLoading() {
+  return (
+    <div className="workspace-shell-loading" role="status" aria-label="Checking account session" aria-busy="true">
+      <aside className="workspace-shell-loading-sidebar" aria-hidden="true">
+        <div className="workspace-shell-loading-brand">
+          <span className="skeleton" />
+          <div>
+            <span className="skeleton" />
+            <span className="skeleton" />
+          </div>
+        </div>
+        <span className="workspace-shell-loading-caption skeleton" />
+        <div className="workspace-shell-loading-nav">
+          {Array.from({ length: 6 }, (_, index) => (
+            <span className="skeleton" key={index} />
+          ))}
+        </div>
+        <div className="workspace-shell-loading-profile">
+          <span className="skeleton" />
+          <div>
+            <span className="skeleton" />
+            <span className="skeleton" />
+          </div>
+        </div>
+      </aside>
+      <main className="workspace-shell-loading-main">
+        <header className="workspace-shell-loading-topbar" aria-hidden="true">
+          <span className="skeleton" />
+          <div>
+            <span className="skeleton" />
+            <span className="skeleton" />
+            <span className="skeleton" />
+          </div>
+        </header>
+        <section className="workspace-shell-loading-content">
+          <div className="workspace-shell-loading-heading" aria-hidden="true">
+            <span className="skeleton" />
+            <span className="skeleton" />
+            <span className="skeleton" />
+          </div>
+          <div className="workspace-shell-loading-stats" aria-hidden="true">
+            {Array.from({ length: 4 }, (_, index) => (
+              <div className="workspace-shell-loading-stat" key={index}>
+                <AsciiSkeleton variant="dither" lines={2} widths={['54%', '28%']} seed={index + 1} />
+              </div>
+            ))}
+          </div>
+          <div className="workspace-shell-loading-table" aria-hidden="true">
+            <AsciiSkeleton variant="dither" lines={7} widths={['22%', '96%', '92%', '94%', '88%', '92%', '76%']} />
+          </div>
+        </section>
+      </main>
+    </div>
+  );
+}
+
 /**
  * The same decode treatment used by the shared application reveal, with a
  * skeleton kept in place until asynchronous data is actually available.

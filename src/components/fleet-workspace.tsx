@@ -1169,46 +1169,7 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
           ))}
         </div>
         </div>
-        <svg
-          className="fuel-chart"
-          viewBox="0 0 720 110"
-          role="img"
-          aria-label="Stored fuel percentage history"
-        >
-          {[25, 50, 75].map((n) => (
-            <g key={n}>
-              <line x1="35" y1={100 - n} x2="710" y2={100 - n} stroke="var(--line)" />
-              <text x="0" y={104 - n} fill="var(--muted)" fontSize="10">
-                {n}%
-              </text>
-            </g>
-          ))}
-          <polyline
-            points={samples
-              .flatMap((v, i) =>
-                v.fuelData
-                  ? [
-                      35 +
-                        (i / Math.max(1, samples.length - 1)) * 675 +
-                        ',' +
-                        (100 - v.fuelData.fuelPercentage),
-                    ]
-                  : [],
-              )
-              .join(' ')}
-            fill="none"
-            stroke="var(--rgu-green)"
-            strokeWidth="3"
-          />
-          <line
-            x1={35 + (index / Math.max(1, samples.length - 1)) * 675}
-            x2={35 + (index / Math.max(1, samples.length - 1)) * 675}
-            y1="0"
-            y2="105"
-            stroke="var(--accent)"
-            strokeWidth="2"
-          />
-        </svg>
+        {/* Fuel percentage chart hidden until the provider supplies fuel readings. */}
         <input
           className="history-slider"
           type="range"

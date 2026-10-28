@@ -542,37 +542,37 @@
   .workspace-footnote {
     font-size: 10px;
   }
-  .auth-page {
+  .auth-page:not(.auth-ambient-page) {
     grid-template-columns: 1fr;
   }
-  .auth-story {
+  .auth-page:not(.auth-ambient-page) .auth-story {
     min-height: auto;
     padding: 28px;
   }
-  .auth-story-copy {
+  .auth-page:not(.auth-ambient-page) .auth-story-copy {
     padding: 50px 0 20px;
   }
-  .auth-story h1 {
+  .auth-page:not(.auth-ambient-page) .auth-story h1 {
     font-size: 42px;
     letter-spacing: -0.03em;
   }
-  .auth-story-copy > p {
+  .auth-page:not(.auth-ambient-page) .auth-story-copy > p {
     margin: 16px 0;
     font-size: 12px;
   }
-  .auth-checks,
-  .auth-image-credit {
+  .auth-page:not(.auth-ambient-page) .auth-checks,
+  .auth-page:not(.auth-ambient-page) .auth-image-credit {
     display: none;
   }
-  .auth-form-section {
+  .auth-page:not(.auth-ambient-page) .auth-form-section {
     padding: 28px 24px;
     min-height: 600px;
   }
-  .auth-form-card {
+  .auth-page:not(.auth-ambient-page) .auth-form-card {
     margin: 36px 0;
     max-width: 420px;
   }
-  .auth-form-card h2 {
+  .auth-page:not(.auth-ambient-page) .auth-form-card h2 {
     font-size: 28px;
   }
   .health-alert {

@@ -6,7 +6,6 @@ import { AsciiSkeleton } from 'ascii-reveal';
 import { type Vehicle, timeLabel } from '@/lib/fleet';
 import { tamilNaduBounds, defaultTileUrl, withinTamilNaduView } from '@/lib/map-config';
 import { Badge, Button } from './ui';
-import { MapLibreJourneyMap } from './maplibre-journey-map';
 
 type Layers = {
   map: Leaflet.Map;
@@ -28,13 +27,11 @@ export function JourneyMap({
     layers = useRef<Layers | null>(null);
   const [ready, setReady] = useState(false),
     [status, setStatus] = useState('loading'),
-    [following, setFollowing] = useState(false),
-    [engine, setEngine] = useState<'leaflet' | 'maplibre'>('leaflet');
+    [following, setFollowing] = useState(false);
   const current = samples[index];
   const data = useRef({ samples, index });
   data.current = { samples, index };
   useEffect(() => {
-    if (engine !== 'leaflet') return;
     let disposed = false;
     const observer = new ResizeObserver(() => layers.current?.map.invalidateSize({ pan: false }));
     if (element.current) observer.observe(element.current);
@@ -104,7 +101,7 @@ export function JourneyMap({
       layers.current?.map.remove();
       layers.current = null;
     };
-  }, [engine]);
+  }, []);
   useEffect(() => {
     const value = layers.current;
     if (!ready || !value || !current) return;
@@ -128,14 +125,7 @@ export function JourneyMap({
           <MapPin size={14} /> TAMIL NADU / ROAD MAP
         </span>
         <Badge tone="neutral">{source === 'vendor' ? 'WheelsEye GPS' : 'Stored GPS'}</Badge>
-        <Button variant="ghost" onClick={() => setEngine(engine === 'leaflet' ? 'maplibre' : 'leaflet')}>
-          {engine === 'leaflet' ? 'Try MapLibre' : 'Use Leaflet'}
-        </Button>
       </div>
-      {engine === 'maplibre' ? (
-        <MapLibreJourneyMap samples={samples} index={index} source={source} />
-      ) : (
-      <>
       <div className="map-view-actions">
         <Button
           disabled={!ready}
@@ -211,8 +201,6 @@ export function JourneyMap({
         Real OpenStreetMap roads · Stored GPS trail, not road routing. Tamil Nadu viewing bounds
         include some neighbouring areas.
       </p>
-      </>
-      )}
     </div>
   );
 }

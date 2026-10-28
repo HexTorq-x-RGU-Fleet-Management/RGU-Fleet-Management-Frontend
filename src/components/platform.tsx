@@ -25,7 +25,6 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { PageHeading, Button, IconButton, Confirm, Modal, Field, Badge, SearchInput } from './ui';
-import { AsciiRevealArea } from './ascii-loading';
 import { useWorkspace } from './workspace-provider';
 import { request } from '@/lib/api';
 import { formatBytes } from '@/lib/model';
@@ -412,7 +411,7 @@ export function Platform() {
       </div>
 
       {/* Glass Data Cards */}
-      <AsciiRevealArea loading={loading} cards={3} compact>
+      <>
       <div className="admin-card-container">
         {paginatedWorkspaces.map((w, index) => {
           const serialNumber = (page - 1) * PAGE_SIZE + index + 1;
@@ -508,7 +507,7 @@ export function Platform() {
           </div>
         )}
       </div>
-      </AsciiRevealArea>
+      </>
 
       {/* Workspaces Pagination */}
       <div className="activity-pagination-deck" style={{ marginTop: 16 }}>
@@ -753,7 +752,7 @@ export function Health() {
 
       {error && <p role="alert">{error}</p>}
 
-      <AsciiRevealArea loading={!data && loading} cards={4} compact>
+      <>
       {data && (
         <>
           {/* Bento Metric Cards */}
@@ -919,7 +918,7 @@ export function Health() {
           </div>
         </>
       )}
-      </AsciiRevealArea>
+      </>
     </div>
   );
 }

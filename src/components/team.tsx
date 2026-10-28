@@ -4,7 +4,6 @@ import { Users, UserPlus, Pencil, UserX, UserCheck, ShieldCheck, HardDrive, Cctv
 import { toast } from 'sonner';
 import { PageHeading, Button, Modal, Field, Confirm, Badge, SearchInput } from './ui';
 import { useWorkspace } from './workspace-provider';
-import { AsciiRevealArea } from './ascii-loading';
 import { request } from '@/lib/api';
 
 type Grant = {
@@ -171,7 +170,7 @@ export function Team() {
       </div>
 
       {/* Glass Data Cards for Team Members */}
-      <AsciiRevealArea loading={loading} cards={3}>
+      <>
       <div className="admin-card-container">
         {filteredUsers.map((m: any) => {
           const initials = (m.fullName || 'U')
@@ -245,7 +244,7 @@ export function Team() {
           </div>
         )}
       </div>
-      </AsciiRevealArea>
+      </>
 
       {/* Edit / Add Member Modal */}
       <Modal

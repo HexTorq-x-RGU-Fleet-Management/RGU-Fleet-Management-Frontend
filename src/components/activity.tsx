@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react';
 import { History, RefreshCw, ShieldCheck, Activity, Search, Clock, ArrowDown, Filter } from 'lucide-react';
 import { PageHeading, Button, SearchInput, Badge } from './ui';
-import { AsciiRevealArea } from './ascii-loading';
 import { request } from '@/lib/api';
 import { useWorkspace } from './workspace-provider';
 
@@ -219,7 +218,7 @@ export function ActivityLog() {
       {error && <p role="alert">{error}</p>}
 
       {/* Glass Data Cards for Audit Log */}
-      <AsciiRevealArea loading={loading} cards={3}>
+      <>
       <div className="admin-card-container">
         {paginatedEvents.map((e, index) => {
           const serialNumber = (page - 1) * PAGE_SIZE + index + 1;
@@ -313,7 +312,7 @@ export function ActivityLog() {
           </div>
         )}
       </div>
-      </AsciiRevealArea>
+      </>
 
       {/* Page Navigation & Pagination Deck */}
       <div className="activity-pagination-deck">

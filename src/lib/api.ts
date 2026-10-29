@@ -150,6 +150,15 @@ export const fleetApi = {
         source: 'vendor';
         receivedAt: string;
       }[];
+      violations: {
+        gps_time: number;
+        observed_at: string;
+        speed_kph: number;
+        speed_limit_kph: number;
+        latitude: number;
+        longitude: number;
+        address: string;
+      }[];
     }>(
       '/api/fleet/history?' + new URLSearchParams({ busId, from: String(from), to: String(to) }),
       undefined,

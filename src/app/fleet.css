@@ -668,6 +668,17 @@
 .timeline-labels strong {
   color: var(--text);
 }
+.speed-monitor-panel {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+.speed-monitor-panel .data-table {
+  min-width: 720px;
+}
+.speed-violation-row {
+  color: var(--danger);
+}
 .fleet-details {
   display: grid;
   grid-template-columns: 1fr 1fr;

@@ -511,6 +511,17 @@ function BusEditor({ bus, onClose }: { bus: Bus | null; onClose: () => void }) {
               onChange={(e) => set({ routeName: e.target.value })}
             />
           </Field>
+          <Field label="Speed limit (km/h)" hint="Overspeed readings are stored and highlighted in the journey timeline.">
+            <input
+              type="number"
+              min={1}
+              max={200}
+              step={0.1}
+              required
+              value={draft.speedLimitKph ?? 60}
+              onChange={(e) => set({ speedLimitKph: Number(e.target.value) })}
+            />
+          </Field>
           <Field label="Recorder">
             <select
               value={draft.recorderId ?? ''}
@@ -885,6 +896,7 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
     [stepSeconds, setStepSeconds] = useState(60),
     [samples, setSamples] = useState<Vehicle[]>([]),
     [source, setSource] = useState<string | undefined>(),
+    [violations, setViolations] = useState<any[]>([]),
     [loading, setLoading] = useState(true),
     [error, setError] = useState('');
   const timelineRef = useRef<HTMLDivElement>(null);
@@ -923,9 +935,16 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
             selectedEnd,
           );
           for (let cursor = start; cursor <= end; cursor += stepSeconds)
-            minuteSamples.push({ ...segment, gpsTime: cursor, moved: segmentIndex > 0 && cursor === start });
+            minuteSamples.push({
+              ...segment,
+              gpsTime: cursor,
+              speedLimitKph: bus.speedLimitKph ?? 60,
+              speedViolation: segment.speed > (bus.speedLimitKph ?? 60),
+              moved: segmentIndex > 0 && cursor === start,
+            });
         });
         setSamples(minuteSamples);
+        setViolations(result.violations || []);
         setSource(result.samples.some((sample) => sample.source === 'vendor') ? 'vendor' : undefined);
       } catch (e) {
         if ((e as Error).name !== 'AbortError') setError((e as Error).message);
@@ -942,7 +961,7 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
       clearInterval(timer);
       abort.abort();
     };
-  }, [bus.id, bus.telemetryDeviceId, range, date, user?.id, stepSeconds]);
+  }, [bus.id, bus.telemetryDeviceId, bus.speedLimitKph, range, date, user?.id, stepSeconds]);
   const index =
       cursor === null
         ? samples.length - 1
@@ -1168,7 +1187,7 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
               style={{
                 flex: '0 0 3px',
                 borderRadius: 99,
-                background: sample.moved ? 'var(--accent)' : 'var(--line-strong)',
+            background: sample.speedViolation ? 'var(--danger)' : sample.moved ? 'var(--accent)' : 'var(--line-strong)',
               }}
             />
           ))}
@@ -1199,6 +1218,12 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
         <p className="small muted">
           The active map and timeline are refreshed directly from WheelsEye for this mapped bus.
         </p>
+        <section className="speed-monitor-panel">
+          <div className="timeline-title"><Gauge size={16} /><strong>Speed monitor</strong><Badge tone={violations.length ? 'red' : 'green'}>{violations.length} violation{violations.length === 1 ? '' : 's'}</Badge></div>
+          {violations.length ? (
+            <div className="table-scroll"><table className="data-table"><thead><tr><th>Time</th><th>Speed</th><th>Limit</th><th>GPS</th><th>Location</th></tr></thead><tbody>{violations.map((item, itemIndex) => <tr key={`${item.gps_time}-${itemIndex}`} className="speed-violation-row"><td>{timeLabel(item.gps_time)} IST</td><td>{Number(item.speed_kph).toFixed(1)} km/h</td><td>{Number(item.speed_limit_kph).toFixed(1)} km/h</td><td>{Number(item.latitude).toFixed(5)}, {Number(item.longitude).toFixed(5)}</td><td>{item.address || '—'}</td></tr>)}</tbody></table></div>
+          ) : <p className="small muted">No speed-limit crossings in this time window.</p>}
+        </section>
       </div>
     </section>
   );

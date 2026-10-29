@@ -8,6 +8,7 @@ export type Bus = {
   routeName: string;
   recorderId: string | null;
   telemetryDeviceId: string | null;
+  speedLimitKph?: number;
   favoriteChannels: number[];
 };
 export type Vehicle = {
@@ -19,6 +20,8 @@ export type Vehicle = {
   chargeOn?: boolean;
   accurate?: boolean;
   moved?: boolean;
+  speedLimitKph?: number;
+  speedViolation?: boolean;
   odometer: number;
   gpsTime: number;
   providerGpsTime?: number;

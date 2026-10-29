@@ -34,7 +34,7 @@ export function AuthScreen() {
   }
 
   return (
-    <main className="auth-page auth-ambient-page">
+    <main className="auth-page auth-ambient-page" data-ascii="skip">
       <div className="auth-ambient" aria-hidden="true">
         <GradientASCII
           colors={['#ed22c6', '#f6f8ff', '#a5d8ff', '#38bdf8']}

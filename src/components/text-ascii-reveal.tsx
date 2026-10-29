@@ -6,7 +6,7 @@ import { createAsciiReveal, type AsciiRevealController } from 'ascii-reveal/core
 import { useWorkspace } from './workspace-provider';
 
 const scopes =
-  '.site-ascii-reveal, .sidebar, .topbar, .main-content, .admin-command-deck, .auth-page, .modal, .dropdown-content, .rgu-toast';
+  '.sidebar, .topbar, .main-content, .admin-command-deck, .auth-page, .modal, .dropdown-content, .rgu-toast';
 const surfaces = [
   '[data-ascii="surface"]',
   '.panel',
@@ -86,7 +86,7 @@ export function TextAsciiReveal({
         if (!controller) {
           controller = createAsciiReveal(scope, {
             preset: 'decode',
-            duration: 'cinematic',
+            duration: 'fast',
             speed: 0.8,
             origin: 'top-left',
             surfaces,

@@ -359,11 +359,30 @@
 
 .notification-card {
   display: flex;
+  width: 100%;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
   gap: 14px;
   background: var(--panel-hover);
   border: 1px solid var(--line);
   padding: 16px;
   border-radius: 10px;
+}
+
+.notification-list {
+  display: grid;
+  gap: 8px;
+  max-height: min(52vh, 420px);
+  overflow: auto;
+  padding-right: 3px;
+}
+
+.notification-card:hover,
+.notification-card:focus-visible {
+  border-color: var(--accent);
+  background: var(--panel);
+  outline: none;
 }
 
 .notification-card > svg {

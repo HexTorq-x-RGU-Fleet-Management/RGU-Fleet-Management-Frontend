@@ -27,11 +27,13 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Clock,
+  AlertTriangle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useWorkspace } from './workspace-provider';
 import { Button, Modal, IconButton, SearchInput, Badge } from './ui';
 import { canAccess } from '@/lib/model';
+import { fleetApi } from '@/lib/api';
 const links = [
   { href: '/', label: 'Fleet overview', icon: LayoutDashboard },
   { href: '/buses', label: 'Buses', icon: BusFront },
@@ -49,6 +51,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     [search, setSearch] = useState(false),
     [query, setQuery] = useState(''),
     [notifications, setNotifications] = useState(false),
+    [speedAlerts, setSpeedAlerts] = useState<Awaited<ReturnType<typeof fleetApi.notifications>>['notifications']>([]),
     [currentTime, setCurrentTime] = useState('');
   const shellRef = useRef<HTMLDivElement>(null),
     wasMobile = useRef(false);
@@ -103,6 +106,23 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     const interval = setInterval(updateTime, 1000);
     return () => clearInterval(interval);
   }, []);
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      try {
+        const result = await fleetApi.notifications();
+        if (active) setSpeedAlerts(result.notifications);
+      } catch {
+        // Notifications are supplementary; navigation should remain usable if unavailable.
+      }
+    };
+    void load();
+    const timer = setInterval(() => void load(), 60000);
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
+  }, [user?.id]);
   useEffect(() => {
     try {
       setCollapsed(localStorage.getItem('rgu-sidebar-collapsed') === 'true');
@@ -356,8 +376,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 {provider?.connected ? 'Hik-Connect' : 'Connect cameras'}
               </Badge>
             )}
-            <IconButton label="Notifications" onClick={() => setNotifications(true)}>
+            <IconButton label="Notifications" onClick={() => setNotifications(true)} className="notification-trigger">
               <Bell size={18} />
+              {speedAlerts.length > 0 && <span className="notification-dot" aria-label={`${speedAlerts.length} speed alerts`} />}
             </IconButton>
           </div>
         </header>
@@ -420,10 +441,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <Modal
         open={notifications}
         onOpenChange={setNotifications}
-        title="Connection notifications"
-        description="Current workspace connection state."
+        title="Notifications"
+        description="Speed-limit alerts from the last 24 hours."
       >
-        <p>
+        {speedAlerts.length > 0 ? (
+          <div className="notification-list" role="list">
+            {speedAlerts.map((alert) => (
+              <button key={alert.id} className="notification-card" role="listitem" onClick={() => { setNotifications(false); nav('/buses?bus=' + alert.bus_id); }}>
+                <AlertTriangle size={18} />
+                <span><strong>{alert.bus_number || alert.registration}</strong><p>{Number(alert.speed_kph).toFixed(1)} km/h · limit {Number(alert.speed_limit_kph).toFixed(1)} km/h</p><small>{new Date(alert.gps_time * 1000).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} · {alert.address || `${Number(alert.latitude).toFixed(5)}, ${Number(alert.longitude).toFixed(5)}`}</small></span>
+              </button>
+            ))}
+          </div>
+        ) : <p>No speed-limit violations in the last 24 hours.</p>}
+        <p className="notification-connection-state">
           {provider?.needsReconnect
             ? 'Your Hik-Connect authorization needs attention. Open account settings to reconnect.'
             : provider?.connected

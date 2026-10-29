@@ -111,6 +111,21 @@ export const api = {
 };
 export const fleetApi = {
   buses: () => request('/api/fleet/buses'),
+  notifications: () => request<{
+    notifications: {
+      id: string;
+      gps_time: number;
+      observed_at: string;
+      speed_kph: number;
+      speed_limit_kph: number;
+      latitude: number;
+      longitude: number;
+      address: string;
+      bus_id: string;
+      bus_number: string;
+      registration: string;
+    }[];
+  }>('/api/fleet/notifications'),
   saveBus: (bus: import('./fleet').Bus) =>
     request('/api/fleet/buses', { ...bus, ...(!bus.id ? { id: undefined } : {}) }),
   removeBus: (id: string) => request('/api/fleet/buses/remove', { id }),

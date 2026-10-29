@@ -478,6 +478,8 @@
   top: 5px;
   box-shadow: 0 0 8px var(--accent);
 }
+.notification-trigger { position: relative; }
+.notification-trigger .notification-dot { position: absolute; top: 5px; right: 5px; }
 
 .live-status-pill {
   display: inline-flex;

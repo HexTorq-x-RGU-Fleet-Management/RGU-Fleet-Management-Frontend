@@ -22,6 +22,10 @@
   min-width: 0;
   width: 100%;
 }
+.sidebar .brand-symbol {
+  width: 48px;
+  height: 48px;
+}
 .sidebar .brand > span:last-child {
   flex: 1;
   min-width: 0;

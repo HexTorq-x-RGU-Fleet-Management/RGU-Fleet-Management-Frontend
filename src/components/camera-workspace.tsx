@@ -181,7 +181,18 @@ export function CameraWorkspace() {
     }
   }
   async function startFootage() {
-    if (!selectedTile || !footage) return;
+    if (!selectedTile) return;
+    if (!footageDate || !footageStart || !footageEnd || footageStart >= footageEnd)
+      return toast.error(
+        'Choose a valid recording period. The end time must be after the start time.',
+      );
+    const range =
+      footage ||
+      ({
+        startTime: `${footageDate} ${footageStart}:00`,
+        stopTime: `${footageDate} ${footageEnd}:59`,
+      } as const);
+    setFootage(range);
     setOpeningFootage(true);
     await stop(selectedTile.slot);
     setHistorical(true);
@@ -192,8 +203,8 @@ export function CameraWorkspace() {
         quality: focused ? 'hd' : 'sd',
         delivery: 'mjpeg',
         slot: selectedTile.slot,
-        startTime: footage.startTime,
-        stopTime: footage.stopTime,
+        startTime: range.startTime,
+        stopTime: range.stopTime,
       });
       wanted.current.add(selectedTile.slot);
       status(selectedTile.slot, { state: 'waiting', detail: 'Opening recorded footage…' });
@@ -824,17 +835,17 @@ export function CameraWorkspace() {
           </label>
           <Button
             loading={searchingFootage}
-            disabled={!selectedTile || !r.online || !provider?.playbackReady || historical}
+            disabled={!selectedTile || !provider?.playbackReady || historical}
             onClick={() => void searchFootage()}
           >
             Find recordings
           </Button>
           <Button
             loading={openingFootage}
-            disabled={!footage || historical}
+            disabled={!selectedTile || !provider?.playbackReady || historical}
             onClick={() => void startFootage()}
           >
-            <Play size={14} /> Play recording
+            <Play size={14} /> Play selected time
           </Button>
         </div>
         {historical && (

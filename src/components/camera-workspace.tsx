@@ -65,7 +65,14 @@ export function CameraWorkspace() {
     [volume, setVolume] = useState(0.7),
     [recording, setRecording] = useState(false),
     [uploading, setUploading] = useState(false),
-    [seconds, setSeconds] = useState(0);
+    [seconds, setSeconds] = useState(0),
+    [footageDate, setFootageDate] = useState(() => new Date().toISOString().slice(0, 10)),
+    [footageStart, setFootageStart] = useState('00:00'),
+    [footageEnd, setFootageEnd] = useState('23:59'),
+    [footage, setFootage] = useState<{ startTime: string; stopTime: string } | null>(null),
+    [historical, setHistorical] = useState(false),
+    [searchingFootage, setSearchingFootage] = useState(false),
+    [openingFootage, setOpeningFootage] = useState(false);
   const stage = useRef<HTMLDivElement>(null),
     canvases = useRef(new Map<number, HTMLCanvasElement>()),
     players = useRef(new Map<number, SmoothPlayer>()),
@@ -144,6 +151,67 @@ export function CameraWorkspace() {
   function status(slot: number, value: Partial<LiveState>) {
     setStates((s) => ({ ...s, [slot]: { ...(s[slot] || { state: 'stopped' }), ...value } }));
   }
+  async function searchFootage() {
+    if (!selectedTile) return;
+    if (!footageDate || !footageStart || !footageEnd || footageStart >= footageEnd)
+      return toast.error(
+        'Choose a valid recording period. The end time must be after the start time.',
+      );
+    const startTime = `${footageDate} ${footageStart}:00`,
+      stopTime = `${footageDate} ${footageEnd}:59`;
+    setSearchingFootage(true);
+    setFootage(null);
+    try {
+      const result = await request<{ recordings: { startTime: string; stopTime: string }[] }>(
+        '/api/playback/search',
+        {
+          deviceId: selectedTile.deviceId,
+          channel: selectedTile.channel,
+          startTime,
+          stopTime,
+        },
+      );
+      setFootage(result.recordings[0] || null);
+      if (!result.recordings.length) toast.info('No recording was returned for that period.');
+      else toast.success('Recording range ready. Start playback to open it.');
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setSearchingFootage(false);
+    }
+  }
+  async function startFootage() {
+    if (!selectedTile || !footage) return;
+    setOpeningFootage(true);
+    await stop(selectedTile.slot);
+    setHistorical(true);
+    try {
+      await request('/api/playback/start', {
+        deviceId: selectedTile.deviceId,
+        channel: selectedTile.channel,
+        quality: focused ? 'hd' : 'sd',
+        delivery: 'mjpeg',
+        slot: selectedTile.slot,
+        startTime: footage.startTime,
+        stopTime: footage.stopTime,
+      });
+      wanted.current.add(selectedTile.slot);
+      status(selectedTile.slot, { state: 'waiting', detail: 'Opening recorded footage…' });
+    } catch (e) {
+      setHistorical(false);
+      toast.error((e as Error).message);
+    } finally {
+      setOpeningFootage(false);
+    }
+  }
+  async function playbackControl(command: string, value?: string | number) {
+    if (!selectedTile) return;
+    try {
+      await request('/api/playback/control', { slot: selectedTile.slot, command, value });
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  }
   function reset(slot: number) {
     players.current.get(slot)?.reset();
     players.current.delete(slot);
@@ -207,6 +275,8 @@ export function CameraWorkspace() {
   useEffect(() => {
     setZoom(1);
     setPan({ x: 0, y: 0 });
+    setFootage(null);
+    setHistorical(false);
   }, [selected, focused, device]);
   useEffect(() => {
     if (!user || !provider?.playbackReady) return;
@@ -658,14 +728,12 @@ export function CameraWorkspace() {
           {recorders.map((item) => (
             <button
               key={item.id}
-              className={
-                [
-                  r.id === item.id ? 'selected' : '',
-                  state.buses.some((mapped) => mapped.recorderId === item.id) ? 'mapped' : '',
-                ]
-                  .filter(Boolean)
-                  .join(' ')
-              }
+              className={[
+                r.id === item.id ? 'selected' : '',
+                state.buses.some((mapped) => mapped.recorderId === item.id) ? 'mapped' : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
               disabled={recording}
               onClick={() => {
                 setDevice(item.id);
@@ -695,7 +763,9 @@ export function CameraWorkspace() {
           <TriangleAlert size={19} aria-hidden="true" />
           <div>
             <strong>
-              {provider?.connected ? 'Live playback authorization required' : 'Camera connection required'}
+              {provider?.connected
+                ? 'Live playback authorization required'
+                : 'Camera connection required'}
             </strong>
             <p>
               {provider?.connected
@@ -708,6 +778,96 @@ export function CameraWorkspace() {
           </div>
         </div>
       )}
+      <section className="playback-panel" aria-label="Recorded footage">
+        <div className="playback-panel-heading">
+          <div>
+            <p className="eyebrow">RECORDED FOOTAGE</p>
+            <h2>{historical ? 'Historical playback' : 'Search DVR recordings'}</h2>
+            <p className="playback-help">
+              Select a camera above, then choose the date and time stored on its recorder.
+            </p>
+          </div>
+          {historical && (
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setHistorical(false);
+                void stop(selectedTile?.slot ?? 0).finally(() =>
+                  setRunVersion((value) => value + 1),
+                );
+              }}
+            >
+              Return to live
+            </Button>
+          )}
+        </div>
+        <div className="playback-controls">
+          <label>
+            Date
+            <input
+              type="date"
+              value={footageDate}
+              onChange={(e) => setFootageDate(e.target.value)}
+            />
+          </label>
+          <label>
+            From
+            <input
+              type="time"
+              value={footageStart}
+              onChange={(e) => setFootageStart(e.target.value)}
+            />
+          </label>
+          <label>
+            To
+            <input type="time" value={footageEnd} onChange={(e) => setFootageEnd(e.target.value)} />
+          </label>
+          <Button
+            loading={searchingFootage}
+            disabled={!selectedTile || !r.online || !provider?.playbackReady || historical}
+            onClick={() => void searchFootage()}
+          >
+            Find recordings
+          </Button>
+          <Button
+            loading={openingFootage}
+            disabled={!footage || historical}
+            onClick={() => void startFootage()}
+          >
+            <Play size={14} /> Play recording
+          </Button>
+        </div>
+        {historical && (
+          <div className="playback-transport">
+            <Button variant="ghost" onClick={() => void playbackControl('pause')}>
+              Pause
+            </Button>
+            <Button variant="ghost" onClick={() => void playbackControl('resume')}>
+              Resume
+            </Button>
+            {[1, 2, 4, 8, 16].map((scale) => (
+              <Button
+                key={scale}
+                variant="ghost"
+                onClick={() => void playbackControl('scale', scale)}
+              >
+                {scale}×
+              </Button>
+            ))}
+            <Button
+              variant="ghost"
+              onClick={() => void playbackControl('seek', footage?.startTime)}
+            >
+              Restart
+            </Button>
+          </div>
+        )}
+        {footage && (
+          <p className="playback-range">
+            Selected range: {footage.startTime} → {footage.stopTime}
+          </p>
+        )}
+      </section>
       <section className="monitor-panel">
         <div className="monitor-header">
           <div className="monitor-title">
@@ -1051,7 +1211,10 @@ export function CameraWorkspace() {
             <Button disabled={selectedState?.state !== 'playing'} onClick={() => setMuted(!muted)}>
               {muted ? <VolumeX size={16} /> : <Volume2 size={16} />} {muted ? 'Unmute' : 'Mute'}
             </Button>
-            <div className="preview-volume-wrapper" title={`Volume: ${Math.round((muted ? 0 : volume) * 100)}%`}>
+            <div
+              className="preview-volume-wrapper"
+              title={`Volume: ${Math.round((muted ? 0 : volume) * 100)}%`}
+            >
               <input
                 type="range"
                 className="preview-volume"
@@ -1065,7 +1228,9 @@ export function CameraWorkspace() {
                   setVolume(Number(e.target.value));
                 }}
               />
-              <span className="volume-percentage">{muted ? '0%' : `${Math.round(volume * 100)}%`}</span>
+              <span className="volume-percentage">
+                {muted ? '0%' : `${Math.round(volume * 100)}%`}
+              </span>
             </div>
             <IconButton label="Push-to-talk unavailable in this backend" disabled>
               <MicOff size={16} />

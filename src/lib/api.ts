@@ -44,7 +44,11 @@ export async function request<T = any>(
   method?: 'GET' | 'POST' | 'DELETE',
 ): Promise<T> {
   const timeoutMs =
-    path.includes('/live/start') || path.includes('/previews/') || path.includes('/connect/')
+    path.includes('/live/start') ||
+    path.includes('/playback/search') ||
+    path.includes('/playback/start') ||
+    path.includes('/previews/') ||
+    path.includes('/connect/')
       ? 60000
       : path === '/api/auth/status' || path === '/api/health'
         ? 5000
@@ -111,21 +115,22 @@ export const api = {
 };
 export const fleetApi = {
   buses: () => request('/api/fleet/buses'),
-  notifications: () => request<{
-    notifications: {
-      id: string;
-      gps_time: number;
-      observed_at: string;
-      speed_kph: number;
-      speed_limit_kph: number;
-      latitude: number;
-      longitude: number;
-      address: string;
-      bus_id: string;
-      bus_number: string;
-      registration: string;
-    }[];
-  }>('/api/fleet/notifications'),
+  notifications: () =>
+    request<{
+      notifications: {
+        id: string;
+        gps_time: number;
+        observed_at: string;
+        speed_kph: number;
+        speed_limit_kph: number;
+        latitude: number;
+        longitude: number;
+        address: string;
+        bus_id: string;
+        bus_number: string;
+        registration: string;
+      }[];
+    }>('/api/fleet/notifications'),
   saveBus: (bus: import('./fleet').Bus) =>
     request('/api/fleet/buses', { ...bus, ...(!bus.id ? { id: undefined } : {}) }),
   removeBus: (id: string) => request('/api/fleet/buses/remove', { id }),
@@ -140,13 +145,21 @@ export const fleetApi = {
   wheelseyeSources: () => request('/api/fleet/wheelseye/sources'),
   refreshWheelseye: () => request('/api/fleet/wheelseye/refresh', {}),
   wheelseyeDevice: (sourceId: string, deviceId: string, signal?: AbortSignal) =>
-    request<{ vehicle: import('./fleet').Vehicle; samples: { vehicle: import('./fleet').Vehicle; receivedAt: string }[]; fetchedAt: number }>(
+    request<{
+      vehicle: import('./fleet').Vehicle;
+      samples: { vehicle: import('./fleet').Vehicle; receivedAt: string }[];
+      fetchedAt: number;
+    }>(
       '/api/fleet/wheelseye/device?' + new URLSearchParams({ sourceId, deviceId }),
       undefined,
       signal,
     ),
   wheelseyeSource: (sourceId: string, live = false, signal?: AbortSignal) =>
-    request(`/api/fleet/wheelseye/source?${new URLSearchParams({ sourceId, ...(live ? { live: '1' } : {}) })}`, undefined, signal),
+    request(
+      `/api/fleet/wheelseye/source?${new URLSearchParams({ sourceId, ...(live ? { live: '1' } : {}) })}`,
+      undefined,
+      signal,
+    ),
   pollWheelseyeSource: (sourceId: string) =>
     request('/api/fleet/wheelseye/source/poll', { sourceId }),
   addWheelseyeSource: (label: string, url: string) =>

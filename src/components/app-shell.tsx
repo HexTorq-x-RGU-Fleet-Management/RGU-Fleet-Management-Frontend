@@ -51,7 +51,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     [search, setSearch] = useState(false),
     [query, setQuery] = useState(''),
     [notifications, setNotifications] = useState(false),
-    [speedAlerts, setSpeedAlerts] = useState<Awaited<ReturnType<typeof fleetApi.notifications>>['notifications']>([]),
+    [speedAlerts, setSpeedAlerts] = useState<
+      Awaited<ReturnType<typeof fleetApi.notifications>>['notifications']
+    >([]),
     [currentTime, setCurrentTime] = useState('');
   const shellRef = useRef<HTMLDivElement>(null),
     wasMobile = useRef(false);
@@ -140,6 +142,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return () => removeEventListener('keydown', key);
   }, []);
   if (!user) return null;
+  const cameraAttention = Boolean(
+    provider?.needsReconnect || (provider?.connected && !provider?.playbackReady),
+  );
   const list = links.filter((l) => canAccess(user.role, l.area || l.href.slice(1)));
   const title =
     list.find((l) => l.href === path)?.label ||
@@ -372,13 +377,32 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </kbd>
             </button>
             {user.role !== 'superadmin' && (
-              <Badge tone={provider?.connected ? 'green' : 'amber'}>
-                {provider?.connected ? 'Hik-Connect' : 'Connect cameras'}
+              <Badge tone={provider?.connected && !cameraAttention ? 'green' : 'amber'}>
+                {provider?.needsReconnect
+                  ? 'Reconnect cameras'
+                  : provider?.connected && !provider?.playbackReady
+                    ? 'Renew playback'
+                    : provider?.connected
+                      ? 'Hik-Connect'
+                      : 'Connect cameras'}
               </Badge>
             )}
-            <IconButton label="Notifications" onClick={() => setNotifications(true)} className="notification-trigger">
+            <IconButton
+              label="Notifications"
+              onClick={() => setNotifications(true)}
+              className="notification-trigger"
+            >
               <Bell size={18} />
-              {speedAlerts.length > 0 && <span className="notification-dot" aria-label={`${speedAlerts.length} speed alerts`} />}
+              {(speedAlerts.length > 0 || cameraAttention) && (
+                <span
+                  className="notification-dot"
+                  aria-label={
+                    cameraAttention
+                      ? 'Camera connection requires attention'
+                      : `${speedAlerts.length} speed alerts`
+                  }
+                />
+              )}
             </IconButton>
           </div>
         </header>
@@ -447,19 +471,45 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {speedAlerts.length > 0 ? (
           <div className="notification-list" role="list">
             {speedAlerts.map((alert) => (
-              <button key={alert.id} className="notification-card" role="listitem" onClick={() => { setNotifications(false); nav('/buses?bus=' + alert.bus_id); }}>
+              <button
+                key={alert.id}
+                className="notification-card"
+                role="listitem"
+                onClick={() => {
+                  setNotifications(false);
+                  nav('/buses?bus=' + alert.bus_id);
+                }}
+              >
                 <AlertTriangle size={18} />
-                <span><strong>{alert.bus_number || alert.registration}</strong><p>{Number(alert.speed_kph).toFixed(1)} km/h · limit {Number(alert.speed_limit_kph).toFixed(1)} km/h</p><small>{new Date(alert.gps_time * 1000).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} · {alert.address || `${Number(alert.latitude).toFixed(5)}, ${Number(alert.longitude).toFixed(5)}`}</small></span>
+                <span>
+                  <strong>{alert.bus_number || alert.registration}</strong>
+                  <p>
+                    {Number(alert.speed_kph).toFixed(1)} km/h · limit{' '}
+                    {Number(alert.speed_limit_kph).toFixed(1)} km/h
+                  </p>
+                  <small>
+                    {new Date(alert.gps_time * 1000).toLocaleString('en-IN', {
+                      timeZone: 'Asia/Kolkata',
+                    })}{' '}
+                    ·{' '}
+                    {alert.address ||
+                      `${Number(alert.latitude).toFixed(5)}, ${Number(alert.longitude).toFixed(5)}`}
+                  </small>
+                </span>
               </button>
             ))}
           </div>
-        ) : <p>No speed-limit violations in the last 24 hours.</p>}
+        ) : (
+          <p>No speed-limit violations in the last 24 hours.</p>
+        )}
         <p className="notification-connection-state">
           {provider?.needsReconnect
             ? 'Your Hik-Connect authorization needs attention. Open account settings to reconnect.'
-            : provider?.connected
-              ? 'Hik-Connect account connected. Recorder status comes from the provider.'
-              : 'No Hik-Connect connection is configured for this workspace.'}
+            : provider?.connected && !provider?.playbackReady
+              ? 'Recorder access is connected, but camera playback stopped or its authorization expired. Import a fresh iVMS playback authorization in account settings.'
+              : provider?.connected
+                ? 'Hik-Connect account connected. Recorder status comes from the provider.'
+                : 'No Hik-Connect connection is configured for this workspace.'}
         </p>
         <Button
           className="mt-4"

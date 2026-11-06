@@ -339,7 +339,9 @@ export function Settings() {
                   >
                     <Button variant="primary" onClick={() => setConnection(true)}>
                       <Link2 size={15} />
-                      Sign in to Hik-Connect
+                      {provider?.connected
+                        ? 'Reconnect or switch Hik-Connect account'
+                        : 'Sign in to Hik-Connect'}
                     </Button>
                     <Button disabled={!provider?.connected} onClick={() => setDisconnect(true)}>
                       <LogOut size={14} /> Disconnect Hik-Connect
@@ -912,7 +914,9 @@ export function Settings() {
             setSourceDiagnostics(null);
           }
         }}
-        title={sourceInspect ? `Telemetry diagnostics · ${sourceInspect.label}` : 'Telemetry diagnostics'}
+        title={
+          sourceInspect ? `Telemetry diagnostics · ${sourceInspect.label}` : 'Telemetry diagnostics'
+        }
         description="Admin-only provider response, discovered devices and persisted database observations. Secrets are never returned."
         wide
       >
@@ -921,7 +925,12 @@ export function Settings() {
             <div className="settings-list-row">
               <div>
                 <strong>{sourceInspect.label}</strong>
-                <small>{sourceInspect.endpointUrl || 'https://api.wheelseye.com/currentLoc'} · {sourceInspect.devices?.length || sourceInspect.devices?.length === 0 ? `${sourceInspect.devices.length} discovered device(s)` : 'Loading source details'}</small>
+                <small>
+                  {sourceInspect.endpointUrl || 'https://api.wheelseye.com/currentLoc'} ·{' '}
+                  {sourceInspect.devices?.length || sourceInspect.devices?.length === 0
+                    ? `${sourceInspect.devices.length} discovered device(s)`
+                    : 'Loading source details'}
+                </small>
               </div>
               <div className="settings-source-actions">
                 <Button
@@ -932,7 +941,13 @@ export function Settings() {
                       const result = await fleetApi.pollWheelseyeSource(sourceInspect.id);
                       setSourceDiagnostics(result);
                       setSourceInspect(result.source);
-                      setWheelseyeSources((items) => items.map((item) => item.id === result.source.id ? { ...item, ...result.source, devices: result.devices } : item));
+                      setWheelseyeSources((items) =>
+                        items.map((item) =>
+                          item.id === result.source.id
+                            ? { ...item, ...result.source, devices: result.devices }
+                            : item,
+                        ),
+                      );
                       toast.success('Live API triggered and telemetry was persisted.');
                     } catch (e) {
                       toast.error((e as Error).message);
@@ -946,40 +961,196 @@ export function Settings() {
                 <Button
                   onClick={async () => {
                     setSourceInspectBusy(true);
-                    try { setSourceDiagnostics(await fleetApi.wheelseyeSource(sourceInspect.id)); }
-                    catch (e) { toast.error((e as Error).message); }
-                    finally { setSourceInspectBusy(false); }
+                    try {
+                      setSourceDiagnostics(await fleetApi.wheelseyeSource(sourceInspect.id));
+                    } catch (e) {
+                      toast.error((e as Error).message);
+                    } finally {
+                      setSourceInspectBusy(false);
+                    }
                   }}
                 >
                   <RefreshCw size={15} /> Refresh database view
                 </Button>
               </div>
             </div>
-            {sourceInspectBusy && !sourceDiagnostics && <div className="settings-loading"><AsciiSkeleton lines={4} /></div>}
+            {sourceInspectBusy && !sourceDiagnostics && (
+              <div className="settings-loading">
+                <AsciiSkeleton lines={4} />
+              </div>
+            )}
             {sourceDiagnostics && (
               <>
                 <div className="telemetry-admin-summary">
-                  <Badge tone={sourceDiagnostics.source?.lastError ? 'amber' : 'green'}>{sourceDiagnostics.source?.lastError ? 'Last poll failed' : 'Source healthy'}</Badge>
+                  <Badge tone={sourceDiagnostics.source?.lastError ? 'amber' : 'green'}>
+                    {sourceDiagnostics.source?.lastError ? 'Last poll failed' : 'Source healthy'}
+                  </Badge>
                   <span>{sourceDiagnostics.devices?.length || 0} devices</span>
                   <span>{sourceDiagnostics.logs?.length || 0} recent database rows</span>
                   <span>Poll every {sourceDiagnostics.source?.pollIntervalSeconds || 60}s</span>
                 </div>
-                {sourceDiagnostics.source?.lastError && <p className="settings-error">{sourceDiagnostics.source.lastError}</p>}
+                {sourceDiagnostics.source?.lastError && (
+                  <p className="settings-error">{sourceDiagnostics.source.lastError}</p>
+                )}
                 <div className="settings-subsection">
-                  <div className="settings-subsection-heading"><span><Database size={17} /></span><div><h3>Configured devices</h3><p>Devices discovered from this provider account.</p></div></div>
-                  <div className="table-scroll"><table className="data-table"><thead><tr><th>Device</th><th>Vehicle</th><th>Vendor</th><th>Last seen</th></tr></thead><tbody>{(sourceDiagnostics.devices || []).map((device: any) => <tr key={device.device_number}><td>{device.device_number}</td><td>{device.vehicle_number || '—'}</td><td>{device.vendor_name || device.vendor_code || device.provider || '—'}</td><td>{device.last_seen_at ? new Date(device.last_seen_at).toLocaleString('en-IN') : '—'}</td></tr>)}</tbody></table></div>
+                  <div className="settings-subsection-heading">
+                    <span>
+                      <Database size={17} />
+                    </span>
+                    <div>
+                      <h3>Configured devices</h3>
+                      <p>Devices discovered from this provider account.</p>
+                    </div>
+                  </div>
+                  <div className="table-scroll">
+                    <table className="data-table">
+                      <thead>
+                        <tr>
+                          <th>Device</th>
+                          <th>Vehicle</th>
+                          <th>Vendor</th>
+                          <th>Last seen</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(sourceDiagnostics.devices || []).map((device: any) => (
+                          <tr key={device.device_number}>
+                            <td>{device.device_number}</td>
+                            <td>{device.vehicle_number || '—'}</td>
+                            <td>
+                              {device.vendor_name || device.vendor_code || device.provider || '—'}
+                            </td>
+                            <td>
+                              {device.last_seen_at
+                                ? new Date(device.last_seen_at).toLocaleString('en-IN')
+                                : '—'}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
                 <div className="settings-subsection">
-                  <div className="settings-subsection-heading"><span><HardDrive size={17} /></span><div><h3>Persisted telemetry rows</h3><p>Latest raw observations stored by the server.</p></div></div>
-                  <div className="table-scroll"><table className="data-table"><thead><tr><th>Received</th><th>Device</th><th>Coordinates</th><th>Speed</th><th>Ignition</th><th>Fuel</th></tr></thead><tbody>{(sourceDiagnostics.logs || []).map((row: any, index: number) => <tr key={`${row.device_number}-${row.gps_time}-${index}`}><td>{row.received_at ? new Date(row.received_at).toLocaleString('en-IN') : '—'}</td><td>{row.device_number}</td><td>{Number(row.latitude).toFixed(5)}, {Number(row.longitude).toFixed(5)}</td><td>{row.speed} km/h</td><td>{row.ignition ? 'On' : 'Off'}</td><td>{row.payload?.fuelData?.currentLiters ?? '—'}</td></tr>)}</tbody></table>{!sourceDiagnostics.logs?.length && <p className="small muted">No telemetry rows have been stored for this source yet.</p>}</div>
+                  <div className="settings-subsection-heading">
+                    <span>
+                      <HardDrive size={17} />
+                    </span>
+                    <div>
+                      <h3>Persisted telemetry rows</h3>
+                      <p>Latest raw observations stored by the server.</p>
+                    </div>
+                  </div>
+                  <div className="table-scroll">
+                    <table className="data-table">
+                      <thead>
+                        <tr>
+                          <th>Received</th>
+                          <th>Device</th>
+                          <th>Coordinates</th>
+                          <th>Speed</th>
+                          <th>Ignition</th>
+                          <th>Fuel</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(sourceDiagnostics.logs || []).map((row: any, index: number) => (
+                          <tr key={`${row.device_number}-${row.gps_time}-${index}`}>
+                            <td>
+                              {row.received_at
+                                ? new Date(row.received_at).toLocaleString('en-IN')
+                                : '—'}
+                            </td>
+                            <td>{row.device_number}</td>
+                            <td>
+                              {Number(row.latitude).toFixed(5)}, {Number(row.longitude).toFixed(5)}
+                            </td>
+                            <td>{row.speed} km/h</td>
+                            <td>{row.ignition ? 'On' : 'Off'}</td>
+                            <td>{row.payload?.fuelData?.currentLiters ?? '—'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {!sourceDiagnostics.logs?.length && (
+                      <p className="small muted">
+                        No telemetry rows have been stored for this source yet.
+                      </p>
+                    )}
+                  </div>
                 </div>
                 <div className="settings-subsection">
-                  <div className="settings-subsection-heading"><span><Route size={17} /></span><div><h3>Normalized movement segments</h3><p>Database segments created only when the position moves more than 10 meters.</p></div></div>
-                  <div className="table-scroll"><table className="data-table"><thead><tr><th>Start</th><th>Device</th><th>Coordinates</th><th>Speed</th><th>Ignition</th><th>Fuel</th></tr></thead><tbody>{(sourceDiagnostics.segments || []).map((row: any, index: number) => <tr key={`${row.device_number}-${row.segment_start}-${index}`}><td>{row.segment_start ? new Date(row.segment_start).toLocaleString('en-IN') : '—'}</td><td>{row.device_number}</td><td>{Number(row.latitude).toFixed(5)}, {Number(row.longitude).toFixed(5)}</td><td>{row.speed} km/h</td><td>{row.ignition ? 'On' : 'Off'}</td><td>{row.fuel_litres ?? '—'}</td></tr>)}</tbody></table>{!sourceDiagnostics.segments?.length && <p className="small muted">No normalized movement segments have been stored yet.</p>}</div>
+                  <div className="settings-subsection-heading">
+                    <span>
+                      <Route size={17} />
+                    </span>
+                    <div>
+                      <h3>Normalized movement segments</h3>
+                      <p>
+                        Database segments created only when the position moves more than 10 meters.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="table-scroll">
+                    <table className="data-table">
+                      <thead>
+                        <tr>
+                          <th>Start</th>
+                          <th>Device</th>
+                          <th>Coordinates</th>
+                          <th>Speed</th>
+                          <th>Ignition</th>
+                          <th>Fuel</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(sourceDiagnostics.segments || []).map((row: any, index: number) => (
+                          <tr key={`${row.device_number}-${row.segment_start}-${index}`}>
+                            <td>
+                              {row.segment_start
+                                ? new Date(row.segment_start).toLocaleString('en-IN')
+                                : '—'}
+                            </td>
+                            <td>{row.device_number}</td>
+                            <td>
+                              {Number(row.latitude).toFixed(5)}, {Number(row.longitude).toFixed(5)}
+                            </td>
+                            <td>{row.speed} km/h</td>
+                            <td>{row.ignition ? 'On' : 'Off'}</td>
+                            <td>{row.fuel_litres ?? '—'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {!sourceDiagnostics.segments?.length && (
+                      <p className="small muted">
+                        No normalized movement segments have been stored yet.
+                      </p>
+                    )}
+                  </div>
                 </div>
                 <div className="settings-subsection">
-                  <div className="settings-subsection-heading"><span><Info size={17} /></span><div><h3>Latest provider response</h3><p>Safe vehicle data returned by the last manual trigger; access tokens are excluded.</p></div></div>
-                  <pre className="telemetry-json">{JSON.stringify(sourceDiagnostics.liveResponse || { note: 'Trigger the live API to capture a response.' }, null, 2)}</pre>
+                  <div className="settings-subsection-heading">
+                    <span>
+                      <Info size={17} />
+                    </span>
+                    <div>
+                      <h3>Latest provider response</h3>
+                      <p>
+                        Safe vehicle data returned by the last manual trigger; access tokens are
+                        excluded.
+                      </p>
+                    </div>
+                  </div>
+                  <pre className="telemetry-json">
+                    {JSON.stringify(
+                      sourceDiagnostics.liveResponse || {
+                        note: 'Trigger the live API to capture a response.',
+                      },
+                      null,
+                      2,
+                    )}
+                  </pre>
                 </div>
               </>
             )}
@@ -989,8 +1160,12 @@ export function Settings() {
       <Modal
         open={connection}
         onOpenChange={setConnection}
-        title="Sign in to Hik-Connect"
-        description="Connect your workspace’s owned and shared recorders."
+        title={provider?.connected ? 'Reconnect Hik-Connect' : 'Sign in to Hik-Connect'}
+        description={
+          provider?.connected
+            ? 'Renew the connected provider session or switch this workspace to another account.'
+            : 'Connect your workspace’s owned and shared recorders.'
+        }
       >
         <form
           onSubmit={async (e) => {
@@ -1035,7 +1210,7 @@ export function Settings() {
             <input type="checkbox" name="recover" />
           </label>
           <Button variant="primary" loading={busy} type="submit">
-            Connect account
+            {provider?.connected ? 'Update connection' : 'Connect account'}
           </Button>
         </form>
       </Modal>

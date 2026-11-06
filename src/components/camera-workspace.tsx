@@ -72,7 +72,8 @@ export function CameraWorkspace() {
     [footage, setFootage] = useState<{ startTime: string; stopTime: string } | null>(null),
     [historical, setHistorical] = useState(false),
     [searchingFootage, setSearchingFootage] = useState(false),
-    [openingFootage, setOpeningFootage] = useState(false);
+    [openingFootage, setOpeningFootage] = useState(false),
+    [playbackAttention, setPlaybackAttention] = useState(false);
   const stage = useRef<HTMLDivElement>(null),
     canvases = useRef(new Map<number, HTMLCanvasElement>()),
     players = useRef(new Map<number, SmoothPlayer>()),
@@ -87,6 +88,7 @@ export function CameraWorkspace() {
     cancelUpload = useRef<(() => void) | null>(null),
     drag = useRef<{ x: number; y: number; px: number; py: number } | null>(null),
     fallback = useRef(false),
+    playbackAlerted = useRef(false),
     frameTimes = useRef(new Map<number, number>()),
     jpegVersions = useRef(new Map<number, number>());
   const r =
@@ -244,6 +246,8 @@ export function CameraWorkspace() {
         delivery,
         slot: tile.slot,
       });
+      setPlaybackAttention(false);
+      playbackAlerted.current = false;
       if (currentEpoch === epoch.current)
         status(tile.slot, {
           state: 'waiting',
@@ -251,6 +255,20 @@ export function CameraWorkspace() {
         });
     } catch (e) {
       if (currentEpoch !== epoch.current) return;
+      if (
+        ['playback-auth-required', 'playback-rejected', 'sdk-start-failed'].includes(
+          (e as any).code,
+        )
+      ) {
+        setPlaybackAttention(true);
+        if (!playbackAlerted.current) {
+          playbackAlerted.current = true;
+          toast.error(
+            'Camera playback stopped or its authorization expired. Import a fresh iVMS playback authorization.',
+          );
+        }
+        void refresh().catch(() => {});
+      }
       status(tile.slot, { state: 'failed', detail: (e as Error).message });
       retry(tile, (e as any).code);
     }
@@ -279,6 +297,10 @@ export function CameraWorkspace() {
     setSelected(0);
     setPage(0);
   }, [query, recorders.map((r) => r.id).join('|')]);
+  useEffect(() => {
+    setPlaybackAttention(false);
+    playbackAlerted.current = false;
+  }, [provider?.connectionId]);
   useEffect(() => {
     setQuality(state.settings.quality);
     setFit(state.settings.fit);
@@ -557,7 +579,17 @@ export function CameraWorkspace() {
       }
       await refresh();
       setGrid(gridFor(count));
-      toast.info(count + ' channels returned camera frames.');
+      if (count === 0 && r.online) {
+        setPlaybackAttention(true);
+        playbackAlerted.current = true;
+        toast.error(
+          'The recorder is online, but playback returned no frames. Renew iVMS playback authorization and try again.',
+        );
+      } else {
+        setPlaybackAttention(false);
+        playbackAlerted.current = false;
+        toast.info(count + ' channels returned camera frames.');
+      }
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -769,22 +801,26 @@ export function CameraWorkspace() {
           ))}
         </div>
       )}
-      {!provider?.playbackReady && (
+      {(!provider?.playbackReady || playbackAttention) && (
         <div className="playback-warning" role="alert">
           <TriangleAlert size={19} aria-hidden="true" />
           <div>
             <strong>
-              {provider?.connected
-                ? 'Live playback authorization required'
-                : 'Camera connection required'}
+              {playbackAttention && provider?.playbackReady
+                ? 'Camera playback stopped'
+                : provider?.connected
+                  ? 'Live playback authorization required'
+                  : 'Camera connection required'}
             </strong>
             <p>
-              {provider?.connected
-                ? 'Hik-Connect device access is connected, but iVMS playback authorization is still missing.'
-                : 'Connect Hik-Connect before opening live camera playback.'}
+              {playbackAttention && provider?.playbackReady
+                ? 'This recorder is online, but the SDK could not open its video. Your saved iVMS playback authorization may have expired.'
+                : provider?.connected
+                  ? 'Hik-Connect device access is connected, but iVMS playback authorization is missing or expired.'
+                  : 'Connect Hik-Connect before opening live camera playback.'}
             </p>
             <Link className="btn btn-ghost playback-warning-link" href="/settings">
-              {provider?.connected ? 'Open playback settings' : 'Open account settings'}
+              {provider?.connected ? 'Renew playback authorization' : 'Open account settings'}
             </Link>
           </div>
         </div>

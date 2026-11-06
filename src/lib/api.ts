@@ -154,9 +154,9 @@ export const fleetApi = {
       undefined,
       signal,
     ),
-  wheelseyeSource: (sourceId: string, live = false, signal?: AbortSignal) =>
+  wheelseyeSource: (sourceId: string, date?: string, live = false, signal?: AbortSignal) =>
     request(
-      `/api/fleet/wheelseye/source?${new URLSearchParams({ sourceId, ...(live ? { live: '1' } : {}) })}`,
+      `/api/fleet/wheelseye/source?${new URLSearchParams({ sourceId, ...(date ? { date } : {}), ...(live ? { live: '1' } : {}) })}`,
       undefined,
       signal,
     ),

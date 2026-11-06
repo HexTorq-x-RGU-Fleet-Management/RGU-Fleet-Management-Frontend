@@ -524,6 +524,19 @@
   display: grid;
   gap: 18px;
 }
+.telemetry-date-filter {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+}
+.telemetry-date-filter .settings-subsection-heading { margin: 0; }
+.telemetry-date-filter .settings-source-actions { align-items: flex-end; flex-wrap: nowrap; }
+.telemetry-date-filter .field { min-width: 180px; }
 .telemetry-admin-summary {
   display: flex;
   flex-wrap: wrap;
@@ -757,6 +770,12 @@
   .settings-source-copy {
     flex-basis: calc(100% - 48px);
   }
+  .telemetry-date-filter,
+  .telemetry-date-filter .settings-source-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .telemetry-date-filter .field { min-width: 0; }
   .settings-security-summary {
     margin: 18px;
     padding: 16px;

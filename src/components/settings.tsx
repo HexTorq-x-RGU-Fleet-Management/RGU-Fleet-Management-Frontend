@@ -26,6 +26,7 @@ import {
   Database,
   Shield,
   Info,
+  CalendarDays,
   type LucideIcon,
 } from 'lucide-react';
 import { AsciiSkeleton } from 'ascii-reveal';
@@ -35,6 +36,8 @@ import { PageHeading, Button, Modal, Field, Badge, Confirm } from './ui';
 import { api, request, fleetApi } from '@/lib/api';
 import { GoogleAuthButton } from './google-auth-button';
 import { formatBytes } from '@/lib/model';
+
+const indiaToday = () => new Date(Date.now() + 5.5 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
 function SectionHeader({
   icon: Icon,
@@ -164,6 +167,7 @@ export function Settings() {
   const [tab, setTab] = useState<string>(user?.role === 'superadmin' ? 'viewing' : 'account'),
     [connection, setConnection] = useState(false),
     [playbackImport, setPlaybackImport] = useState(false),
+    [playbackRemove, setPlaybackRemove] = useState(false),
     [busy, setBusy] = useState(false),
     [disconnect, setDisconnect] = useState(false),
     [googleLinked, setGoogleLinked] = useState(false),
@@ -174,6 +178,7 @@ export function Settings() {
     [deviceDetail, setDeviceDetail] = useState<any>(null),
     [sourceInspect, setSourceInspect] = useState<any>(null),
     [sourceDiagnostics, setSourceDiagnostics] = useState<any>(null),
+    [sourceDate, setSourceDate] = useState(indiaToday),
     [sourceInspectBusy, setSourceInspectBusy] = useState(false),
     [deviceBusy, setDeviceBusy] = useState(false),
     [storageLoading, setStorageLoading] = useState(false),
@@ -370,6 +375,12 @@ export function Settings() {
                       {provider?.playbackRecovery === 'external-authorization'
                         ? 'Import playback authorization'
                         : 'Use iVMS playback sign-in'}
+                    </Button>
+                    <Button disabled={!provider?.playbackReady} onClick={() => setPlaybackRemove(true)}>
+                      <LogOut size={14} /> Remove playback authorization
+                    </Button>
+                    <Button onClick={() => void refresh()}>
+                      <RefreshCw size={14} /> Refresh playback status
                     </Button>
                   </SettingGroup>
                   <SettingGroup
@@ -750,11 +761,13 @@ export function Settings() {
                           <div className="settings-source-actions">
                             <Button
                               onClick={async () => {
+                                const day = indiaToday();
+                                setSourceDate(day);
                                 setSourceInspect(source);
                                 setSourceDiagnostics(null);
                                 setSourceInspectBusy(true);
                                 try {
-                                  setSourceDiagnostics(await fleetApi.wheelseyeSource(source.id));
+                                  setSourceDiagnostics(await fleetApi.wheelseyeSource(source.id, day));
                                 } catch (e) {
                                   toast.error((e as Error).message);
                                 } finally {
@@ -939,7 +952,8 @@ export function Settings() {
                     setSourceInspectBusy(true);
                     try {
                       const result = await fleetApi.pollWheelseyeSource(sourceInspect.id);
-                      setSourceDiagnostics(result);
+                      const selected = await fleetApi.wheelseyeSource(sourceInspect.id, sourceDate);
+                      setSourceDiagnostics({ ...selected, liveResponse: result.liveResponse });
                       setSourceInspect(result.source);
                       setWheelseyeSources((items) =>
                         items.map((item) =>
@@ -962,7 +976,7 @@ export function Settings() {
                   onClick={async () => {
                     setSourceInspectBusy(true);
                     try {
-                      setSourceDiagnostics(await fleetApi.wheelseyeSource(sourceInspect.id));
+                      setSourceDiagnostics(await fleetApi.wheelseyeSource(sourceInspect.id, sourceDate));
                     } catch (e) {
                       toast.error((e as Error).message);
                     } finally {
@@ -981,12 +995,28 @@ export function Settings() {
             )}
             {sourceDiagnostics && (
               <>
+                <div className="telemetry-date-filter">
+                  <div className="settings-subsection-heading">
+                    <span><CalendarDays size={17} /></span>
+                    <div><h3>Telemetry date</h3><p>Load all saved movement sessions and raw polling rows for one IST day.</p></div>
+                  </div>
+                  <div className="settings-source-actions">
+                    <label className="field"><span>Date</span><input type="date" value={sourceDate} max={indiaToday()} onChange={(event) => setSourceDate(event.target.value)} /></label>
+                    <Button loading={sourceInspectBusy} disabled={!sourceDate} onClick={async () => {
+                      setSourceInspectBusy(true);
+                      try { setSourceDiagnostics(await fleetApi.wheelseyeSource(sourceInspect.id, sourceDate)); }
+                      catch (e) { toast.error((e as Error).message); }
+                      finally { setSourceInspectBusy(false); }
+                    }}><CalendarDays size={15} /> Load full day</Button>
+                  </div>
+                </div>
                 <div className="telemetry-admin-summary">
                   <Badge tone={sourceDiagnostics.source?.lastError ? 'amber' : 'green'}>
                     {sourceDiagnostics.source?.lastError ? 'Last poll failed' : 'Source healthy'}
                   </Badge>
                   <span>{sourceDiagnostics.devices?.length || 0} devices</span>
-                  <span>{sourceDiagnostics.logs?.length || 0} recent database rows</span>
+                  <span>{sourceDiagnostics.segments?.length || 0} movement sessions</span>
+                  <span>{sourceDiagnostics.logs?.length || 0} raw rows</span>
                   <span>Poll every {sourceDiagnostics.source?.pollIntervalSeconds || 60}s</span>
                 </div>
                 {sourceDiagnostics.source?.lastError && (
@@ -1034,11 +1064,59 @@ export function Settings() {
                 <div className="settings-subsection">
                   <div className="settings-subsection-heading">
                     <span>
+                      <Route size={17} />
+                    </span>
+                    <div>
+                      <h3>Movement sessions</h3>
+                      <p>Normalized positions created when movement exceeds 10 metres.</p>
+                    </div>
+                  </div>
+                  <div className="table-scroll">
+                    <table className="data-table">
+                      <thead>
+                        <tr>
+                          <th>Session start</th>
+                          <th>Device</th>
+                          <th>Coordinates</th>
+                          <th>Speed</th>
+                          <th>Ignition</th>
+                          <th>Fuel</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(sourceDiagnostics.segments || []).map((row: any, index: number) => (
+                          <tr key={`${row.device_number}-${row.segment_start}-${index}`}>
+                            <td>
+                              {row.segment_start
+                                ? new Date(row.segment_start).toLocaleString('en-IN')
+                                : '—'}
+                            </td>
+                            <td>{row.device_number}</td>
+                            <td>
+                              {Number(row.latitude).toFixed(5)}, {Number(row.longitude).toFixed(5)}
+                            </td>
+                            <td>{row.speed} km/h</td>
+                            <td>{row.ignition ? 'On' : 'Off'}</td>
+                            <td>{row.fuel_litres ?? '—'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {!sourceDiagnostics.segments?.length && (
+                      <p className="small muted">
+                        No movement sessions were stored for the selected date.
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="settings-subsection">
+                  <div className="settings-subsection-heading">
+                    <span>
                       <HardDrive size={17} />
                     </span>
                     <div>
-                      <h3>Persisted telemetry rows</h3>
-                      <p>Latest raw observations stored by the server.</p>
+                      <h3>Raw telemetry rows</h3>
+                      <p>Every retained provider poll stored during the selected day.</p>
                     </div>
                   </div>
                   <div className="table-scroll">
@@ -1074,57 +1152,7 @@ export function Settings() {
                     </table>
                     {!sourceDiagnostics.logs?.length && (
                       <p className="small muted">
-                        No telemetry rows have been stored for this source yet.
-                      </p>
-                    )}
-                  </div>
-                </div>
-                <div className="settings-subsection">
-                  <div className="settings-subsection-heading">
-                    <span>
-                      <Route size={17} />
-                    </span>
-                    <div>
-                      <h3>Normalized movement segments</h3>
-                      <p>
-                        Database segments created only when the position moves more than 10 meters.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="table-scroll">
-                    <table className="data-table">
-                      <thead>
-                        <tr>
-                          <th>Start</th>
-                          <th>Device</th>
-                          <th>Coordinates</th>
-                          <th>Speed</th>
-                          <th>Ignition</th>
-                          <th>Fuel</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(sourceDiagnostics.segments || []).map((row: any, index: number) => (
-                          <tr key={`${row.device_number}-${row.segment_start}-${index}`}>
-                            <td>
-                              {row.segment_start
-                                ? new Date(row.segment_start).toLocaleString('en-IN')
-                                : '—'}
-                            </td>
-                            <td>{row.device_number}</td>
-                            <td>
-                              {Number(row.latitude).toFixed(5)}, {Number(row.longitude).toFixed(5)}
-                            </td>
-                            <td>{row.speed} km/h</td>
-                            <td>{row.ignition ? 'On' : 'Off'}</td>
-                            <td>{row.fuel_litres ?? '—'}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                    {!sourceDiagnostics.segments?.length && (
-                      <p className="small muted">
-                        No normalized movement segments have been stored yet.
+                        No raw telemetry rows are retained for the selected date.
                       </p>
                     )}
                   </div>
@@ -1338,6 +1366,14 @@ export function Settings() {
           </div>
         )}
       </Modal>
+      <Confirm
+        open={playbackRemove}
+        onOpenChange={setPlaybackRemove}
+        title="Remove playback authorization?"
+        description="Live and recorded camera playback will stop, but the Hik-Connect device account and recorder list remain connected. Restore playback with the Tauri bridge or a fresh grant."
+        action="Remove authorization"
+        onConfirm={() => action(() => request('/api/connect/playback/remove', {})).then(() => setPlaybackRemove(false))}
+      />
       <Confirm
         open={disconnect}
         onOpenChange={setDisconnect}

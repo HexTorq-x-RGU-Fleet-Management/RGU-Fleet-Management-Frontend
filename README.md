@@ -80,6 +80,12 @@ need HTTPS and the appropriate Secure/SameSite cookie policy; browser cookie
 restrictions still apply. Prefer frontend/API under one site. No VPS deployment
 or Linux runtime migration was performed by this change.
 
+Same-origin API proxy: set NEXT_PUBLIC_API_BASE_URL=/rgu and
+RGU_API_PROXY_TARGET to the real API origin without the /rgu prefix and never
+the frontend's own domain. A target that points back at the frontend rewrites
+/rgu onto itself and every API call fails with HTTP 508 (loop detected). The
+rewrite also refuses to proxy requests whose host already matches the target.
+
 ## Checks
 
 ```powershell

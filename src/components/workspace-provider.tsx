@@ -159,8 +159,10 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       setError(null);
     } catch (e) {
       if (seq === generation.current) {
+        const message = e instanceof ApiError && e.status === 401 ? null : (e as Error).message;
         clear();
-        setError(e instanceof ApiError && e.status === 401 ? null : (e as Error).message);
+        setError(message);
+        setReady(true);
       }
     } finally {
       if (seq === generation.current) setReady(true);

@@ -79,7 +79,11 @@ export async function request<T = any>(
   try {
     result = await response.json();
   } catch {
-    throw new ApiError('Unexpected API response.', response.status, 'invalid-response');
+    throw new ApiError(
+      `Unexpected API response (HTTP ${response.status}) from the fleet service.`,
+      response.status,
+      'invalid-response',
+    );
   }
   if (!response.ok) {
     if (response.status === 401 && typeof window !== 'undefined')

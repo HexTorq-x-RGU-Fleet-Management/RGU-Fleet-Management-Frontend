@@ -70,6 +70,19 @@ describe('separate backend boundary', () => {
     const { request } = await import('../../src/lib/api');
     await expect(request('/api/auth/status')).rejects.toMatchObject({ code: 'invalid-response' });
   });
+  it('surfaces the HTTP status when the API proxy answers with a non-JSON error', async () => {
+    vi.stubEnv('NEXT_PUBLIC_API_BASE_URL', '/rgu');
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(new Response('Infinite loop detected', { status: 508 })),
+    );
+    const { request } = await import('../../src/lib/api');
+    await expect(request('/api/auth/status')).rejects.toMatchObject({
+      status: 508,
+      code: 'invalid-response',
+      message: 'Unexpected API response (HTTP 508) from the fleet service.',
+    });
+  });
   it('rejects non-API routes and reports network failure', async () => {
     vi.stubEnv('NEXT_PUBLIC_API_BASE_URL', 'https://api.example.test');
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(Error('internal-error')));

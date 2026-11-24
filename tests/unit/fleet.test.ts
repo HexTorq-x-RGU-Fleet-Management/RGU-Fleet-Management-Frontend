@@ -96,7 +96,14 @@ it('summarizes live buses, verified cameras and online GPS devices', () => {
       status: 'online',
       channels: 4,
       channelList: [
-        { number: 1, name: 'Front', canRecord: true, canDownload: true, health: 'working' },
+        {
+          number: 1,
+          name: 'Front',
+          canRecord: true,
+          canDownload: true,
+          health: 'working',
+          healthCheckedAt: '2026-11-24T10:00:00.000Z',
+        },
         { number: 2, name: 'Rear', canRecord: true, canDownload: true, health: 'unknown' },
       ],
       vehicle: '',
@@ -111,7 +118,12 @@ it('summarizes live buses, verified cameras and online GPS devices', () => {
     ),
   ).toEqual({
     buses: { total: 3, active: 1, inactive: 2 },
-    cameras: { total: 4, active: 1, inactive: 3 },
+    cameras: {
+      total: 4,
+      active: 1,
+      inactive: 3,
+      checkedAt: '2026-11-24T10:00:00.000Z',
+    },
     gps: { total: 2, active: 2, inactive: 0 },
   });
 });

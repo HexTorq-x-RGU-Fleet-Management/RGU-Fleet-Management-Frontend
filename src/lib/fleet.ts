@@ -129,7 +129,7 @@ export type OperationsMetric = {
 };
 export type OperationsSummary = {
   buses: OperationsMetric;
-  cameras: OperationsMetric;
+  cameras: OperationsMetric & { checkedAt: string | null };
   gps: OperationsMetric;
 };
 
@@ -149,6 +149,13 @@ export function operationsSummary(
     (total, recorder) => total + workingChannels(recorders, recorder.id).length,
     0,
   );
+  const cameraCheckedAt =
+    recorders
+      .flatMap((recorder) => recorder.channelList)
+      .map((channel) => channel.healthCheckedAt)
+      .filter((value): value is string => Boolean(value))
+      .sort()
+      .at(-1) ?? null;
   const gps = gpsSummary(buses, vehicles, now);
   return {
     buses: {
@@ -160,6 +167,7 @@ export function operationsSummary(
       total: totalCameras,
       active: activeCameras,
       inactive: Math.max(0, totalCameras - activeCameras),
+      checkedAt: cameraCheckedAt,
     },
     gps: {
       total: gps.total,

@@ -23,6 +23,17 @@ export type SpeedAlert = {
 };
 export type KpiFilter = 'all' | 'moving' | 'online' | 'offline' | 'overspeed';
 
+function cameraCheckLabel(value: string | null) {
+  if (!value) return 'Automatic check starting';
+  const time = new Date(value);
+  if (Number.isNaN(time.getTime())) return 'Checked automatically';
+  return `Checked ${new Intl.DateTimeFormat('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(time)} IST`;
+}
+
 type OperationalCardProps = {
   tone: 'bus' | 'camera' | 'gps';
   icon: ComponentType<{ size?: number }>;
@@ -180,10 +191,10 @@ export function FleetKpis({
           icon={Cctv}
           title="CCTV cameras"
           metric={operations.cameras}
-          activeLabel="active"
-          inactiveLabel="not verified"
+          activeLabel="ready to view"
+          inactiveLabel="not ready"
           note="recorder channels"
-          actionLabel="Open camera workspace"
+          actionLabel={`${cameraCheckLabel(operations.cameras.checkedAt)} · Open cameras`}
           href="/cameras"
         />
         <OperationalCard

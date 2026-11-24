@@ -77,6 +77,19 @@
 
 .fleet-filters {
   margin-bottom: 22px;
+  max-width: 100%;
+}
+
+@media (max-width: 560px) {
+  .segmented.fleet-filters {
+    display: flex;
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .segmented.fleet-filters button {
+    flex: 1 1 auto;
+  }
 }
 
 .fleet-bus-grid {

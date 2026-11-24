@@ -45,6 +45,7 @@ import {
   telemetryAge,
   gpsState,
   gpsSummary,
+  operationsSummary,
   isOverspeed,
   DEFAULT_SPEED_LIMIT_KPH,
 } from '@/lib/fleet';
@@ -192,6 +193,7 @@ export function FleetWorkspace({ busesOnly = false }: { busesOnly?: boolean }) {
         (filter === 'unmapped' && (!b.recorderId || !b.telemetryDeviceId)),
     );
   const summary = gpsSummary(state.buses, vehicles, now),
+    operations = operationsSummary(state.buses, vehicles, recorders, now),
     playbackBus =
       state.buses.find((b) => gpsState(b, reading(b), now) === 'online') ??
       state.buses.find((b) => b.telemetryDeviceId);
@@ -269,6 +271,7 @@ export function FleetWorkspace({ busesOnly = false }: { busesOnly?: boolean }) {
                 </span>
               </div>
               <FleetKpis
+                operations={operations}
                 summary={summary}
                 filter={filter}
                 onFilter={setFilter}
@@ -562,7 +565,10 @@ function BusEditor({ bus, onClose }: { bus: Bus | null; onClose: () => void }) {
               onChange={(e) => set({ routeName: e.target.value })}
             />
           </Field>
-          <Field label="Speed limit (km/h)" hint="Overspeed readings are stored and highlighted in the journey timeline.">
+          <Field
+            label="Speed limit (km/h)"
+            hint="Overspeed readings are stored and highlighted in the journey timeline."
+          >
             <input
               type="number"
               min={1}
@@ -973,12 +979,7 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
     let first = true;
     const readHistory = async () => {
       try {
-        const result = await fleetApi.history(
-          bus.id,
-          from,
-          selectedEnd,
-          abort.signal,
-        );
+        const result = await fleetApi.history(bus.id, from, selectedEnd, abort.signal);
         const ordered = result.samples
           .map((sample) => sample.vehicle)
           .sort((a, b) => a.gpsTime - b.gpsTime);
@@ -1001,7 +1002,9 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
         });
         setSamples(minuteSamples);
         setViolations(result.violations || []);
-        setSource(result.samples.some((sample) => sample.source === 'vendor') ? 'vendor' : undefined);
+        setSource(
+          result.samples.some((sample) => sample.source === 'vendor') ? 'vendor' : undefined,
+        );
       } catch (e) {
         if ((e as Error).name !== 'AbortError') setError((e as Error).message);
       } finally {
@@ -1021,9 +1024,13 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
   const index =
       cursor === null
         ? samples.length - 1
-        : samples.reduce((best, sample, i) =>
-            Math.abs(sample.gpsTime - cursor) < Math.abs(samples[best].gpsTime - cursor) ? i : best,
-          0),
+        : samples.reduce(
+            (best, sample, i) =>
+              Math.abs(sample.gpsTime - cursor) < Math.abs(samples[best].gpsTime - cursor)
+                ? i
+                : best,
+            0,
+          ),
     v = samples[index];
   useEffect(() => {
     setCursor(null);
@@ -1035,7 +1042,11 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
   }, [index, playing]);
   useEffect(() => {
     const active = timelineRef.current?.querySelector<HTMLElement>('[data-active="true"]');
-    active?.scrollIntoView({ behavior: playing ? 'smooth' : 'auto', block: 'nearest', inline: 'center' });
+    active?.scrollIntoView({
+      behavior: playing ? 'smooth' : 'auto',
+      block: 'nearest',
+      inline: 'center',
+    });
   }, [index, playing]);
   useEffect(() => {
     if (!playing || !samples.length) return;
@@ -1073,7 +1084,9 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
       <div className="fleet-toolbar">
         <div>
           <h2>Journey explorer</h2>
-          <p className="muted">Persisted one-minute WheelsEye GPS, speed, ignition and fuel samples.</p>
+          <p className="muted">
+            Persisted one-minute WheelsEye GPS, speed, ignition and fuel samples.
+          </p>
         </div>
         <label className="compact-select">
           Date
@@ -1110,7 +1123,9 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
               {timeLabel(v.gpsTime)} <small>IST</small>
             </h2>
           </div>
-          <Badge tone="neutral">{source === 'vendor' ? 'WheelsEye observations' : 'Provider observations'}</Badge>
+          <Badge tone="neutral">
+            {source === 'vendor' ? 'WheelsEye observations' : 'Provider observations'}
+          </Badge>
           <p>
             <Navigation size={16} />
             {v.speed > 0 ? 'Speed reported' : 'Stationary coordinate'} · {v.speed.toFixed(1)} km/h
@@ -1133,7 +1148,8 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
             Ignition {v.ignition ? 'on' : 'off'}
           </p>
           <p className="small muted">
-            Angle {v.angle ?? 0}° Â· Charge {v.chargeOn ? 'on' : 'off'} Â· GPS {v.accurate ? 'accurate' : 'unverified'}
+            Angle {v.angle ?? 0}° Â· Charge {v.chargeOn ? 'on' : 'off'} Â· GPS{' '}
+            {v.accurate ? 'accurate' : 'unverified'}
           </p>
           <p className="small muted">{v.location.address}</p>
           <p className="small muted">
@@ -1165,9 +1181,8 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
             <Button
               onClick={() => {
                 if (!playing) {
-                  playbackIndex.current = cursor === null
-                    ? direction === 1 ? 0 : samples.length - 1
-                    : index;
+                  playbackIndex.current =
+                    cursor === null ? (direction === 1 ? 0 : samples.length - 1) : index;
                   setCursor(samples[playbackIndex.current].gpsTime);
                 }
                 setPlaying(!playing);
@@ -1206,13 +1221,25 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
             </Button>
             <label className="compact-select">
               Speed
-              <select aria-label="Replay speed" value={speed} onChange={(e) => setSpeed(Number(e.target.value))}>
-                {[1, 2, 4, 8, 16].map((value) => <option key={value} value={value}>{value}×</option>)}
+              <select
+                aria-label="Replay speed"
+                value={speed}
+                onChange={(e) => setSpeed(Number(e.target.value))}
+              >
+                {[1, 2, 4, 8, 16].map((value) => (
+                  <option key={value} value={value}>
+                    {value}×
+                  </option>
+                ))}
               </select>
             </label>
             <label className="compact-select">
               Step
-              <select aria-label="Replay step interval" value={stepSeconds} onChange={(e) => setStepSeconds(Number(e.target.value))}>
+              <select
+                aria-label="Replay step interval"
+                value={stepSeconds}
+                onChange={(e) => setStepSeconds(Number(e.target.value))}
+              >
                 <option value={10}>10 seconds</option>
                 <option value={30}>30 seconds</option>
                 <option value={60}>1 minute</option>
@@ -1230,24 +1257,38 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
             </Button>
           </div>
         </div>
-        <div className="journey-activity-scroll" ref={timelineRef} aria-label="Movement activity timeline">
         <div
-          className="journey-activity"
-          style={{ display: 'flex', gap: 2, height: 8, margin: '8px 0', minWidth: Math.max(100, samples.length * 3) }}
+          className="journey-activity-scroll"
+          ref={timelineRef}
+          aria-label="Movement activity timeline"
         >
-          {samples.map((sample, sampleIndex) => (
-            <span
-              key={`${sample.gpsTime}-${sampleIndex}`}
-              data-active={sampleIndex === index ? 'true' : 'false'}
-              title={`${timeLabel(sample.gpsTime)} · ${sample.moved ? 'Moved >10 m' : 'Stationary coordinate'}`}
-              style={{
-                flex: '0 0 3px',
-                borderRadius: 99,
-            background: sample.speedViolation ? 'var(--danger)' : sample.moved ? 'var(--accent)' : 'var(--line-strong)',
-              }}
-            />
-          ))}
-        </div>
+          <div
+            className="journey-activity"
+            style={{
+              display: 'flex',
+              gap: 2,
+              height: 8,
+              margin: '8px 0',
+              minWidth: Math.max(100, samples.length * 3),
+            }}
+          >
+            {samples.map((sample, sampleIndex) => (
+              <span
+                key={`${sample.gpsTime}-${sampleIndex}`}
+                data-active={sampleIndex === index ? 'true' : 'false'}
+                title={`${timeLabel(sample.gpsTime)} · ${sample.moved ? 'Moved >10 m' : 'Stationary coordinate'}`}
+                style={{
+                  flex: '0 0 3px',
+                  borderRadius: 99,
+                  background: sample.speedViolation
+                    ? 'var(--danger)'
+                    : sample.moved
+                      ? 'var(--accent)'
+                      : 'var(--line-strong)',
+                }}
+              />
+            ))}
+          </div>
         </div>
         {/* Fuel percentage chart hidden until the provider supplies fuel readings. */}
         <input
@@ -1275,10 +1316,43 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
           The active map and timeline are refreshed directly from WheelsEye for this mapped bus.
         </p>
         <section className="speed-monitor-panel">
-          <div className="timeline-title"><Gauge size={16} /><strong>Speed monitor</strong><Badge tone={violations.length ? 'red' : 'green'}>{violations.length} violation{violations.length === 1 ? '' : 's'}</Badge></div>
+          <div className="timeline-title">
+            <Gauge size={16} />
+            <strong>Speed monitor</strong>
+            <Badge tone={violations.length ? 'red' : 'green'}>
+              {violations.length} violation{violations.length === 1 ? '' : 's'}
+            </Badge>
+          </div>
           {violations.length ? (
-            <div className="table-scroll"><table className="data-table"><thead><tr><th>Time</th><th>Speed</th><th>Limit</th><th>GPS</th><th>Location</th></tr></thead><tbody>{violations.map((item, itemIndex) => <tr key={`${item.gps_time}-${itemIndex}`} className="speed-violation-row"><td>{timeLabel(item.gps_time)} IST</td><td>{Number(item.speed_kph).toFixed(1)} km/h</td><td>{Number(item.speed_limit_kph).toFixed(1)} km/h</td><td>{Number(item.latitude).toFixed(5)}, {Number(item.longitude).toFixed(5)}</td><td>{item.address || '—'}</td></tr>)}</tbody></table></div>
-          ) : <p className="small muted">No speed-limit crossings in this time window.</p>}
+            <div className="table-scroll">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Time</th>
+                    <th>Speed</th>
+                    <th>Limit</th>
+                    <th>GPS</th>
+                    <th>Location</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {violations.map((item, itemIndex) => (
+                    <tr key={`${item.gps_time}-${itemIndex}`} className="speed-violation-row">
+                      <td>{timeLabel(item.gps_time)} IST</td>
+                      <td>{Number(item.speed_kph).toFixed(1)} km/h</td>
+                      <td>{Number(item.speed_limit_kph).toFixed(1)} km/h</td>
+                      <td>
+                        {Number(item.latitude).toFixed(5)}, {Number(item.longitude).toFixed(5)}
+                      </td>
+                      <td>{item.address || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="small muted">No speed-limit crossings in this time window.</p>
+          )}
         </section>
       </div>
     </section>

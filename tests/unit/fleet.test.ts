@@ -6,10 +6,12 @@ import {
   telemetryAge,
   gpsState,
   gpsSummary,
+  operationsSummary,
   isOverspeed,
   type Bus,
   type Vehicle,
 } from '../../src/lib/fleet';
+import type { Recorder } from '../../src/lib/model';
 const bus: Bus = {
   id: 'a',
   busNumber: 'A',
@@ -78,4 +80,38 @@ it('flags overspeed only for fresh readings above the bus limit', () => {
   expect(isOverspeed(limited, vehicle({ speed: 50 }), NOW)).toBe(false);
   expect(isOverspeed(limited, vehicle({ speed: 90, gpsTime: 1 }), NOW)).toBe(false);
   expect(isOverspeed(bus, vehicle({ speed: 61 }), NOW)).toBe(true);
+});
+it('summarizes live buses, verified cameras and online GPS devices', () => {
+  const buses: Bus[] = [
+    { ...bus, id: '1', recorderId: 'R1', telemetryDeviceId: 'D1' },
+    { ...bus, id: '2', telemetryDeviceId: 'D2' },
+    { ...bus, id: '3' },
+  ];
+  const recorders: Recorder[] = [
+    {
+      id: 'R1',
+      name: 'Bus DVR',
+      location: '',
+      online: true,
+      status: 'online',
+      channels: 4,
+      channelList: [
+        { number: 1, name: 'Front', canRecord: true, canDownload: true, health: 'working' },
+        { number: 2, name: 'Rear', canRecord: true, canDownload: true, health: 'unknown' },
+      ],
+      vehicle: '',
+    },
+  ];
+  expect(
+    operationsSummary(
+      buses,
+      [vehicle({ deviceId: 'D1', speed: 25 }), vehicle({ deviceId: 'D2', speed: 0 })],
+      recorders,
+      NOW,
+    ),
+  ).toEqual({
+    buses: { total: 3, active: 1, inactive: 2 },
+    cameras: { total: 4, active: 1, inactive: 3 },
+    gps: { total: 2, active: 2, inactive: 0 },
+  });
 });

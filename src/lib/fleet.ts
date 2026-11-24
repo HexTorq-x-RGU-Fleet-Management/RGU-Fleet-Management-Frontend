@@ -121,3 +121,50 @@ export function gpsSummary(buses: Bus[], vehicles: Vehicle[], now: number): GpsS
   }
   return summary;
 }
+
+export type OperationsMetric = {
+  total: number;
+  active: number;
+  inactive: number;
+};
+export type OperationsSummary = {
+  buses: OperationsMetric;
+  cameras: OperationsMetric;
+  gps: OperationsMetric;
+};
+
+/** Live operational totals used by the fleet overview dashboard. */
+export function operationsSummary(
+  buses: Bus[],
+  vehicles: Vehicle[],
+  recorders: Recorder[],
+  now: number,
+): OperationsSummary {
+  const runningBuses = buses.filter((bus) => {
+    const vehicle = vehicles.find((item) => item.deviceId === bus.telemetryDeviceId);
+    return gpsState(bus, vehicle, now) === 'online' && (vehicle?.speed ?? 0) > 0;
+  }).length;
+  const totalCameras = recorders.reduce((total, recorder) => total + recorder.channels, 0);
+  const activeCameras = recorders.reduce(
+    (total, recorder) => total + workingChannels(recorders, recorder.id).length,
+    0,
+  );
+  const gps = gpsSummary(buses, vehicles, now);
+  return {
+    buses: {
+      total: buses.length,
+      active: runningBuses,
+      inactive: Math.max(0, buses.length - runningBuses),
+    },
+    cameras: {
+      total: totalCameras,
+      active: activeCameras,
+      inactive: Math.max(0, totalCameras - activeCameras),
+    },
+    gps: {
+      total: gps.total,
+      active: gps.online,
+      inactive: gps.offline,
+    },
+  };
+}

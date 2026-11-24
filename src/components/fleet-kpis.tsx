@@ -1,8 +1,16 @@
 'use client';
+
 import Link from 'next/link';
-import { Satellite, Wifi, WifiOff, Gauge, History, TriangleAlert, ArrowUpRight } from 'lucide-react';
+import { BusFront, Cctv, Gauge, History, Satellite, TriangleAlert } from 'lucide-react';
 import type { ComponentType } from 'react';
-import { TELEMETRY_FRESH_SECONDS, timeLabel, type GpsSummary } from '@/lib/fleet';
+import { Cell, Pie, PieChart, ResponsiveContainer } from 'recharts';
+import {
+  TELEMETRY_FRESH_SECONDS,
+  timeLabel,
+  type GpsSummary,
+  type OperationsMetric,
+  type OperationsSummary,
+} from '@/lib/fleet';
 
 export type SpeedAlert = {
   id: string;
@@ -13,55 +21,121 @@ export type SpeedAlert = {
   bus_id: string;
   bus_number: string;
 };
-export type KpiFilter = 'all' | 'online' | 'offline' | 'overspeed';
+export type KpiFilter = 'all' | 'moving' | 'online' | 'offline' | 'overspeed';
 
-type CardProps = {
-  tone: 'violet' | 'green' | 'red' | 'amber' | 'blue';
+type OperationalCardProps = {
+  tone: 'bus' | 'camera' | 'gps';
   icon: ComponentType<{ size?: number }>;
-  label: string;
-  value: string;
+  title: string;
+  metric: OperationsMetric;
+  activeLabel: string;
+  inactiveLabel: string;
   note: string;
+  actionLabel: string;
   pressed?: boolean;
   onClick?: () => void;
   href?: string;
 };
-function KpiCard({ tone, icon: Icon, label, value, note, pressed, onClick, href }: CardProps) {
+
+function OperationalCard({
+  tone,
+  icon: Icon,
+  title,
+  metric,
+  activeLabel,
+  inactiveLabel,
+  note,
+  actionLabel,
+  pressed,
+  onClick,
+  href,
+}: OperationalCardProps) {
+  const percentage = metric.total ? Math.round((metric.active / metric.total) * 100) : 0;
+  const data = metric.total
+    ? [
+        { name: activeLabel, value: metric.active, fill: 'var(--ops-active)' },
+        { name: inactiveLabel, value: metric.inactive, fill: 'var(--ops-inactive)' },
+      ]
+    : [{ name: 'No devices', value: 1, fill: 'var(--ops-inactive)' }];
   const body = (
     <>
-      <span className="kpi-icon">
-        <Icon size={20} />
-      </span>
-      <span className="kpi-label">{label}</span>
-      <strong className="kpi-value">{value}</strong>
-      <span className="kpi-note">{note}</span>
+      <div className="ops-card-heading">
+        <span className="ops-card-icon">
+          <Icon size={20} />
+        </span>
+        <div>
+          <span className="ops-card-kicker">Live operations</span>
+          <h3>{title}</h3>
+        </div>
+      </div>
+      <div className="ops-card-content">
+        <div className="ops-chart" aria-hidden="true">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={data}
+                dataKey="value"
+                nameKey="name"
+                cx="50%"
+                cy="50%"
+                innerRadius="70%"
+                outerRadius="94%"
+                startAngle={90}
+                endAngle={-270}
+                cornerRadius={6}
+                paddingAngle={metric.total ? 3 : 0}
+                stroke="none"
+                isAnimationActive={false}
+              >
+                {data.map((item) => (
+                  <Cell key={item.name} fill={item.fill} />
+                ))}
+              </Pie>
+            </PieChart>
+          </ResponsiveContainer>
+          <span className="ops-chart-value">
+            <strong>{metric.active}</strong>
+            <small>{percentage}%</small>
+          </span>
+        </div>
+        <div className="ops-totals">
+          <span className="ops-total-label">Total</span>
+          <strong className="ops-total-value">{metric.total}</strong>
+          <span className="ops-total-note">{note}</span>
+        </div>
+      </div>
+      <div
+        className="ops-legend"
+        aria-label={`${metric.active} ${activeLabel}; ${metric.inactive} ${inactiveLabel}`}
+      >
+        <span>
+          <i className="active" />
+          <strong>{metric.active}</strong> {activeLabel}
+        </span>
+        <span>
+          <i />
+          <strong>{metric.inactive}</strong> {inactiveLabel}
+        </span>
+      </div>
+      <span className="ops-action">{actionLabel}</span>
     </>
   );
+  const className = `ops-card ops-${tone}`;
   if (href)
     return (
-      <Link className={`kpi-card kpi-link kpi-${tone}`} href={href}>
+      <Link className={className} href={href}>
         {body}
-        <ArrowUpRight className="kpi-go" size={16} />
       </Link>
     );
-  if (!onClick)
-    return (
-      <div className={`kpi-card kpi-${tone}`} aria-disabled="true">
-        {body}
-      </div>
-    );
   return (
-    <button
-      type="button"
-      className={`kpi-card kpi-${tone}`}
-      aria-pressed={pressed}
-      onClick={onClick}
-    >
+    <button className={className} type="button" aria-pressed={pressed} onClick={onClick}>
       {body}
     </button>
   );
 }
 
 export function FleetKpis({
+  operations,
   summary,
   filter,
   onFilter,
@@ -69,6 +143,7 @@ export function FleetKpis({
   playbackHref,
   playbackBus,
 }: {
+  operations: OperationsSummary;
   summary: GpsSummary;
   filter: string;
   onFilter: (value: KpiFilter) => void;
@@ -76,72 +151,90 @@ export function FleetKpis({
   playbackHref: string | null;
   playbackBus: string | null;
 }) {
-  const toggle = (value: KpiFilter) => onFilter(filter === value ? 'all' : value);
   const freshMinutes = Math.round(TELEMETRY_FRESH_SECONDS / 60);
+  const toggle = (value: KpiFilter) => onFilter(filter === value ? 'all' : value);
   return (
-    <section aria-label="GPS fleet overview" className="kpi-section">
-      <div className="kpi-grid">
-        <KpiCard
-          tone="violet"
-          icon={Satellite}
-          label="GPS devices"
-          value={String(summary.total)}
-          note={
-            summary.unmapped
-              ? `${summary.unmapped} bus${summary.unmapped === 1 ? '' : 'es'} without a GPS device`
-              : 'Every bus has a GPS device'
-          }
-          pressed={filter === 'all'}
-          onClick={() => onFilter('all')}
+    <section aria-labelledby="operations-heading" className="kpi-section operations-section">
+      <div className="operations-heading">
+        <div>
+          <span className="operations-eyebrow">Operational status</span>
+          <h2 id="operations-heading">Fleet at a glance</h2>
+        </div>
+        <p>Live bus movement, camera availability and GPS connectivity.</p>
+      </div>
+      <div className="operations-grid">
+        <OperationalCard
+          tone="bus"
+          icon={BusFront}
+          title="Buses"
+          metric={operations.buses}
+          activeLabel="running"
+          inactiveLabel="not running"
+          note="configured vehicles"
+          actionLabel={filter === 'moving' ? 'Show all buses' : 'View running buses'}
+          pressed={filter === 'moving'}
+          onClick={() => toggle('moving')}
         />
-        <KpiCard
-          tone="green"
-          icon={Wifi}
-          label="GPS online"
-          value={String(summary.online)}
-          note={`Reported in the last ${freshMinutes} minutes`}
+        <OperationalCard
+          tone="camera"
+          icon={Cctv}
+          title="CCTV cameras"
+          metric={operations.cameras}
+          activeLabel="active"
+          inactiveLabel="not verified"
+          note="recorder channels"
+          actionLabel="Open camera workspace"
+          href="/cameras"
+        />
+        <OperationalCard
+          tone="gps"
+          icon={Satellite}
+          title="GPS devices"
+          metric={operations.gps}
+          activeLabel="online"
+          inactiveLabel="offline"
+          note={`${freshMinutes}-minute live window`}
+          actionLabel={filter === 'online' ? 'Show all buses' : 'View online GPS'}
           pressed={filter === 'online'}
           onClick={() => toggle('online')}
         />
-        <KpiCard
-          tone="red"
-          icon={WifiOff}
-          label="GPS offline"
-          value={String(summary.offline)}
-          note="No recent signal"
-          pressed={filter === 'offline'}
-          onClick={() => toggle('offline')}
-        />
-        <KpiCard
-          tone="amber"
-          icon={Gauge}
-          label="Speed alerts, 24 h"
-          value={String(alerts.length)}
-          note={
-            summary.overspeedNow
-              ? `${summary.overspeedNow} over the limit right now`
-              : 'No bus over its limit right now'
-          }
-          pressed={filter === 'overspeed'}
+      </div>
+      <div className="operations-actions">
+        <button
+          type="button"
+          className={`operations-action-card ${filter === 'overspeed' ? 'selected' : ''}`}
+          aria-pressed={filter === 'overspeed'}
           onClick={() => toggle('overspeed')}
-        />
+        >
+          <Gauge size={18} />
+          <span>
+            <strong>{alerts.length}</strong>
+            Speed alerts in 24 hours
+          </span>
+          <small>
+            {summary.overspeedNow
+              ? `${summary.overspeedNow} over the limit now`
+              : 'No bus over its limit now'}
+          </small>
+        </button>
         {playbackHref ? (
-          <KpiCard
-            tone="blue"
-            icon={History}
-            label="Playback"
-            value="Replay"
-            note={`Open ${playbackBus ?? 'a bus'} route history`}
-            href={playbackHref}
-          />
+          <Link className="operations-action-card" href={playbackHref}>
+            <History size={18} />
+            <span>
+              <strong>Replay</strong>
+              Route playback
+            </span>
+            <small>Open {playbackBus ?? 'bus'} journey history</small>
+          </Link>
         ) : (
-          <KpiCard
-            tone="blue"
-            icon={History}
-            label="Playback"
-            value="Replay"
-            note="Map a GPS device to a bus first"
-          />
+          <div className="operations-action-card disabled">
+            <History size={18} />
+            <span>
+              <strong>Replay</strong>
+              Route playback
+            </span>
+            <small>Map a GPS device first</small>
+          </div>
         )}
       </div>
       {alerts.length > 0 && (

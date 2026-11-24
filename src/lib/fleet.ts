@@ -68,8 +68,13 @@ export function validateBus(bus: Bus, buses: Bus[]) {
     return 'Telemetry device is already assigned.';
   return null;
 }
+export const TELEMETRY_FRESH_SECONDS = 120;
 export function telemetryAge(vehicle: Vehicle | undefined, now: number) {
-  return !vehicle ? 'unmapped' : now - vehicle.gpsTime > 120 ? 'stale' : 'fresh';
+  return !vehicle
+    ? 'unmapped'
+    : now - vehicle.gpsTime > TELEMETRY_FRESH_SECONDS
+      ? 'stale'
+      : 'fresh';
 }
 export function timeLabel(seconds: number) {
   return new Intl.DateTimeFormat('en-IN', {
@@ -78,4 +83,41 @@ export function timeLabel(seconds: number) {
     minute: '2-digit',
     hour12: false,
   }).format(seconds * 1000);
+}
+export type GpsState = 'online' | 'offline' | 'unmapped';
+export const DEFAULT_SPEED_LIMIT_KPH = 60;
+/** A mapped GPS device is online only while its latest reading is fresh and not reported OFFLINE. */
+export function gpsState(bus: Bus, vehicle: Vehicle | undefined, now: number): GpsState {
+  if (!bus.telemetryDeviceId) return 'unmapped';
+  if (!vehicle || vehicle.status === 'OFFLINE' || telemetryAge(vehicle, now) !== 'fresh')
+    return 'offline';
+  return 'online';
+}
+export function isOverspeed(bus: Bus, vehicle: Vehicle | undefined, now: number) {
+  if (!vehicle || telemetryAge(vehicle, now) !== 'fresh') return false;
+  return (
+    vehicle.speedViolation === true ||
+    vehicle.speed > (bus.speedLimitKph ?? DEFAULT_SPEED_LIMIT_KPH)
+  );
+}
+export type GpsSummary = {
+  total: number;
+  online: number;
+  offline: number;
+  unmapped: number;
+  overspeedNow: number;
+};
+export function gpsSummary(buses: Bus[], vehicles: Vehicle[], now: number): GpsSummary {
+  const summary: GpsSummary = { total: 0, online: 0, offline: 0, unmapped: 0, overspeedNow: 0 };
+  for (const bus of buses) {
+    const vehicle = vehicles.find((v) => v.deviceId === bus.telemetryDeviceId),
+      state = gpsState(bus, vehicle, now);
+    if (state === 'unmapped') summary.unmapped++;
+    else {
+      summary.total++;
+      summary[state]++;
+    }
+    if (isOverspeed(bus, vehicle, now)) summary.overspeedNow++;
+  }
+  return summary;
 }

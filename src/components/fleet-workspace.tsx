@@ -21,6 +21,7 @@ import {
   RefreshCw,
   Route,
   Unplug,
+  History,
   Play,
   Pause,
   SkipBack,
@@ -31,6 +32,7 @@ import { useWorkspace } from './workspace-provider';
 import { Badge, Button, Confirm, Field, Modal, PageHeading, SearchInput, Reveal } from './ui';
 import { JourneyMap } from './journey-map';
 import { CameraPreview } from './camera-preview';
+import { FleetKpis, type SpeedAlert } from './fleet-kpis';
 import { FleetOverviewSkeleton, LoadingBlock } from './ascii-loading';
 import { channelName } from '@/lib/model';
 import {
@@ -41,6 +43,10 @@ import {
   validateBus,
   timeLabel,
   telemetryAge,
+  gpsState,
+  gpsSummary,
+  isOverspeed,
+  DEFAULT_SPEED_LIMIT_KPH,
 } from '@/lib/fleet';
 import { request, fleetApi } from '@/lib/api';
 function useClock() {
@@ -125,6 +131,7 @@ export function FleetWorkspace({ busesOnly = false }: { busesOnly?: boolean }) {
     [filter, setFilter] = useState('all'),
     [busColumns, setBusColumns] = useState(3),
     [editor, setEditor] = useState<Bus | null>(null),
+    [alerts, setAlerts] = useState<SpeedAlert[]>([]),
     [busy, setBusy] = useState(false);
   const recorders = state.recorders,
     vehicles = telemetry?.data.vehicles ?? [],
@@ -137,6 +144,25 @@ export function FleetWorkspace({ busesOnly = false }: { busesOnly?: boolean }) {
       setSearch(qParam);
     }
   }, [query]);
+
+  const showingBus = !!query.get('bus');
+  useEffect(() => {
+    if (busesOnly || showingBus) return;
+    let active = true;
+    const load = () =>
+      fleetApi
+        .notifications()
+        .then((result) => active && setAlerts(result.notifications))
+        .catch(() => {
+          // Alerts are supplementary; the GPS cards stay usable without them.
+        });
+    void load();
+    const timer = setInterval(load, 60000);
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
+  }, [busesOnly, showingBus]);
 
   if (!ready || now === null) return <FleetOverviewSkeleton directory={busesOnly} />;
   if (query.get('bus') && !detail)
@@ -160,8 +186,15 @@ export function FleetWorkspace({ busesOnly = false }: { busesOnly?: boolean }) {
         (filter === 'moving' &&
           (reading(b)?.speed ?? 0) > 0 &&
           telemetryAge(reading(b), now) === 'fresh') ||
+        (filter === 'online' && gpsState(b, reading(b), now) === 'online') ||
+        (filter === 'offline' && gpsState(b, reading(b), now) === 'offline') ||
+        (filter === 'overspeed' && isOverspeed(b, reading(b), now)) ||
         (filter === 'unmapped' && (!b.recorderId || !b.telemetryDeviceId)),
     );
+  const summary = gpsSummary(state.buses, vehicles, now),
+    playbackBus =
+      state.buses.find((b) => gpsState(b, reading(b), now) === 'online') ??
+      state.buses.find((b) => b.telemetryDeviceId);
   return (
     <div className={`fleet-workspace ${busesOnly && !detail ? 'bus-directory' : ''}`}>
       {detail ? (
@@ -224,39 +257,25 @@ export function FleetWorkspace({ busesOnly = false }: { busesOnly?: boolean }) {
                     ? 'GPS/fuel: stored WheelsEye observations'
                     : 'GPS/fuel: no observations stored yet'}
                 </span>
+                <span>
+                  {state.buses.length} buses ·{' '}
+                  {
+                    vehicles.filter((v) => (v.speed ?? 0) > 0 && telemetryAge(v, now) === 'fresh')
+                      .length
+                  }{' '}
+                  moving · {vehicles.length} fuel readings ·{' '}
+                  {recorders.reduce((n, r) => n + workingChannels(recorders, r.id).length, 0)}{' '}
+                  camera channels
+                </span>
               </div>
-              <div className="stats-grid">
-                <Metric
-                  icon={BusFront}
-                  label="Fleet size"
-                  value={String(state.buses.length)}
-                  note="Saved in your workspace"
-                />
-                <Metric
-                  icon={Navigation}
-                  label="Moving"
-                  value={String(
-                    vehicles.filter(
-                      (v) => (v.speed ?? 0) > 0 && telemetryAge(v, now) === 'fresh',
-                    ).length,
-                  )}
-                  note="Fresh telemetry observations"
-                />
-                <Metric
-                  icon={Fuel}
-                  label="Fuel monitored"
-                  value={String(vehicles.length)}
-                  note="Stored telemetry device readings"
-                />
-                <Metric
-                  icon={Cctv}
-                  label="Verified camera channels"
-                  value={String(
-                    recorders.reduce((n, r) => n + workingChannels(recorders, r.id).length, 0),
-                  )}
-                  note="Recently observed SDK frames"
-                />
-              </div>
+              <FleetKpis
+                summary={summary}
+                filter={filter}
+                onFilter={setFilter}
+                alerts={alerts}
+                playbackHref={playbackBus ? `/buses?bus=${playbackBus.id}&tab=journey` : null}
+                playbackBus={playbackBus?.busNumber ?? null}
+              />
             </>
           )}
           <div className={busesOnly ? 'bus-directory-tools' : ''}>
@@ -315,6 +334,9 @@ export function FleetWorkspace({ busesOnly = false }: { busesOnly?: boolean }) {
             <div className="segmented fleet-filters" aria-label="Bus filter">
               {[
                 ['all', 'All buses'],
+                ['online', 'GPS online'],
+                ['offline', 'GPS offline'],
+                ['overspeed', 'Over speed limit'],
                 ['moving', 'Moving'],
                 ['unmapped', 'Needs mapping'],
               ].map(([id, label]) => (
@@ -352,9 +374,15 @@ export function FleetWorkspace({ busesOnly = false }: { busesOnly?: boolean }) {
               {list.map((bus, i) => {
                 const v = reading(bus),
                   r = recorders.find((r) => r.id === bus.recorderId),
-                  stale = telemetryAge(v, now) === 'stale';
+                  gps = gpsState(bus, v, now),
+                  over = isOverspeed(bus, v, now);
                 return (
-                  <Reveal className="bus-card" key={bus.id} delay={Math.min(i * 0.035, 0.2)}>
+                  <Reveal
+                    className="bus-card"
+                    key={bus.id}
+                    delay={Math.min(i * 0.035, 0.2)}
+                    attrs={{ 'data-gps': gps, 'data-over': String(over) }}
+                  >
                     <Link
                       className="bus-card-main"
                       href={'/buses?bus=' + bus.id}
@@ -365,9 +393,13 @@ export function FleetWorkspace({ busesOnly = false }: { busesOnly?: boolean }) {
                           <BusFront size={26} />
                         </span>
                         <Badge
-                          tone={stale ? 'amber' : (v?.speed ?? 0) > 0 ? 'green' : 'neutral'}
+                          tone={gps === 'online' ? 'green' : gps === 'offline' ? 'red' : 'neutral'}
                         >
-                          {stale ? 'Stale GPS' : v ? 'Position observed' : 'No GPS'}
+                          {gps === 'online'
+                            ? 'GPS online'
+                            : gps === 'offline'
+                              ? 'GPS offline'
+                              : 'No GPS device'}
                         </Badge>
                         <ArrowUpRight size={18} />
                       </div>
@@ -390,6 +422,16 @@ export function FleetWorkspace({ busesOnly = false }: { busesOnly?: boolean }) {
                         </div>
                       </div>
                       {v?.fuelData && <FuelMeter value={v.fuelData.fuelPercentage} />}
+                      {over ? (
+                        <span className="speed-chip">
+                          <Gauge size={12} />
+                          Over limit of {bus.speedLimitKph ?? DEFAULT_SPEED_LIMIT_KPH} km/h
+                        </span>
+                      ) : (
+                        <span className="speed-limit-note">
+                          Limit {bus.speedLimitKph ?? DEFAULT_SPEED_LIMIT_KPH} km/h
+                        </span>
+                      )}
                       <div className="bus-card-footer">
                         <span>
                           <UserRound size={14} />
@@ -400,6 +442,15 @@ export function FleetWorkspace({ busesOnly = false }: { busesOnly?: boolean }) {
                           {workingChannels(recorders, bus.recorderId).length}/{r?.channels ?? 0}
                         </span>
                       </div>
+                    </Link>
+                    <Link
+                      className="bus-playback"
+                      href={'/buses?bus=' + bus.id + '&tab=journey'}
+                      aria-disabled={!bus.telemetryDeviceId}
+                      tabIndex={bus.telemetryDeviceId ? undefined : -1}
+                    >
+                      <History size={16} />
+                      Playback
                     </Link>
                     <div className="bus-mapping">
                       <span>
@@ -612,8 +663,13 @@ function BusEditor({ bus, onClose }: { bus: Bus | null; onClose: () => void }) {
 }
 function BusDetail({ bus, now, onEdit }: { bus: Bus; now: number; onEdit: () => void }) {
   const { state, user, provider, telemetry, saveBus, removeBus, refresh } = useWorkspace(),
-    router = useRouter();
-  const [tab, setTab] = useState('journey'),
+    router = useRouter(),
+    params = useSearchParams();
+  const [tab, setTab] = useState(
+      ['journey', 'cameras', 'details'].includes(params.get('tab') ?? '')
+        ? (params.get('tab') as string)
+        : 'journey',
+    ),
     [remove, setRemove] = useState(false),
     [probing, setProbing] = useState(false);
   const r = state.recorders.find((r) => r.id === bus.recorderId),
@@ -737,7 +793,7 @@ function BusDetail({ bus, now, onEdit }: { bus: Bus; now: number; onEdit: () => 
       )}
       <div className="segmented fleet-tabs" role="tablist" aria-label="Bus sections">
         {[
-          ['journey', 'GPS & fuel timeline'],
+          ['journey', 'Playback & GPS'],
           ['cameras', 'Bus cameras'],
           ['details', 'Vehicle details'],
         ].map(([id, label]) => (

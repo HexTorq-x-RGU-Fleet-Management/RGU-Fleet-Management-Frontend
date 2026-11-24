@@ -146,12 +146,18 @@ export function Confirm({
 export function Reveal({
   children,
   className = '',
+  attrs,
 }: {
   children: ReactNode;
   className?: string;
   delay?: number;
+  attrs?: Record<`data-${string}`, string>;
 }) {
-  return <div className={className}>{children}</div>;
+  return (
+    <div className={className} {...attrs}>
+      {children}
+    </div>
+  );
 }
 export function PageHeading({
   eyebrow,

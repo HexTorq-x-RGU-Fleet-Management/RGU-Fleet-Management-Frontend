@@ -49,7 +49,7 @@ export function SkeletonRows({ rows = 3 }: { rows?: number }) {
 
 /**
  * Loading skeleton that mirrors the real fleet overview: heading, source
- * banner, four stat cards, toolbar, filter tabs and the bus card grid.
+ * banner, five GPS KPI cards, toolbar, filter tabs and the bus card grid.
  */
 export function FleetOverviewSkeleton({ directory = false }: { directory?: boolean }) {
   const label = directory ? 'Loading bus directory...' : 'Loading fleet overview...';
@@ -97,15 +97,13 @@ export function FleetOverviewSkeleton({ directory = false }: { directory?: boole
             <span className="skeleton fleet-skeleton-line" />
             <span className="skeleton fleet-skeleton-line wide" />
           </div>
-          <div className="stats-grid" aria-hidden="true">
-            {Array.from({ length: 4 }, (_, index) => (
-              <div className="stat-card" key={index}>
-                <AsciiSkeleton
-                  variant="dither"
-                  lines={3}
-                  widths={['52%', '34%', '78%']}
-                  seed={index + 1}
-                />
+          <div className="kpi-grid" aria-hidden="true">
+            {Array.from({ length: 5 }, (_, index) => (
+              <div className="kpi-card kpi-skeleton" key={index}>
+                <span className="skeleton kpi-skeleton-label" />
+                <span className="skeleton kpi-skeleton-icon" />
+                <span className="skeleton kpi-skeleton-value" />
+                <span className="skeleton kpi-skeleton-note" />
               </div>
             ))}
           </div>

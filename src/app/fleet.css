@@ -301,7 +301,9 @@
     box-shadow 0.28s var(--ease-spring),
     background 0.28s ease;
   min-width: 0;
-  height: var(--bus-card-height, 340px);
+  min-height: var(--bus-card-height, 340px);
+  display: flex;
+  flex-direction: column;
 }
 .bus-card::before {
   content: '';
@@ -326,7 +328,8 @@
 }
 .bus-card-main {
   display: block;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
   padding: 24px;
 }
 .bus-card-head {

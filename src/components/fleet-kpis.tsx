@@ -41,6 +41,7 @@ type OperationalCardProps = {
   metric: OperationsMetric;
   activeLabel: string;
   inactiveLabel: string;
+  pendingLabel?: string;
   note: string;
   actionLabel: string;
   pressed?: boolean;
@@ -55,6 +56,7 @@ function OperationalCard({
   metric,
   activeLabel,
   inactiveLabel,
+  pendingLabel,
   note,
   actionLabel,
   pressed,
@@ -66,6 +68,9 @@ function OperationalCard({
     ? [
         { name: activeLabel, value: metric.active, fill: 'var(--ops-active)' },
         { name: inactiveLabel, value: metric.inactive, fill: 'var(--ops-inactive)' },
+        ...(pendingLabel && metric.pending
+          ? [{ name: pendingLabel, value: metric.pending, fill: 'var(--ops-pending)' }]
+          : []),
       ]
     : [{ name: 'No devices', value: 1, fill: 'var(--ops-inactive)' }];
   const body = (
@@ -116,8 +121,8 @@ function OperationalCard({
         </div>
       </div>
       <div
-        className="ops-legend"
-        aria-label={`${metric.active} ${activeLabel}; ${metric.inactive} ${inactiveLabel}`}
+        className={`ops-legend ${pendingLabel ? 'has-pending' : ''}`}
+        aria-label={`${metric.active} ${activeLabel}; ${metric.inactive} ${inactiveLabel}${pendingLabel ? `; ${metric.pending ?? 0} ${pendingLabel}` : ''}`}
       >
         <span>
           <i className="active" />
@@ -127,6 +132,12 @@ function OperationalCard({
           <i />
           <strong>{metric.inactive}</strong> {inactiveLabel}
         </span>
+        {pendingLabel ? (
+          <span>
+            <i className="pending" />
+            <strong>{metric.pending ?? 0}</strong> {pendingLabel}
+          </span>
+        ) : null}
       </div>
       <span className="ops-action">{actionLabel}</span>
     </>
@@ -191,8 +202,9 @@ export function FleetKpis({
           icon={Cctv}
           title="CCTV cameras"
           metric={operations.cameras}
-          activeLabel="ready to view"
-          inactiveLabel="not ready"
+          activeLabel="online"
+          inactiveLabel="offline"
+          pendingLabel="checking"
           note="recorder channels"
           actionLabel={`${cameraCheckLabel(operations.cameras.checkedAt)} · Open cameras`}
           href="/cameras"

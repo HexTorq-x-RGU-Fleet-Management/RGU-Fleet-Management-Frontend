@@ -121,7 +121,8 @@ it('summarizes live buses, verified cameras and online GPS devices', () => {
     cameras: {
       total: 4,
       active: 1,
-      inactive: 3,
+      inactive: 0,
+      pending: 3,
       checkedAt: '2026-11-24T10:00:00.000Z',
     },
     gps: { total: 2, active: 2, inactive: 0 },

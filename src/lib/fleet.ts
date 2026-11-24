@@ -126,6 +126,7 @@ export type OperationsMetric = {
   total: number;
   active: number;
   inactive: number;
+  pending?: number;
 };
 export type OperationsSummary = {
   buses: OperationsMetric;
@@ -149,6 +150,11 @@ export function operationsSummary(
     (total, recorder) => total + workingChannels(recorders, recorder.id).length,
     0,
   );
+  const offlineCameras = recorders.reduce(
+    (total, recorder) =>
+      total + recorder.channelList.filter((channel) => channel.health === 'unavailable').length,
+    0,
+  );
   const cameraCheckedAt =
     recorders
       .flatMap((recorder) => recorder.channelList)
@@ -166,7 +172,8 @@ export function operationsSummary(
     cameras: {
       total: totalCameras,
       active: activeCameras,
-      inactive: Math.max(0, totalCameras - activeCameras),
+      inactive: offlineCameras,
+      pending: Math.max(0, totalCameras - activeCameras - offlineCameras),
       checkedAt: cameraCheckedAt,
     },
     gps: {

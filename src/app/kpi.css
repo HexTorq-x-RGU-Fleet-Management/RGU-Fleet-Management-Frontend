@@ -227,6 +227,7 @@
   --ops-accent: #7c3aed;
   --ops-active: #a78bfa;
   --ops-inactive: color-mix(in srgb, var(--ops-accent) 14%, var(--line));
+  --ops-pending: #f59e0b;
   position: relative;
   display: grid;
   gap: 14px;
@@ -397,6 +398,10 @@
   border-top: 1px solid var(--line);
 }
 
+.ops-legend.has-pending {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .ops-legend span {
   display: flex;
   align-items: center;
@@ -422,6 +427,11 @@
 .ops-legend i.active {
   background: var(--ops-active);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--ops-active) 15%, transparent);
+}
+
+.ops-legend i.pending {
+  background: var(--ops-pending);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ops-pending) 15%, transparent);
 }
 
 .ops-action {

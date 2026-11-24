@@ -265,9 +265,9 @@ export function FleetWorkspace({ busesOnly = false }: { busesOnly?: boolean }) {
                     vehicles.filter((v) => (v.speed ?? 0) > 0 && telemetryAge(v, now) === 'fresh')
                       .length
                   }{' '}
-                  moving · {vehicles.length} GPS readings ·{' '}
-                  {recorders.reduce((n, r) => n + workingChannels(recorders, r.id).length, 0)}{' '}
-                  cameras ready
+                  moving · {vehicles.length} GPS readings · {operations.cameras.active} cameras
+                  online · {operations.cameras.inactive} offline
+                  {operations.cameras.pending ? ` · ${operations.cameras.pending} checking` : ''}
                 </span>
               </div>
               <FleetKpis

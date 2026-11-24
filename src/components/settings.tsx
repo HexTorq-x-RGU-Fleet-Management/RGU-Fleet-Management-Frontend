@@ -29,7 +29,7 @@ import {
   CalendarDays,
   type LucideIcon,
 } from 'lucide-react';
-import { AsciiSkeleton } from 'ascii-reveal';
+import { SkeletonRows } from './ascii-loading';
 import { toast } from 'sonner';
 import { useWorkspace } from './workspace-provider';
 import { PageHeading, Button, Modal, Field, Badge, Confirm } from './ui';
@@ -567,7 +567,7 @@ export function Settings() {
                   aria-label="Loading recording storage"
                   aria-busy="true"
                 >
-                  <AsciiSkeleton lines={4} variant="dither" />
+                  <SkeletonRows rows={4} />
                 </div>
               ) : storage ? (
                 <>
@@ -737,7 +737,7 @@ export function Settings() {
                     <div className="settings-list" aria-busy={sourcesLoading || undefined}>
                       {sourcesLoading && (
                         <div className="settings-loading">
-                          <AsciiSkeleton lines={2} />
+                          <SkeletonRows rows={2} />
                         </div>
                       )}
                       {!sourcesLoading && !wheelseyeSources.length && (
@@ -990,7 +990,7 @@ export function Settings() {
             </div>
             {sourceInspectBusy && !sourceDiagnostics && (
               <div className="settings-loading">
-                <AsciiSkeleton lines={4} />
+                <SkeletonRows rows={4} />
               </div>
             )}
             {sourceDiagnostics && (

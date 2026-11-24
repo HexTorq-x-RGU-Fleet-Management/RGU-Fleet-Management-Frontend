@@ -1,60 +1,159 @@
 'use client';
 
-import { AsciiSkeleton, type SkeletonVariant } from 'ascii-reveal';
+import type { CSSProperties } from 'react';
+import { AsciiSkeleton } from 'ascii-reveal';
 
-function SkeletonCards({
-  cards,
-  compact,
-  variant,
+/**
+ * Neutral placeholder for every route except the main dashboard. The ASCII
+ * loading effect is reserved for the first dashboard paint.
+ */
+export function LoadingBlock({
+  label = 'Loading...',
+  rows = 3,
 }: {
-  cards: number;
-  compact: boolean;
-  variant: SkeletonVariant;
+  label?: string;
+  rows?: number;
 }) {
   return (
     <div
-      className={`ascii-skeleton-grid ${compact ? 'ascii-skeleton-grid-compact' : ''}`}
-      aria-hidden="true"
+      className="loading-block"
+      role="status"
+      aria-busy="true"
+      aria-label={label}
+      data-ascii="skip"
     >
-      {Array.from({ length: cards }, (_, index) => (
-        <div className="ascii-skeleton-card" key={index}>
-          <AsciiSkeleton
-            as="div"
-            variant={variant}
-            lines={compact ? 2 : 4}
-            widths={compact ? ['52%', '84%'] : ['38%', '78%', '92%', '64%']}
-            seed={index + 1}
-          />
-        </div>
+      <div className="loading-block-heading" aria-hidden="true">
+        <span className="skeleton" />
+        <span className="skeleton" />
+        <span className="skeleton" />
+      </div>
+      <div className="loading-block-rows" aria-hidden="true">
+        {Array.from({ length: rows }, (_, index) => (
+          <span className="skeleton" key={index} />
+        ))}
+      </div>
+      <span className="loading-block-label">{label}</span>
+    </div>
+  );
+}
+
+export function SkeletonRows({ rows = 3 }: { rows?: number }) {
+  return (
+    <div className="skeleton-rows" aria-hidden="true">
+      {Array.from({ length: rows }, (_, index) => (
+        <span className="skeleton" key={index} />
       ))}
     </div>
   );
 }
 
-export function AsciiLoading({
-  label = 'Loading workspace data...',
-  cards = 3,
-  compact = false,
-  shell = false,
-  variant = 'dither',
-}: {
-  label?: string;
-  cards?: number;
-  compact?: boolean;
-  shell?: boolean;
-  variant?: SkeletonVariant;
-}) {
+/**
+ * Loading skeleton that mirrors the real fleet overview: heading, source
+ * banner, four stat cards, toolbar, filter tabs and the bus card grid.
+ */
+export function FleetOverviewSkeleton({ directory = false }: { directory?: boolean }) {
+  const label = directory ? 'Loading bus directory...' : 'Loading fleet overview...';
+  const gridStyle = {
+    '--bus-columns': 3,
+    '--bus-card-height': '440px',
+  } as CSSProperties;
+
   return (
     <div
-      className={`ascii-loading ${compact ? 'ascii-loading-compact' : ''} ${
-        shell ? 'ascii-loading-shell' : ''
-      }`}
+      className={`fleet-overview-skeleton ${directory ? 'is-directory' : ''}`}
       role="status"
       aria-busy="true"
+      aria-label={label}
       data-ascii="skip"
     >
-      <SkeletonCards cards={cards} compact={compact} variant={variant} />
-      <span className="ascii-loading-label">{label}</span>
+      {directory ? (
+        <div className="bus-directory-heading fleet-skeleton-directory-heading" aria-hidden="true">
+          <div>
+            <span className="skeleton fleet-skeleton-title" />
+            <span className="skeleton fleet-skeleton-chip" />
+          </div>
+          <div className="bus-directory-actions">
+            <span className="skeleton fleet-skeleton-button" />
+          </div>
+        </div>
+      ) : (
+        <div className="page-heading" aria-hidden="true">
+          <div className="fleet-skeleton-heading">
+            <span className="skeleton" />
+            <span className="skeleton" />
+            <span className="skeleton" />
+          </div>
+          <div className="heading-actions">
+            <span className="skeleton fleet-skeleton-button" />
+            <span className="skeleton fleet-skeleton-button" />
+          </div>
+        </div>
+      )}
+
+      {!directory && (
+        <>
+          <div className="fleet-source fleet-skeleton-source" aria-hidden="true">
+            <span className="skeleton fleet-skeleton-dot" />
+            <span className="skeleton fleet-skeleton-line" />
+            <span className="skeleton fleet-skeleton-line wide" />
+          </div>
+          <div className="stats-grid" aria-hidden="true">
+            {Array.from({ length: 4 }, (_, index) => (
+              <div className="stat-card" key={index}>
+                <AsciiSkeleton
+                  variant="dither"
+                  lines={3}
+                  widths={['52%', '34%', '78%']}
+                  seed={index + 1}
+                />
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {directory ? (
+        <div className="bus-directory-tools" aria-hidden="true">
+          <div className="segmented fleet-filters fleet-skeleton-filters">
+            <span className="skeleton fleet-skeleton-tab" />
+            <span className="skeleton fleet-skeleton-tab" />
+            <span className="skeleton fleet-skeleton-tab" />
+          </div>
+          <span className="skeleton fleet-skeleton-search" />
+        </div>
+      ) : (
+        <>
+          <div className="fleet-toolbar" aria-hidden="true">
+            <div className="fleet-skeleton-toolbar-copy">
+              <span className="skeleton fleet-skeleton-line heading" />
+              <span className="skeleton fleet-skeleton-line wide" />
+            </div>
+            <span className="skeleton fleet-skeleton-search" />
+            <span className="skeleton fleet-skeleton-density" />
+          </div>
+
+          <div className="segmented fleet-filters fleet-skeleton-filters" aria-hidden="true">
+            <span className="skeleton fleet-skeleton-tab" />
+            <span className="skeleton fleet-skeleton-tab" />
+            <span className="skeleton fleet-skeleton-tab" />
+          </div>
+        </>
+      )}
+
+      <div className="fleet-bus-grid" style={gridStyle} aria-hidden="true">
+        {Array.from({ length: 3 }, (_, index) => (
+          <div className="fleet-skeleton-bus" key={index}>
+            <AsciiSkeleton
+              variant="dither"
+              lines={9}
+              widths={['46%', '68%', '52%', '84%', '58%', '88%', '72%', '90%', '64%']}
+              seed={index + 1}
+            />
+          </div>
+        ))}
+      </div>
+
+      <span className="loading-block-label">{label}</span>
     </div>
   );
 }
@@ -108,59 +207,18 @@ export function WorkspaceShellLoading() {
           <div className="workspace-shell-loading-stats" aria-hidden="true">
             {Array.from({ length: 4 }, (_, index) => (
               <div className="workspace-shell-loading-stat" key={index}>
-                <AsciiSkeleton
-                  variant="dither"
-                  lines={2}
-                  widths={['54%', '28%']}
-                  seed={index + 1}
-                />
+                <span className="skeleton" />
+                <span className="skeleton" />
               </div>
             ))}
           </div>
           <div className="workspace-shell-loading-table" aria-hidden="true">
-            <AsciiSkeleton
-              variant="dither"
-              lines={7}
-              widths={['22%', '96%', '92%', '94%', '88%', '92%', '76%']}
-            />
+            {Array.from({ length: 7 }, (_, index) => (
+              <span className="skeleton" key={index} />
+            ))}
           </div>
         </section>
       </main>
-    </div>
-  );
-}
-
-/**
- * Keep the real loading placeholder until data arrives. The shared site
- * controller reveals the arriving content, avoiding nested decode waves.
- */
-export function AsciiRevealArea({
-  loading,
-  children,
-  cards = 3,
-  compact = false,
-  variant = 'dither',
-}: {
-  loading: boolean;
-  children: React.ReactNode;
-  cards?: number;
-  compact?: boolean;
-  variant?: SkeletonVariant;
-}) {
-  return (
-    <div aria-busy={loading || undefined}>
-      {loading ? (
-        <div
-          className={`ascii-loading ${compact ? 'ascii-loading-compact' : ''}`}
-          role="status"
-          aria-busy="true"
-          data-ascii="skip"
-        >
-          <SkeletonCards cards={cards} compact={compact} variant={variant} />
-        </div>
-      ) : (
-        children
-      )}
     </div>
   );
 }

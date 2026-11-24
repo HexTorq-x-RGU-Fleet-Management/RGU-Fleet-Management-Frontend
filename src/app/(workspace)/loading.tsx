@@ -1,5 +1,5 @@
-import { AsciiLoading } from '@/components/ascii-loading';
+import { LoadingBlock } from '@/components/ascii-loading';
 
 export default function WorkspaceLoading() {
-  return <AsciiLoading label="Loading workspace data..." />;
+  return <LoadingBlock label="Loading workspace data..." rows={4} />;
 }

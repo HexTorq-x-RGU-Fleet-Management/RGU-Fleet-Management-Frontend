@@ -1229,11 +1229,71 @@ td strong {
   animation: shimmer 1.8s ease-in-out infinite;
 }
 
-.ascii-loading {
+.loading-block {
   display: grid;
-  gap: 18px;
+  gap: 20px;
   width: 100%;
+  max-width: 760px;
   padding: 24px 0;
+}
+
+.loading-block-heading {
+  display: grid;
+  gap: 12px;
+}
+
+.loading-block-heading .skeleton:first-child {
+  width: 128px;
+  height: 9px;
+}
+
+.loading-block-heading .skeleton:nth-child(2) {
+  width: min(100%, 400px);
+  height: 34px;
+}
+
+.loading-block-heading .skeleton:last-child {
+  width: min(100%, 540px);
+  height: 13px;
+}
+
+.loading-block-rows {
+  display: grid;
+  gap: 12px;
+}
+
+.loading-block-rows .skeleton {
+  height: 64px;
+  border-radius: 12px;
+}
+
+.loading-block-rows .skeleton:nth-child(even) {
+  width: 92%;
+}
+
+.loading-block-label {
+  color: var(--muted);
+  font-family: var(--font-stack-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
+.skeleton-rows {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+}
+
+.skeleton-rows .skeleton {
+  height: 14px;
+}
+
+.skeleton-rows .skeleton:nth-child(2n) {
+  width: 88%;
+}
+
+.skeleton-rows .skeleton:nth-child(3n) {
+  width: 72%;
 }
 
 .workspace-shell-loading {
@@ -1292,8 +1352,43 @@ td strong {
 .workspace-shell-loading-table { padding: 22px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--panel); }
 .workspace-shell-loading-stat { min-height: 108px; }
 .workspace-shell-loading-table { min-height: 270px; }
-.workspace-shell-loading-stat .ars,
-.workspace-shell-loading-table .ars { --ars-base: 0.55; --ars-wave: 1; }
+.workspace-shell-loading-stat {
+  display: grid;
+  gap: 10px;
+  align-content: center;
+}
+
+.workspace-shell-loading-stat .skeleton:first-child {
+  width: 56%;
+  height: 9px;
+}
+
+.workspace-shell-loading-stat .skeleton:last-child {
+  width: 34%;
+  height: 22px;
+}
+
+.workspace-shell-loading-table {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+}
+
+.workspace-shell-loading-table .skeleton {
+  height: 12px;
+}
+
+.workspace-shell-loading-table .skeleton:first-child {
+  width: 22%;
+  height: 9px;
+}
+
+.workspace-shell-loading-table .skeleton:nth-child(2) { width: 96%; }
+.workspace-shell-loading-table .skeleton:nth-child(3) { width: 92%; }
+.workspace-shell-loading-table .skeleton:nth-child(4) { width: 94%; }
+.workspace-shell-loading-table .skeleton:nth-child(5) { width: 88%; }
+.workspace-shell-loading-table .skeleton:nth-child(6) { width: 92%; }
+.workspace-shell-loading-table .skeleton:last-child { width: 76%; }
 
 @media (max-width: 1050px) {
   .workspace-shell-loading { grid-template-columns: 210px minmax(0, 1fr); }
@@ -1311,45 +1406,6 @@ td strong {
   .workspace-shell-loading-topbar > div .skeleton:nth-child(2) { display: none; }
   .workspace-shell-loading-content { gap: 20px; padding: 28px 16px 40px; }
   .workspace-shell-loading-stats { grid-template-columns: 1fr; }
-}
-
-.ascii-skeleton-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
-  gap: 16px;
-}
-
-.ascii-skeleton-card {
-  min-height: 150px;
-  padding: 22px;
-  overflow: hidden;
-  color: var(--muted);
-  background: var(--panel-hover);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
-  box-shadow: none;
-}
-
-/* Make the terminal glyph pattern clearly visible on porcelain surfaces. */
-.ascii-skeleton-card .ars {
-  --ars-base: 0.55;
-  --ars-wave: 1;
-}
-
-.ascii-loading-compact .ascii-skeleton-card {
-  min-height: 90px;
-}
-
-/* Keep list containers from clipping or blending the loading skeletons. */
-.admin-card-container .ascii-loading {
-  padding: 20px 24px;
-}
-
-.ascii-loading-label {
-  color: var(--muted);
-  font-family: var(--font-stack-mono);
-  font-size: 12px;
-  letter-spacing: 0.04em;
 }
 
 /* ==========================================================================

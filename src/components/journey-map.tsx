@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type * as Leaflet from 'leaflet';
 import { MapPin, Navigation, Map, RefreshCw } from 'lucide-react';
-import { AsciiSkeleton } from 'ascii-reveal';
+import { SkeletonRows } from './ascii-loading';
 import { type Vehicle, timeLabel } from '@/lib/fleet';
 import { tamilNaduBounds, defaultTileUrl, withinTamilNaduView } from '@/lib/map-config';
 import { Badge, Button } from './ui';
@@ -162,14 +162,7 @@ export function JourneyMap({
       />
       {status === 'loading' && (
         <div className="map-network-state" role="status">
-          <AsciiSkeleton
-            as="div"
-            variant="dither"
-            rows={2}
-            width="100%"
-            height={22}
-            seed={11}
-          />
+          <SkeletonRows rows={2} />
           Loading road tiles...
         </div>
       )}

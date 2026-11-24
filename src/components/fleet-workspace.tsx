@@ -31,7 +31,7 @@ import { useWorkspace } from './workspace-provider';
 import { Badge, Button, Confirm, Field, Modal, PageHeading, SearchInput, Reveal } from './ui';
 import { JourneyMap } from './journey-map';
 import { CameraPreview } from './camera-preview';
-import { AsciiLoading } from './ascii-loading';
+import { FleetOverviewSkeleton, LoadingBlock } from './ascii-loading';
 import { channelName } from '@/lib/model';
 import {
   type Bus,
@@ -138,7 +138,7 @@ export function FleetWorkspace({ busesOnly = false }: { busesOnly?: boolean }) {
     }
   }, [query]);
 
-  if (!ready || now === null) return <AsciiLoading label="Loading fleet..." cards={4} />;
+  if (!ready || now === null) return <FleetOverviewSkeleton directory={busesOnly} />;
   if (query.get('bus') && !detail)
     return (
       <div className="fleet-no-data">
@@ -998,7 +998,7 @@ function Journey({ bus, now }: { bus: Bus; now: number }) {
     );
     return () => clearInterval(id);
   }, [playing, samples, direction, speed]);
-  if (loading) return <AsciiLoading label="Loading stored GPS/fuel history..." cards={2} compact />;
+  if (loading) return <LoadingBlock label="Loading stored GPS/fuel history..." rows={2} />;
   if (!v)
     return (
       <div className="fleet-no-data">

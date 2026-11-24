@@ -806,6 +806,8 @@
     width: 100%;
     margin-left: 0;
     justify-content: space-between;
+    flex-wrap: wrap;
+    row-gap: 8px;
   }
   .fleet-section,
   .journey {

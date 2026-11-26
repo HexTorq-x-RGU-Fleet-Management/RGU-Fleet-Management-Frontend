@@ -228,12 +228,24 @@ function Directory({ buses, view }: { buses: Bus[]; view: 'drivers' | 'routes' }
       .toLowerCase()
       .includes(query.trim().toLowerCase()),
   );
+  const routeGroups = !drivers
+    ? Array.from(
+        records.reduce((groups, bus) => {
+          const route = bus.routeName.trim() || 'Unassigned route';
+          const current = groups.get(route) ?? [];
+          current.push(bus);
+          groups.set(route, current);
+          return groups;
+        }, new Map<string, Bus[]>()),
+      ).map(([route, assigned]) => ({ route, assigned }))
+    : [];
+  const directoryCount = drivers ? records.length : routeGroups.length;
   return (
     <div className={`fleet-ops-panel neotrack-directory ${drivers ? 'driver-directory' : 'route-directory'}`}>
       <div className="neotrack-directory-heading">
         <div>
           <h2>{drivers ? 'Manage drivers' : 'Manage routes'}</h2>
-          <span>Total {drivers ? 'drivers' : 'routes'} <strong>{records.length}</strong></span>
+          <span>Total {drivers ? 'drivers' : 'routes'} <strong>{directoryCount}</strong></span>
         </div>
       </div>
       <div className="fleet-ops-controls neotrack-directory-controls">
@@ -242,7 +254,7 @@ function Directory({ buses, view }: { buses: Bus[]; view: 'drivers' | 'routes' }
           onChange={setQuery}
           placeholder={drivers ? 'Search driver or bus' : 'Search route or bus'}
         />
-        <span className="directory-result-count">{records.length} {records.length === 1 ? 'record' : 'records'}</span>
+        <span className="directory-result-count">{directoryCount} {directoryCount === 1 ? 'record' : 'records'}</span>
       </div>
       <div
         className="fleet-ops-table"
@@ -256,14 +268,14 @@ function Directory({ buses, view }: { buses: Bus[]; view: 'drivers' | 'routes' }
             <tr>
               <th scope="col">{drivers ? 'Name' : 'Route'}</th>
               {drivers && <th scope="col">Phone</th>}
-              <th scope="col">Assigned bus</th>
-              <th scope="col">Registration</th>
-              <th scope="col">Actions</th>
-              <th scope="col">{drivers ? 'Route' : 'Driver'}</th>
+              <th scope="col">{drivers ? 'Assigned bus' : 'Assigned buses'}</th>
+              <th scope="col">{drivers ? 'Registration' : 'Drivers'}</th>
+              <th scope="col">{drivers ? 'Actions' : 'Recorders'}</th>
+              <th scope="col">{drivers ? 'Route' : 'Actions'}</th>
             </tr>
           </thead>
           <tbody>
-            {records.map((bus) => (
+            {drivers && records.map((bus) => (
               <tr key={bus.id}>
                 <td>{(drivers ? bus.driverName : bus.routeName) || 'Unassigned'}</td>
                 {drivers && <td>{bus.driverPhone || '—'}</td>}
@@ -277,7 +289,16 @@ function Directory({ buses, view }: { buses: Bus[]; view: 'drivers' | 'routes' }
                 <td>{(drivers ? bus.routeName : bus.driverName) || '—'}</td>
               </tr>
             ))}
-            {!records.length && (
+            {!drivers && routeGroups.map(({ route, assigned }) => (
+              <tr key={route}>
+                <td>{route}</td>
+                <td>{assigned.map((bus) => bus.busNumber).join(', ')}</td>
+                <td>{assigned.map((bus) => bus.driverName || 'Unassigned').join(', ')}</td>
+                <td>{assigned.filter((bus) => bus.recorderId).length} mapped</td>
+                <td><Link className="directory-open" href={busHref(assigned[0])}>Open bus <ArrowUpRight size={14} aria-hidden="true" /></Link></td>
+              </tr>
+            ))}
+            {!(drivers ? records.length : routeGroups.length) && (
               <tr>
                 <td colSpan={drivers ? 6 : 5}>No matching {drivers ? 'driver' : 'route'} assignments.</td>
               </tr>

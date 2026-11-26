@@ -229,16 +229,20 @@ function Directory({ buses, view }: { buses: Bus[]; view: 'drivers' | 'routes' }
       .includes(query.trim().toLowerCase()),
   );
   return (
-    <div className="fleet-ops-panel">
-      <div className="fleet-ops-controls">
+    <div className={`fleet-ops-panel neotrack-directory ${drivers ? 'driver-directory' : 'route-directory'}`}>
+      <div className="neotrack-directory-heading">
+        <div>
+          <h2>{drivers ? 'Manage drivers' : 'Manage routes'}</h2>
+          <span>Total {drivers ? 'drivers' : 'routes'} <strong>{records.length}</strong></span>
+        </div>
+      </div>
+      <div className="fleet-ops-controls neotrack-directory-controls">
         <SearchInput
           value={query}
           onChange={setQuery}
           placeholder={drivers ? 'Search driver or bus' : 'Search route or bus'}
         />
-        <span>
-          {records.length} {records.length === 1 ? 'bus' : 'buses'}
-        </span>
+        <span className="directory-result-count">{records.length} {records.length === 1 ? 'record' : 'records'}</span>
       </div>
       <div
         className="fleet-ops-table"
@@ -250,28 +254,32 @@ function Directory({ buses, view }: { buses: Bus[]; view: 'drivers' | 'routes' }
         <table>
           <thead>
             <tr>
-              <th scope="col">{drivers ? 'Driver' : 'Route'}</th>
-              <th scope="col">Bus</th>
+              <th scope="col">{drivers ? 'Name' : 'Route'}</th>
+              {drivers && <th scope="col">Phone</th>}
+              <th scope="col">Assigned bus</th>
               <th scope="col">Registration</th>
-              <th scope="col">{drivers ? 'Contact' : 'Driver'}</th>
+              <th scope="col">Actions</th>
+              <th scope="col">{drivers ? 'Route' : 'Driver'}</th>
             </tr>
           </thead>
           <tbody>
             {records.map((bus) => (
               <tr key={bus.id}>
                 <td>{(drivers ? bus.driverName : bus.routeName) || 'Unassigned'}</td>
+                {drivers && <td>{bus.driverPhone || '—'}</td>}
                 <td>
                   <Link href={busHref(bus)}>
                     {bus.busNumber} <ArrowUpRight size={13} />
                   </Link>
                 </td>
                 <td>{bus.registration}</td>
-                <td>{(drivers ? bus.driverPhone : bus.driverName) || '—'}</td>
+                <td><Link className="directory-open" href={busHref(bus)}>Open <ArrowUpRight size={14} aria-hidden="true" /></Link></td>
+                <td>{(drivers ? bus.routeName : bus.driverName) || '—'}</td>
               </tr>
             ))}
             {!records.length && (
               <tr>
-                <td colSpan={4}>No matching bus assignments.</td>
+                <td colSpan={drivers ? 6 : 5}>No matching {drivers ? 'driver' : 'route'} assignments.</td>
               </tr>
             )}
           </tbody>

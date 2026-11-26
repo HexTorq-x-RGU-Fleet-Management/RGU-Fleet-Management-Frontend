@@ -1,0 +1,140 @@
+.fleet-operations {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+  padding-block: 0.75rem 2rem;
+}
+.fleet-ops-heading h1 {
+  margin: 0;
+  font-size: clamp(1.65rem, 3vw, 2.25rem);
+  font-weight: 750;
+  letter-spacing: -0.035em;
+}
+.fleet-ops-heading p {
+  margin: 0.25rem 0 0;
+  color: var(--muted);
+}
+.fleet-ops-tracking {
+  display: grid;
+  grid-template-columns: minmax(15rem, 21rem) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+.fleet-ops-panel {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel);
+}
+.fleet-ops-controls,
+.fleet-ops-position-title,
+.fleet-ops-reading {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.7rem 1rem;
+  padding: 0.85rem 1rem;
+}
+.fleet-ops-controls {
+  border-bottom: 1px solid var(--line);
+  align-items: end;
+}
+.fleet-ops-controls label {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+.fleet-ops-controls select,
+.fleet-ops-controls input[type='date'] {
+  padding: 0.55rem 0.65rem;
+  max-width: 100%;
+  border: 1px solid var(--line-strong);
+  border-radius: 0.45rem;
+  background: var(--panel);
+  color: var(--text);
+}
+.fleet-ops-picker .search-input,
+.fleet-ops-picker select {
+  width: 100%;
+}
+.fleet-ops-bus-list {
+  display: grid;
+  gap: 0.3rem;
+  max-height: 34rem;
+  overflow: auto;
+  padding: 0.5rem;
+}
+.fleet-ops-bus-list button {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.65rem;
+  border: 1px solid transparent;
+  border-radius: 0.55rem;
+  text-align: left;
+}
+.fleet-ops-bus-list button[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: var(--panel-hover);
+}
+.fleet-ops-bus-list small {
+  display: block;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.fleet-ops-position-title {
+  justify-content: space-between;
+}
+.fleet-ops-position-title h2 {
+  font-size: 1.2rem;
+  font-weight: 750;
+  overflow-wrap: anywhere;
+}
+.fleet-ops-position .fleet-map {
+  margin: 0.75rem;
+}
+.fleet-ops-table {
+  overflow: auto;
+}
+.fleet-ops-table table {
+  width: 100%;
+  min-width: 30rem;
+  border-collapse: collapse;
+  text-align: left;
+}
+.fleet-ops-table th,
+.fleet-ops-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--line);
+}
+.fleet-ops-table th {
+  background: var(--panel-hover);
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+.fleet-ops-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+.fleet-ops-empty {
+  display: flex;
+  gap: 0.5rem;
+  color: var(--muted);
+  padding: 1rem;
+}
+.fleet-ops-panel a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--accent);
+  font-weight: 650;
+}
+@media (max-width: 850px) {
+  .fleet-ops-tracking {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .fleet-ops-bus-list {
+    max-height: 14rem;
+  }
+}

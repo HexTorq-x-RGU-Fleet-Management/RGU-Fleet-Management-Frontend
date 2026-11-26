@@ -10,6 +10,7 @@ import './workspace.css';
 import './controls.css';
 import './responsive.css';
 import './fleet.css';
+import './fleet-operations.css';
 import './kpi.css';
 import './navigation.css';
 import 'leaflet/dist/leaflet.css';

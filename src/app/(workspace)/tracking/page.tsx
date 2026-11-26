@@ -1,4 +1,5 @@
-import { redirect } from 'next/navigation';
+import { FleetOperations } from '@/components/fleet-operations';
+
 export default function Page() {
-  redirect('/buses');
+  return <FleetOperations view="tracking" />;
 }

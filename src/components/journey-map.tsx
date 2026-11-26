@@ -18,16 +18,18 @@ export function JourneyMap({
   samples,
   index,
   source,
+  followOnMount = false,
 }: {
   samples: Vehicle[];
   index: number;
   source?: string;
+  followOnMount?: boolean;
 }) {
   const element = useRef<HTMLDivElement>(null),
     layers = useRef<Layers | null>(null);
   const [ready, setReady] = useState(false),
     [status, setStatus] = useState('loading'),
-    [following, setFollowing] = useState(false);
+    [following, setFollowing] = useState(followOnMount);
   const current = samples[index];
   const data = useRef({ samples, index });
   data.current = { samples, index };

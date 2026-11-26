@@ -12,6 +12,9 @@ import {
   History,
   Settings,
   Route,
+  ChartNoAxesCombined,
+  IdCard,
+  MapPin,
   ChevronDown,
   Search,
   Command,
@@ -41,6 +44,12 @@ const links = [
   { href: '/recordings', label: 'Recordings', icon: Clapperboard },
   { href: '/team', label: 'Team & access', icon: Users, area: 'team' },
   { href: '/activity', label: 'Activity log', icon: History, area: 'activity' },
+];
+const fleetLinks = [
+  { href: '/tracking', label: 'Live tracking', icon: MapPin },
+  { href: '/drivers', label: 'Drivers', icon: IdCard },
+  { href: '/route-planning', label: 'Routes', icon: Route },
+  { href: '/reports', label: 'Reports', icon: ChartNoAxesCombined },
 ];
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { state, user, provider, signOut, patch } = useWorkspace(),
@@ -146,8 +155,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     provider?.needsReconnect || (provider?.connected && !provider?.playbackReady),
   );
   const list = links.filter((l) => canAccess(user.role, l.area || l.href.slice(1)));
+  const fleetNavigation = fleetLinks.filter((link) => canAccess(user.role, link.href.slice(1)));
   const title =
-    list.find((l) => l.href === path)?.label ||
+    [...list, ...fleetNavigation].find((l) => l.href === path)?.label ||
     (
       {
         '/settings': 'Workspace settings',
@@ -226,6 +236,28 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </Link>
           ))}
         </nav>
+        {fleetNavigation.length > 0 && (
+          <>
+            <p className="nav-caption">FLEET MANAGEMENT</p>
+            <nav aria-label="Fleet management">
+              {fleetNavigation.map(({ href, label, icon: Icon }) => (
+                <Link
+                  key={href}
+                  href={href}
+                  className={`nav-link ${path === href ? 'active' : ''}`}
+                  aria-current={path === href ? 'page' : undefined}
+                  aria-label={label}
+                  title={label}
+                  onClick={() => setMobile(false)}
+                >
+                  <Icon size={18} />
+                  <span>{label}</span>
+                  {path === href && <span className="nav-active-dot" />}
+                </Link>
+              ))}
+            </nav>
+          </>
+        )}
         <div className="sidebar-lower">
           {user.role === 'superadmin' && (
             <>
@@ -430,7 +462,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         />
         <div className="command-results">
           {[
-            ...list.map((l) => ({ title: l.label, subtitle: 'Workspace page', href: l.href })),
+            ...[...list, ...fleetNavigation].map((l) => ({
+              title: l.label,
+              subtitle: 'Workspace page',
+              href: l.href,
+            })),
             ...state.buses.map((b) => ({
               title: b.busNumber,
               subtitle: b.registration,

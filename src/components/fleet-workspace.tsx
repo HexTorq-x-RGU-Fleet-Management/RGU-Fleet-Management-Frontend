@@ -26,6 +26,8 @@ import {
   Pause,
   SkipBack,
   SkipForward,
+  LayoutGrid,
+  List,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useWorkspace } from './workspace-provider';
@@ -117,8 +119,8 @@ function Heading({
   ) : (
     <PageHeading
       eyebrow="RGU FLEET MANAGEMENT"
-      title="One fleet. Every perspective."
-      description="Your bus cameras, fleet and stored GPS/fuel observations."
+      title="Fleet overview"
+      description="Monitor bus movement, GPS connectivity, and camera readiness."
     >
       {children}
     </PageHeading>
@@ -131,6 +133,7 @@ export function FleetWorkspace({ busesOnly = false }: { busesOnly?: boolean }) {
   const [search, setSearch] = useState(''),
     [filter, setFilter] = useState('all'),
     [busColumns, setBusColumns] = useState(3),
+    [directoryView, setDirectoryView] = useState<'grid' | 'table'>('grid'),
     [editor, setEditor] = useState<Bus | null>(null),
     [alerts, setAlerts] = useState<SpeedAlert[]>([]),
     [busy, setBusy] = useState(false);
@@ -192,6 +195,7 @@ export function FleetWorkspace({ busesOnly = false }: { busesOnly?: boolean }) {
         (filter === 'overspeed' && isOverspeed(b, reading(b), now)) ||
         (filter === 'unmapped' && (!b.recorderId || !b.telemetryDeviceId)),
     );
+  const showTable = busesOnly && directoryView === 'table';
   const summary = gpsSummary(state.buses, vehicles, now),
     operations = operationsSummary(state.buses, vehicles, recorders, now),
     playbackBus =
@@ -247,28 +251,26 @@ export function FleetWorkspace({ busesOnly = false }: { busesOnly?: boolean }) {
           </Heading>
           {!busesOnly && (
             <>
-              <div className="fleet-source">
-                <Radio size={15} />
-                <strong>
-                  {provider?.connected
-                    ? 'Hik-Connect connected'
-                    : 'Connect Hik-Connect in Settings'}
-                </strong>
+              <div className="fleet-source" aria-label="Data connections">
                 <span>
+                  <Radio size={15} aria-hidden="true" />
+                  <Badge tone={provider?.playbackReady ? 'green' : 'amber'}>
+                    {provider?.needsReconnect
+                      ? 'Hik-Connect needs reconnection'
+                      : provider?.playbackReady
+                        ? 'Camera access authorized'
+                        : provider?.connected
+                          ? 'Playback authorization required'
+                          : 'Hik-Connect disconnected'}
+                  </Badge>
+                </span>
+                <Link className="text-link" href="/tracking">
+                  <MapPin size={15} aria-hidden="true" />
                   {vehicles.length
-                    ? 'GPS/fuel: stored WheelsEye observations'
-                    : 'GPS/fuel: no observations stored yet'}
-                </span>
-                <span>
-                  {state.buses.length} buses ·{' '}
-                  {
-                    vehicles.filter((v) => (v.speed ?? 0) > 0 && telemetryAge(v, now) === 'fresh')
-                      .length
-                  }{' '}
-                  moving · {vehicles.length} GPS readings · {operations.cameras.active} cameras
-                  online · {operations.cameras.inactive} offline
-                  {operations.cameras.pending ? ` · ${operations.cameras.pending} checking` : ''}
-                </span>
+                    ? telemetry?.source === 'mock' ? 'Simulated GPS observations' : 'Stored GPS observations'
+                    : 'No GPS observations yet'}
+                  <ArrowUpRight size={13} aria-hidden="true" />
+                </Link>
               </div>
               <FleetKpis
                 operations={operations}
@@ -294,7 +296,17 @@ export function FleetWorkspace({ busesOnly = false }: { busesOnly?: boolean }) {
                 onChange={setSearch}
                 placeholder="Search buses, drivers or routes"
               />
-              <div className="bus-density-control">
+              {busesOnly && (
+                <div className="segmented bus-view-switch" role="group" aria-label="Bus layout">
+                  <button type="button" aria-pressed={!showTable} className={!showTable ? 'selected' : ''} onClick={() => setDirectoryView('grid')}>
+                    <LayoutGrid size={14} aria-hidden="true" /> Grid
+                  </button>
+                  <button type="button" aria-pressed={showTable} className={showTable ? 'selected' : ''} onClick={() => setDirectoryView('table')}>
+                    <List size={14} aria-hidden="true" /> Table
+                  </button>
+                </div>
+              )}
+              {!showTable && <div className="bus-density-control">
                 <span className="bus-density-caption">Buses per row</span>
                 <div className="bus-density-slider-deck">
                   <span className="density-bound min" title="Minimum: 1 bus per row">
@@ -332,7 +344,7 @@ export function FleetWorkspace({ busesOnly = false }: { busesOnly?: boolean }) {
                   <strong>{busColumns}</strong>
                   <span className="density-max-hint">/ 6</span>
                 </div>
-              </div>
+              </div>}
             </div>
             <div className="segmented fleet-filters" aria-label="Bus filter">
               {[
@@ -363,6 +375,29 @@ export function FleetWorkspace({ busesOnly = false }: { busesOnly?: boolean }) {
                   ? 'Import your Hik-Connect recorders, then add and map a bus.'
                   : 'Your administrator manages bus configuration and recorder access.'}
               </p>
+            </div>
+          ) : showTable ? (
+            <div className="fleet-ops-panel fleet-ops-table" role="region" aria-label="Bus directory table" tabIndex={0} data-lenis-prevent>
+              <table>
+                <thead><tr><th scope="col">Bus</th><th scope="col">Route</th><th scope="col">Driver</th><th scope="col">GPS</th><th scope="col">Latest speed</th><th scope="col">Ready cameras</th></tr></thead>
+                <tbody>
+                  {list.map((bus) => {
+                    const vehicle = reading(bus);
+                    const recorder = recorders.find((entry) => entry.id === bus.recorderId);
+                    const gps = gpsState(bus, vehicle, now);
+                    return (
+                      <tr key={bus.id}>
+                        <th scope="row"><Link href={'/buses?bus=' + bus.id} aria-label={'Open ' + bus.busNumber}>{bus.busNumber}<ArrowUpRight size={13} /></Link><small>{bus.registration}</small></th>
+                        <td>{bus.routeName || 'Unassigned'}</td>
+                        <td>{bus.driverName || 'Unassigned'}</td>
+                        <td><Badge tone={gps === 'online' ? 'green' : gps === 'offline' ? 'red' : 'neutral'}>{gps}</Badge></td>
+                        <td>{vehicle ? vehicle.speed.toFixed(0) + ' km/h' : '—'}</td>
+                        <td>{recorder ? workingChannels(recorders, bus.recorderId).length + ' / ' + recorder.channels : '—'}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           ) : (
             <div

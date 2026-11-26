@@ -171,14 +171,14 @@ export function PageHeading({
   children?: ReactNode;
 }) {
   return (
-    <div className="page-heading">
+    <header className="page-heading">
       <div>
         <p className="eyebrow">{eyebrow}</p>
-        <h1 className="rgu-gradient-text">{title}</h1>
+        <h1>{title}</h1>
         <p className="page-description">{description}</p>
       </div>
-      <div className="heading-actions">{children}</div>
-    </div>
+      {children && <div className="heading-actions">{children}</div>}
+    </header>
   );
 }
 export function Empty({

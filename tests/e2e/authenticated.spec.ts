@@ -199,7 +199,7 @@ test('workspace signup, platform approval and temporary password recovery use ac
   await page.getByLabel('Current password', { exact: true }).fill(password + '-temporary');
   await page.getByLabel('New password', { exact: true }).fill(password + '-final');
   await page.getByRole('button', { name: 'Save new password', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'One fleet. Every perspective.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Fleet overview', exact: true })).toBeVisible();
 });
 test('sidebar is compact, independently scrollable and mobile pages fit', async ({ page }) => {
   await login(page);

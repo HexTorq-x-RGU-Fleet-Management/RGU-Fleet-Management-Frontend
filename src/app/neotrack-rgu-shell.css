@@ -279,6 +279,35 @@
 .neotrack-camera-console .camera-stage { background: #101216; }
 .neotrack-camera-console .selected-controls { border-color: var(--nt-border); border-radius: 8px; background: #fff; box-shadow: 0 3px 8px rgba(20,30,50,.06); }
 
+/* NeoTrack-style recording library, driven by workspace clip storage. */
+.neotrack-recordings-library { display: grid; gap: 14px; }
+.neotrack-recordings-library .page-heading { min-height: 58px; padding: 2px 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.neotrack-recordings-library .page-heading .eyebrow { display: none; }
+.neotrack-recordings-library .page-heading h1 { color: var(--nt-ink); font-size: 24px; letter-spacing: -.03em; }
+.neotrack-recordings-library .page-heading .page-description { margin-top: 4px; color: #64748b; font-size: 12px; }
+.neotrack-recordings-library .page-heading .btn { min-height: 34px; border-radius: 6px; font-size: 11px; }
+.recordings-library-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 10px 14px; border: 1px solid var(--nt-border); border-radius: 7px; background: #fff; box-shadow: 0 3px 8px rgba(20,30,50,.06); }
+.recordings-library-toolbar .search-input { width: min(390px, 100%); }
+.recordings-library-toolbar .muted { color: #64748b; font-size: 11px; }
+.recordings-storage-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.recordings-storage-summary > div { display: grid; gap: 3px; min-height: 94px; padding: 15px; border: 1px solid var(--nt-border); border-radius: 8px; background: #fff; box-shadow: 0 3px 8px rgba(20,30,50,.05); }
+.recordings-storage-summary span, .recordings-storage-summary small { color: #69778c; font-size: 10px; }
+.recordings-storage-summary strong { color: #202938; font-size: 23px; line-height: 1.15; }
+.neotrack-recordings-library .clips-grid { gap: 12px; }
+.neotrack-recordings-library .clip-card { border-color: var(--nt-border); border-radius: 8px; background: #fff; box-shadow: 0 3px 8px rgba(20,30,50,.06); }
+.neotrack-recordings-library .clip-preview { min-height: 152px; background: linear-gradient(135deg, #171722, #322039); }
+.neotrack-recordings-library .clip-body { padding: 15px; }
+.neotrack-recordings-library .clip-body h3 { color: #202938; font-size: 14px; }
+.neotrack-recordings-library .clip-body p { color: #69778c; font-size: 11px; }
+.neotrack-recordings-library .clip-body .badge { border-color: #dae2ec; background: #f7f9fb; color: #526177; }
+.neotrack-recordings-library .clip-body .btn { min-height: 34px; border-radius: 6px; font-size: 11px; }
+
+@media (max-width: 700px) {
+  .recordings-library-toolbar { align-items: stretch; flex-direction: column; }
+  .recordings-library-toolbar .search-input { width: 100%; }
+  .recordings-storage-summary { grid-template-columns: 1fr; }
+}
+
 @media (max-width: 900px) {
   .neotrack-camera-console .camera-page-heading { align-items: flex-start; }
   .neotrack-camera-console .recorder-tabs { overflow-x: auto; }

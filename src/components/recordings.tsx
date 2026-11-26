@@ -57,7 +57,7 @@ export function Recordings() {
       .includes(query.toLowerCase()),
   );
   return (
-    <div>
+    <div className="neotrack-recordings-library">
       <PageHeading
         eyebrow="SERVER RECORDINGS"
         title="Saved camera clips."
@@ -68,7 +68,7 @@ export function Recordings() {
           Refresh recordings
         </Button>
       </PageHeading>
-      <div className="panel-toolbar">
+      <section className="recordings-library-toolbar" aria-label="Recording library controls">
         <SearchInput value={query} onChange={setQuery} placeholder="Search recordings" />
         {data.storage && (
           <span className="muted">
@@ -76,7 +76,12 @@ export function Recordings() {
             {data.storage.retentionDays} days retention
           </span>
         )}
-      </div>
+      </section>
+      <section className="recordings-storage-summary" aria-label="Recording storage summary">
+        <div><span>Available clips</span><strong>{data.clips.length}</strong><small>in this workspace</small></div>
+        <div><span>Storage used</span><strong>{data.storage ? formatBytes(data.storage.usedBytes) : '—'}</strong><small>{data.storage ? `of ${formatBytes(data.storage.maxBytes)}` : 'loading capacity'}</small></div>
+        <div><span>Retention</span><strong>{data.storage ? data.storage.retentionDays : '—'}</strong><small>days</small></div>
+      </section>
       {error && <p role="alert">{error}</p>}
       <>
       {!clips.length ? (

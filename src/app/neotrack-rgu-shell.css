@@ -1,0 +1,145 @@
+/* Phase 1 fidelity shell: adapted from the locally supplied NeoTrack reference.
+   Brand, routes, roles and data remain RGU-specific. */
+.app-shell { --nt-yellow: #ffc226; --nt-black: #050505; }
+
+.sidebar {
+  inset: 68px auto 0 0;
+  width: 152px;
+  padding: 10px 0 14px;
+  overflow-x: hidden;
+  background: var(--nt-black);
+  border: 0;
+  box-shadow: none;
+}
+
+.sidebar > .brand,
+.sidebar > .mobile-sidebar-close,
+.sidebar .nav-caption,
+.sidebar .profile-button > span:not(.avatar),
+.sidebar .profile-button > svg,
+.sidebar .nav-link > span:not(.nav-active-dot) { display: none; }
+
+.sidebar nav { display: contents; }
+.sidebar .nav-link {
+  width: 100%;
+  min-height: 74px;
+  margin: 0;
+  padding: 12px 8px;
+  border: 0;
+  border-radius: 0;
+  color: #fff;
+  background: transparent;
+  justify-content: center;
+  flex-direction: column;
+  gap: 7px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.sidebar .nav-link::after {
+  content: attr(aria-label);
+  max-width: 100%;
+  overflow: hidden;
+  color: inherit;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sidebar .nav-link svg { width: 26px; height: 26px; stroke-width: 1.8; }
+.sidebar .nav-link:hover { transform: none; color: var(--nt-yellow); background: #111; }
+.sidebar .nav-link.active { color: var(--nt-yellow); background: #111; box-shadow: none; }
+.sidebar .nav-link.active::before { content: ''; position: absolute; inset: auto 0 0; height: 2px; background: var(--nt-yellow); }
+.sidebar .nav-active-dot { display: none; }
+
+.sidebar .sidebar-lower { display: contents; margin: 0; padding: 0; border: 0; }
+.sidebar .sidebar-lower > .nav-link { order: 20; }
+.sidebar .profile-button {
+  position: absolute;
+  inset: auto 0 0;
+  width: 100%;
+  min-height: 62px;
+  margin: 0;
+  border: 0;
+  border-top: 1px solid #242424;
+  border-radius: 0;
+  background: #111;
+  justify-content: center;
+}
+.sidebar .profile-button .avatar { width: 30px; height: 30px; background: var(--nt-yellow); border: 0; color: #171717; }
+
+.main-shell { margin-left: 152px; }
+.topbar {
+  position: relative;
+  height: 68px;
+  margin-left: -152px;
+  padding: 0 26px 0 0;
+  background: #fff;
+  border-bottom: 1px solid #e1e5eb;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, .035);
+}
+.neotrack-rgu-brand {
+  display: inline-flex;
+  align-items: center;
+  align-self: stretch;
+  width: 270px;
+  gap: 10px;
+  padding: 0 18px;
+  border-right: 1px solid #e1e5eb;
+  color: #202938;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -.055em;
+  text-decoration: none;
+}
+.neotrack-rgu-brand img { width: 34px; height: 34px; object-fit: contain; }
+.topbar-location { margin-left: 18px; flex: 1; }
+.topbar-location::before { content: 'Fleet operations'; color: #334155; font-size: 13px; font-weight: 600; }
+.topbar-location > * { display: none; }
+.topbar-actions { gap: 12px; }
+.topbar-clock-badge { display: none; }
+.global-search { display: none; }
+.topbar .badge { min-height: 36px; padding-inline: 12px; background: #fff5cf; border-color: #f7c649; color: #342407; }
+.notification-trigger { width: 44px; height: 40px; border-radius: 20px; background: #fff5cf; border-color: #f7c649; color: #181818; }
+
+.sidebar-edge-toggle {
+  z-index: 55;
+  top: auto;
+  right: auto;
+  bottom: 12px;
+  left: 108px;
+  width: 32px;
+  height: 32px;
+  color: #fff;
+  border-color: #333;
+  background: #171717;
+}
+.sidebar-collapsed .sidebar { width: 70px; }
+.sidebar-collapsed .main-shell { margin-left: 70px; }
+.sidebar-collapsed .topbar { margin-left: -70px; }
+.sidebar-collapsed .sidebar-edge-toggle { left: 20px; }
+.sidebar-collapsed .sidebar .nav-link { min-height: 58px; }
+.sidebar-collapsed .sidebar .nav-link::after { display: none; }
+
+.main-content { padding: 22px 20px 30px; }
+.app-footer { display: none; }
+
+@media (max-width: 900px) {
+  .sidebar { inset: 0 auto 0 0; width: min(286px, 86vw); padding: 16px 12px; background: #fff; }
+  .sidebar > .brand { display: flex; }
+  .sidebar .nav-caption { display: block; }
+  .sidebar .nav-link { width: auto; min-height: 42px; padding: 10px 12px; border-radius: 8px; color: var(--nt-ink); background: transparent; justify-content: flex-start; flex-direction: row; font-size: 12px; }
+  .sidebar .nav-link::after { display: none; }
+  .sidebar .nav-link > span:not(.nav-active-dot) { display: inline; }
+  .sidebar .nav-link.active { color: var(--nt-primary); background: var(--nt-primary-soft); }
+  .sidebar .nav-link.active::before { display: none; }
+  .sidebar .profile-button { position: static; width: auto; min-height: 44px; margin: 12px 0 0; border: 1px solid var(--nt-border); border-radius: 8px; background: var(--nt-surface-muted); justify-content: flex-start; }
+  .sidebar .profile-button > span:not(.avatar), .sidebar .profile-button > svg { display: initial; }
+  .sidebar .mobile-sidebar-close { display: inline-flex; }
+  .topbar { height: 58px; margin-left: 0; padding: 0 .85rem; }
+  .neotrack-rgu-brand { width: auto; padding: 0; border: 0; font-size: 17px; }
+  .neotrack-rgu-brand img { width: 28px; height: 28px; }
+  .topbar-location { margin-left: auto; flex: 0; }
+  .topbar-location::before { display: none; }
+  .topbar-location .mobile-menu { display: inline-flex; }
+  .sidebar-edge-toggle { display: none; }
+}

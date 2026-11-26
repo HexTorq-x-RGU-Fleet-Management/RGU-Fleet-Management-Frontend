@@ -373,6 +373,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </IconButton>
       <div className="main-shell">
         <header className="topbar">
+          <Link href="/" className="neotrack-rgu-brand" aria-label="RGU Fleet dashboard">
+            <img src="/rathinam-logo.svg" alt="" width={34} height={34} />
+            <span>RGU Fleet</span>
+          </Link>
           <div className="topbar-location">
             <IconButton
               label="Open navigation"

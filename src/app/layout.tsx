@@ -13,6 +13,7 @@ import './fleet.css';
 import './fleet-operations.css';
 import './operations-refinement.css';
 import './neotrack-rgu-foundation.css';
+import './neotrack-rgu-shell.css';
 import './kpi.css';
 import './navigation.css';
 import 'leaflet/dist/leaflet.css';

@@ -177,18 +177,31 @@ export function FleetKpis({
   const toggle = (value: KpiFilter) => onFilter(filter === value ? 'all' : value);
   return (
     <section aria-labelledby="operations-heading" className="kpi-section operations-section">
+      <div className="dashboard-filter-strip" role="group" aria-label="Dashboard focus">
+        <button type="button" className={filter === 'all' ? 'selected' : ''} onClick={() => onFilter('all')}>
+          Fleet overview
+        </button>
+        <button type="button" className={filter === 'moving' ? 'selected' : ''} onClick={() => toggle('moving')}>
+          Moving buses
+        </button>
+        <button type="button" className={filter === 'online' ? 'selected' : ''} onClick={() => toggle('online')}>
+          GPS online
+        </button>
+        <button type="button" className={filter === 'overspeed' ? 'selected' : ''} onClick={() => toggle('overspeed')}>
+          Speed alerts
+        </button>
+      </div>
       <div className="operations-heading">
         <div>
-          <span className="operations-eyebrow">Operational status</span>
-          <h2 id="operations-heading">Fleet at a glance</h2>
+          <h2 id="operations-heading">Operational status</h2>
         </div>
-        <p>Live bus movement, camera availability and GPS connectivity.</p>
+        <p>Current RGU vehicle, CCTV and GPS availability.</p>
       </div>
       <div className="operations-grid">
         <OperationalCard
           tone="bus"
           icon={BusFront}
-          title="Buses"
+          title="Vehicle status"
           metric={operations.buses}
           activeLabel="running"
           inactiveLabel="not running"
@@ -200,7 +213,7 @@ export function FleetKpis({
         <OperationalCard
           tone="camera"
           icon={Cctv}
-          title="CCTV cameras"
+          title="Camera status"
           metric={operations.cameras}
           activeLabel="online"
           inactiveLabel="offline"
@@ -212,7 +225,7 @@ export function FleetKpis({
         <OperationalCard
           tone="gps"
           icon={Satellite}
-          title="GPS devices"
+          title="GPS status"
           metric={operations.gps}
           activeLabel="online"
           inactiveLabel="offline"
@@ -232,12 +245,12 @@ export function FleetKpis({
           <Gauge size={18} />
           <span>
             <strong>{alerts.length}</strong>
-            Speed alerts in 24 hours
+            Speed compliance
           </span>
           <small>
             {summary.overspeedNow
               ? `${summary.overspeedNow} over the limit now`
-              : 'No bus over its limit now'}
+              : 'No active limit breach'}
           </small>
         </button>
         {playbackHref ? (
@@ -245,7 +258,7 @@ export function FleetKpis({
             <History size={18} />
             <span>
               <strong>Replay</strong>
-              Route playback
+              Journey playback
             </span>
             <small>Open {playbackBus ?? 'bus'} journey history</small>
           </Link>

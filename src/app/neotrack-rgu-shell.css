@@ -123,6 +123,46 @@
 .main-content { padding: 22px 20px 30px; }
 .app-footer { display: none; }
 
+/* NeoTrack dashboard geometry, populated only by real RGU status values. */
+.fleet-workspace:not(.bus-directory) .page-heading { padding: 3px 0 14px; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.fleet-workspace:not(.bus-directory) .page-heading .eyebrow,
+.fleet-workspace:not(.bus-directory) .page-heading .page-description { display: none; }
+.fleet-workspace:not(.bus-directory) .page-heading h1 { margin: 0; font-size: 24px; letter-spacing: -.03em; }
+.fleet-workspace:not(.bus-directory) .fleet-source { min-height: 52px; padding: 8px 14px; margin-bottom: 24px; border-radius: 7px; background: #fff; box-shadow: 0 3px 8px rgba(20, 30, 50, .08); }
+.fleet-workspace:not(.bus-directory) .operations-section { padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.dashboard-filter-strip { display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 8px 10px; margin-bottom: 24px; border: 1px solid var(--nt-border); border-radius: 7px; background: #fff; box-shadow: 0 3px 8px rgba(20, 30, 50, .08); }
+.dashboard-filter-strip button { min-height: 34px; padding: 0 14px; border: 0; border-radius: 6px; background: #f3f5f8; color: #334155; font: inherit; font-size: 12px; font-weight: 650; cursor: pointer; }
+.dashboard-filter-strip button:hover { background: #e8edf4; }
+.dashboard-filter-strip button.selected { color: #161616; background: var(--nt-yellow); box-shadow: inset 0 0 0 1px #efae10; }
+.operations-heading { margin-bottom: 10px; }
+.operations-heading h2 { font-size: 22px; }
+.operations-heading p { color: #64748b; font-size: 12px; }
+.operations-grid { gap: 8px; }
+.ops-card { min-height: 360px; padding: 18px 20px; border-color: var(--nt-border); border-radius: 18px; background: #fff; box-shadow: none; }
+.ops-card::before { display: none; }
+.ops-card:hover { transform: none; border-color: #cfd7e5; box-shadow: 0 6px 16px rgba(33, 45, 68, .06); }
+.ops-card-heading { padding-bottom: 10px; border-bottom: 0; }
+.ops-card-heading h3 { font-size: 22px; font-weight: 700; }
+.ops-card-kicker, .ops-card-icon { display: none; }
+.ops-card-content { grid-template-columns: 1fr; justify-items: center; gap: 4px; }
+.ops-chart { width: 238px; height: 238px; }
+.ops-chart-value strong { font-size: 24px; }
+.ops-chart-value small { display: none; }
+.ops-totals { position: absolute; align-items: center; justify-items: center; inset: 132px 0 auto; pointer-events: none; }
+.ops-total-label, .ops-total-note { display: none; }
+.ops-total-value { color: var(--nt-ink); font-size: 24px; }
+.ops-legend { width: 100%; margin-top: auto; padding-top: 12px; border-top: 0; justify-content: center; }
+.ops-legend span { justify-content: center; font-size: 11px; }
+.ops-action { margin-top: 2px; color: #64748b; text-align: center; }
+.operations-actions { gap: 8px; margin-top: 8px; }
+.operations-action-card { min-height: 104px; padding: 18px; border-radius: 18px; border-color: var(--nt-border); background: #fff; box-shadow: none; }
+.operations-action-card:hover, .operations-action-card.selected { background: #fff8e6; border-color: #f0c34a; }
+.operations-action-card > svg { color: #202938; }
+.operations-action-card strong { font-size: 16px; }
+.operations-action-card small { color: #64748b; }
+
+@media (max-width: 900px) { .dashboard-filter-strip { overflow-x: auto; } .dashboard-filter-strip button { flex: 0 0 auto; } .ops-card { min-height: auto; } .ops-chart { width: 180px; height: 180px; } .ops-totals { inset: 104px 0 auto; } }
+
 @media (max-width: 900px) {
   .sidebar { inset: 0 auto 0 0; width: min(286px, 86vw); padding: 16px 12px; background: #fff; }
   .sidebar > .brand { display: flex; }

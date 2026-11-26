@@ -119,8 +119,8 @@ function Heading({
   ) : (
     <PageHeading
       eyebrow="RGU FLEET MANAGEMENT"
-      title="Fleet overview"
-      description="Monitor bus movement, GPS connectivity, and camera readiness."
+      title="Dashboard"
+      description="Live fleet, camera and GPS operations at a glance."
     >
       {children}
     </PageHeading>

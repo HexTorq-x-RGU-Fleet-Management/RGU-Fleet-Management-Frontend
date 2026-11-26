@@ -348,8 +348,14 @@ function Reports({ buses }: { buses: Bus[] }) {
         .sort((a, b) => a.gpsTime - b.gpsTime)
     : [];
   return (
-    <div className="fleet-ops-panel">
-      <form className="fleet-ops-controls" onSubmit={load}>
+    <div className="fleet-ops-panel neotrack-report-workbench">
+      <div className="report-workbench-heading">
+        <div>
+          <h2>Movement report</h2>
+          <p>Review stored GPS observations and speed-limit events for one IST day.</p>
+        </div>
+      </div>
+      <form className="fleet-ops-controls report-filter-strip" onSubmit={load}>
         <label>
           Bus
           <select
@@ -393,9 +399,11 @@ function Reports({ buses }: { buses: Bus[] }) {
       )}
       {result && (
         <>
-          <div className="fleet-ops-controls" role="status">
-            <strong>{samples.length} movement observations</strong>
-            <strong>{result.data.violations.length} speed alerts</strong>
+          <div className="report-summary-grid" role="status">
+            <div><span>Observations</span><strong>{samples.length}</strong><small>stored for this day</small></div>
+            <div><span>Speed alerts</span><strong>{result.data.violations.length}</strong><small>limit crossings</small></div>
+            <div><span>First observation</span><strong>{samples[0] ? timeLabel(samples[0].gpsTime) : '—'}</strong><small>IST</small></div>
+            <div><span>Last observation</span><strong>{samples.at(-1) ? timeLabel(samples.at(-1)!.gpsTime) : '—'}</strong><small>IST</small></div>
             <Link href={'/buses?' + new URLSearchParams({ bus: result.busId, tab: 'journey' })}>
               Open journey <ArrowUpRight size={15} />
             </Link>

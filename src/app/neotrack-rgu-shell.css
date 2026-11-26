@@ -161,7 +161,34 @@
 .operations-action-card strong { font-size: 16px; }
 .operations-action-card small { color: #64748b; }
 
+/* NeoTrack vehicle-directory pattern, mapped to the real RGU bus directory. */
+.bus-directory .bus-directory-heading { min-height: 40px; margin: 2px 0 20px; }
+.bus-directory .bus-directory-heading h1 { color: var(--nt-ink); font-size: 24px; font-weight: 700; letter-spacing: -.03em; }
+.directory-total { color: #64748b; font-size: 13px; }
+.directory-total strong { color: var(--nt-ink); font-weight: 750; }
+.bus-directory .bus-directory-tools { display: grid; grid-template-columns: minmax(220px, 1fr) auto; align-items: center; gap: 12px 20px; padding: 0; margin: 0 0 18px; border: 0; border-radius: 0; box-shadow: none; background: transparent; }
+.bus-directory .bus-directory-tools .search-input { grid-column: 1; grid-row: 1; order: unset; width: min(360px, 100%); }
+.bus-directory .bus-directory-tools .bus-view-switch { grid-column: 2; grid-row: 1; justify-self: end; }
+.bus-directory .bus-directory-tools .fleet-filters { grid-column: 1 / -1; grid-row: 2; order: unset; padding: 8px; border: 1px solid var(--nt-border); border-radius: 7px; background: #fff; }
+.bus-directory .bus-directory-tools .bus-density-control { grid-column: 2; grid-row: 1; }
+.bus-directory .neotrack-bus-table { overflow: auto; border: 1px solid var(--nt-border); border-radius: 8px; background: #fff; box-shadow: 0 3px 8px rgba(20,30,50,.06); }
+.bus-directory .neotrack-bus-table table { min-width: 970px; }
+.bus-directory .neotrack-bus-table thead th { position: static; padding: 15px 14px; color: #58677d; font-size: 11px; font-weight: 750; letter-spacing: .02em; text-transform: none; background: #f7f8fa; border-bottom: 1px solid #e8edf3; white-space: nowrap; }
+.bus-directory .neotrack-bus-table tbody th,
+.bus-directory .neotrack-bus-table tbody td { padding: 15px 14px; color: #26354a; font-size: 12px; vertical-align: middle; border-bottom: 1px solid #edf0f4; white-space: nowrap; }
+.bus-directory .neotrack-bus-table tbody th a { color: #172135; font-weight: 700; }
+.bus-directory .neotrack-bus-table tbody tr:hover { background: #fbfcfe; }
+.directory-open { display: inline-flex; align-items: center; gap: 5px; color: var(--nt-primary); font-weight: 700; text-decoration: none; }
+.directory-open:hover { color: #611e72; text-decoration: underline; }
+
 @media (max-width: 900px) { .dashboard-filter-strip { overflow-x: auto; } .dashboard-filter-strip button { flex: 0 0 auto; } .ops-card { min-height: auto; } .ops-chart { width: 180px; height: 180px; } .ops-totals { inset: 104px 0 auto; } }
+
+@media (max-width: 700px) {
+  .bus-directory .bus-directory-tools { display: flex; align-items: stretch; }
+  .bus-directory .bus-directory-tools .search-input { width: 100%; }
+  .bus-directory .bus-directory-tools .bus-view-switch { align-self: flex-end; }
+  .bus-directory .bus-directory-tools .fleet-filters { width: 100%; overflow-x: auto; }
+}
 
 @media (max-width: 900px) {
   .sidebar { inset: 0 auto 0 0; width: min(286px, 86vw); padding: 16px 12px; background: #fff; }

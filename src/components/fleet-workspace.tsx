@@ -112,7 +112,7 @@ function Heading({
     <div className="bus-directory-heading">
       <div>
         <h1>Buses</h1>
-        <span className="count-chip">{count}</span>
+        <span className="directory-total">Total buses <strong>{count}</strong></span>
       </div>
       <div className="bus-directory-actions">{children}</div>
     </div>
@@ -133,7 +133,7 @@ export function FleetWorkspace({ busesOnly = false }: { busesOnly?: boolean }) {
   const [search, setSearch] = useState(''),
     [filter, setFilter] = useState('all'),
     [busColumns, setBusColumns] = useState(3),
-    [directoryView, setDirectoryView] = useState<'grid' | 'table'>('grid'),
+    [directoryView, setDirectoryView] = useState<'grid' | 'table'>(() => (busesOnly ? 'table' : 'grid')),
     [editor, setEditor] = useState<Bus | null>(null),
     [alerts, setAlerts] = useState<SpeedAlert[]>([]),
     [busy, setBusy] = useState(false);
@@ -377,9 +377,9 @@ export function FleetWorkspace({ busesOnly = false }: { busesOnly?: boolean }) {
               </p>
             </div>
           ) : showTable ? (
-            <div className="fleet-ops-panel fleet-ops-table" role="region" aria-label="Bus directory table" tabIndex={0} data-lenis-prevent>
+            <div className="fleet-ops-panel fleet-ops-table neotrack-bus-table" role="region" aria-label="Bus directory table" tabIndex={0} data-lenis-prevent>
               <table>
-                <thead><tr><th scope="col">Bus</th><th scope="col">Route</th><th scope="col">Driver</th><th scope="col">GPS</th><th scope="col">Latest speed</th><th scope="col">Ready cameras</th></tr></thead>
+                <thead><tr><th scope="col">Bus name</th><th scope="col">Registration</th><th scope="col">Route</th><th scope="col">Driver</th><th scope="col">GPS status</th><th scope="col">Latest speed</th><th scope="col">Cameras ready</th><th scope="col">Actions</th></tr></thead>
                 <tbody>
                   {list.map((bus) => {
                     const vehicle = reading(bus);
@@ -387,12 +387,14 @@ export function FleetWorkspace({ busesOnly = false }: { busesOnly?: boolean }) {
                     const gps = gpsState(bus, vehicle, now);
                     return (
                       <tr key={bus.id}>
-                        <th scope="row"><Link href={'/buses?bus=' + bus.id} aria-label={'Open ' + bus.busNumber}>{bus.busNumber}<ArrowUpRight size={13} /></Link><small>{bus.registration}</small></th>
+                        <th scope="row"><Link href={'/buses?bus=' + bus.id} aria-label={'Open ' + bus.busNumber}>{bus.busNumber}</Link></th>
+                        <td>{bus.registration || '—'}</td>
                         <td>{bus.routeName || 'Unassigned'}</td>
                         <td>{bus.driverName || 'Unassigned'}</td>
                         <td><Badge tone={gps === 'online' ? 'green' : gps === 'offline' ? 'red' : 'neutral'}>{gps}</Badge></td>
                         <td>{vehicle ? vehicle.speed.toFixed(0) + ' km/h' : '—'}</td>
                         <td>{recorder ? workingChannels(recorders, bus.recorderId).length + ' / ' + recorder.channels : '—'}</td>
+                        <td><Link className="directory-open" href={'/buses?bus=' + bus.id}>Open <ArrowUpRight size={14} aria-hidden="true" /></Link></td>
                       </tr>
                     );
                   })}

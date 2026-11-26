@@ -724,7 +724,7 @@ export function CameraWorkspace() {
       </div>
     );
   return (
-    <div className="camera-workspace-container">
+    <div className="camera-workspace-container neotrack-camera-console">
       {bus && (
         <Link className="btn btn-ghost fleet-back" href={'/buses?bus=' + bus.id}>
           <ArrowLeft size={15} />

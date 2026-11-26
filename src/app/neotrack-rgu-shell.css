@@ -245,6 +245,45 @@
 .neotrack-report-workbench > .fleet-ops-table thead th { position: static; padding: 14px 20px; color: #58677d; font-size: 11px; font-weight: 750; text-transform: none; background: #f7f8fa; }
 .neotrack-report-workbench > .fleet-ops-table td { padding: 14px 20px; font-size: 12px; }
 
+/* CCTV control centre: NeoTrack operational geometry without changing camera transport. */
+.neotrack-camera-console { gap: 14px; }
+.neotrack-camera-console .camera-page-heading { align-items: center; min-height: 62px; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.neotrack-camera-console .camera-page-heading .eyebrow { display: none; }
+.neotrack-camera-console .camera-page-heading h1 { color: var(--nt-ink); font-size: 24px; letter-spacing: -.03em; }
+.neotrack-camera-console .camera-page-heading .page-description { margin-top: 4px; color: #64748b; font-size: 12px; }
+.neotrack-camera-console .camera-page-heading .control-actions { gap: 7px; }
+.neotrack-camera-console .camera-page-heading .btn { min-height: 34px; border-radius: 6px; font-size: 11px; }
+.neotrack-camera-console .recorder-tabs { gap: 0; padding: 5px; margin: 0; border: 1px solid var(--nt-border); border-radius: 7px; background: #fff; box-shadow: 0 3px 8px rgba(20,30,50,.06); }
+.neotrack-camera-console .recorder-tabs button { min-height: 36px; padding: 0 12px; border: 0; border-radius: 5px; color: #536177; background: transparent; box-shadow: none; font-size: 11px; }
+.neotrack-camera-console .recorder-tabs button:hover { transform: none; color: #202938; background: #f5f7fa; }
+.neotrack-camera-console .recorder-tabs button.selected { color: #1d212b; background: #fff3c5; box-shadow: inset 0 0 0 1px #f4cc55; }
+.neotrack-camera-console .recorder-tabs button.mapped:not(.selected) { border: 0; background: transparent; }
+.neotrack-camera-console .recorder-tabs .recorder-bus-tag { color: #2f6b4f; border-color: #b8dec9; background: #eefaf2; }
+.neotrack-camera-console .recorder-tabs .recorder-channel-count { color: #64748b; border-color: #dfe5ec; background: #f7f8fa; }
+.neotrack-camera-console .playback-warning { border-radius: 7px; }
+.neotrack-camera-console .playback-panel { margin: 0; padding: 16px 18px; border-color: var(--nt-border); border-radius: 8px; background: #fff; box-shadow: 0 3px 8px rgba(20,30,50,.06); }
+.neotrack-camera-console .playback-panel-heading { margin-bottom: 12px; }
+.neotrack-camera-console .playback-panel-heading .eyebrow { display: none; }
+.neotrack-camera-console .playback-panel-heading h2 { color: #202938; font-size: 16px; }
+.neotrack-camera-console .playback-help { color: #64748b; font-size: 11px; }
+.neotrack-camera-console .playback-controls { gap: 9px; }
+.neotrack-camera-console .playback-controls label { min-width: 140px; color: #5d6a7c; font-size: 10px; }
+.neotrack-camera-console .playback-controls input { min-height: 36px; border-color: #dce3ec; border-radius: 6px; background: #fff; }
+.neotrack-camera-console .playback-controls .btn { min-height: 36px; border-radius: 6px; font-size: 11px; }
+.neotrack-camera-console .monitor-panel { border-color: var(--nt-border); border-top: 1px solid var(--nt-border); border-radius: 8px; background: #fff; box-shadow: 0 3px 8px rgba(20,30,50,.06); }
+.neotrack-camera-console .monitor-header { padding: 15px 18px; }
+.neotrack-camera-console .monitor-icon { width: 36px; height: 36px; border-color: #e5c8ea; border-radius: 7px; color: #6a2c7b; background: #faf3fb; box-shadow: none; }
+.neotrack-camera-console .monitor-title h2 { color: #202938; font-size: 16px; }
+.neotrack-camera-console .monitor-title p { color: #64748b; }
+.neotrack-camera-console .monitor-subbar { border-top-color: #e7ebf1; color: #526177; background: #f8fafc; backdrop-filter: none; }
+.neotrack-camera-console .camera-stage { background: #101216; }
+.neotrack-camera-console .selected-controls { border-color: var(--nt-border); border-radius: 8px; background: #fff; box-shadow: 0 3px 8px rgba(20,30,50,.06); }
+
+@media (max-width: 900px) {
+  .neotrack-camera-console .camera-page-heading { align-items: flex-start; }
+  .neotrack-camera-console .recorder-tabs { overflow-x: auto; }
+}
+
 @media (max-width: 900px) {
   .neotrack-report-workbench .report-filter-strip { grid-template-columns: 1fr; align-items: stretch; }
   .report-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }

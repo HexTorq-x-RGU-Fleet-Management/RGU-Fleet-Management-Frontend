@@ -181,6 +181,43 @@
 .directory-open { display: inline-flex; align-items: center; gap: 5px; color: var(--nt-primary); font-weight: 700; text-decoration: none; }
 .directory-open:hover { color: #611e72; text-decoration: underline; }
 
+/* NeoTrack live tracking structure, connected to stored RGU GPS observations. */
+.fleet-operations { padding-top: 2px; }
+.fleet-ops-heading { margin-bottom: 6px; }
+.fleet-ops-heading h1 { color: var(--nt-ink); font-size: 24px; }
+.fleet-ops-heading p { color: #64748b; font-size: 12px; }
+.neotrack-live-tracking { grid-template-columns: minmax(280px, 348px) minmax(0, 1fr); gap: 10px; }
+.tracking-mode-strip { grid-column: 1 / -1; display: flex; gap: 6px; min-height: 42px; padding: 5px; border: 1px solid var(--nt-border); border-radius: 7px; background: #fff; }
+.tracking-mode-strip > * { display: inline-flex; align-items: center; justify-content: center; min-height: 30px; padding: 0 18px; border: 0; border-radius: 5px; background: transparent; color: #59677c; font: inherit; font-size: 12px; font-weight: 700; text-decoration: none; cursor: pointer; }
+.tracking-mode-strip > [aria-selected='true'] { color: #1b202a; background: var(--nt-yellow); box-shadow: inset 0 0 0 1px #efae10; }
+.tracking-roster, .tracking-map-panel { border-color: var(--nt-border); border-radius: 8px; background: #fff; box-shadow: 0 3px 8px rgba(20,30,50,.06); }
+.tracking-status-tabs { display: flex; overflow-x: auto; border-bottom: 1px solid #e7ebf1; }
+.tracking-status-tabs button { flex: 0 0 auto; min-height: 43px; padding: 0 12px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: #64748b; font: inherit; font-size: 11px; font-weight: 700; cursor: pointer; }
+.tracking-status-tabs button.selected { color: #1f2937; border-bottom-color: var(--nt-primary); }
+.tracking-roster .fleet-ops-controls { padding: 10px; border-bottom: 1px solid #e7ebf1; }
+.tracking-roster .fleet-ops-bus-list { gap: 0; max-height: calc(100vh - 262px); padding: 0; }
+.tracking-roster .fleet-ops-bus-list button { gap: 10px; min-height: 92px; padding: 13px 12px; border: 0; border-bottom: 1px solid #eef1f5; border-radius: 0; background: #fff; }
+.tracking-roster .fleet-ops-bus-list button:hover { background: #fafbfc; }
+.tracking-roster .fleet-ops-bus-list button[aria-pressed='true'] { border-left: 3px solid var(--nt-primary); background: #fcf8fd; }
+.tracking-roster-copy { display: grid; min-width: 0; gap: 3px; }
+.tracking-roster-copy strong { color: #26354a; font-size: 13px; }
+.tracking-roster-copy small { font-size: 10px; }
+.tracking-roster-metrics { display: flex; align-items: center; gap: 4px; color: #64748b; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tracking-roster-metrics svg:nth-of-type(2) { margin-left: 7px; }
+.tracking-map-panel { min-height: min(720px, calc(100vh - 166px)); overflow: hidden; }
+.tracking-map-panel .fleet-ops-position-title { padding: 14px 16px; border-bottom: 1px solid #e7ebf1; }
+.tracking-map-kicker { display: block; margin-bottom: 3px; color: #7d2e8e; font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.tracking-map-panel .fleet-ops-position-title h2 { color: #202938; font-size: 18px; }
+.tracking-reading { padding: 9px 16px; color: #607087; font-size: 11px; border-bottom: 1px solid #e7ebf1; }
+.tracking-map-panel .fleet-map { margin: 0; border: 0; border-radius: 0; min-height: 500px; }
+
+@media (max-width: 850px) {
+  .neotrack-live-tracking { grid-template-columns: minmax(0, 1fr); }
+  .tracking-roster .fleet-ops-bus-list { max-height: 360px; }
+  .tracking-map-panel { min-height: 0; }
+  .tracking-map-panel .fleet-map { min-height: 360px; }
+}
+
 @media (max-width: 900px) { .dashboard-filter-strip { overflow-x: auto; } .dashboard-filter-strip button { flex: 0 0 auto; } .ops-card { min-height: auto; } .ops-chart { width: 180px; height: 180px; } .ops-totals { inset: 104px 0 auto; } }
 
 @media (max-width: 700px) {

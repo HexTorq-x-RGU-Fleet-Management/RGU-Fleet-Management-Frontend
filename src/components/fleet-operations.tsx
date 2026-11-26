@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowUpRight, BusFront, MapPin } from 'lucide-react';
+import { ArrowUpRight, BusFront, Gauge, MapPin, Route } from 'lucide-react';
 import { useEffect, useState, type FormEvent } from 'react';
 import { fleetApi } from '@/lib/api';
 import { gpsState, timeLabel, type Bus, type Vehicle } from '@/lib/fleet';
@@ -85,17 +85,50 @@ function Tracking({
     const status = gpsState(bus, vehicle, now);
     const searchable = [bus.busNumber, bus.registration, bus.routeName].join(' ').toLowerCase();
     return searchable.includes(query.trim().toLowerCase()) &&
-      (filter === 'all' || status === filter)
+      (filter === 'all' || status === filter || (filter === 'moving' && status === 'online' && (vehicle?.speed ?? 0) > 0))
       ? [{ bus, vehicle, status }]
       : [];
   });
+  const all = buses.map((bus) => ({
+    bus,
+    vehicle: bus.telemetryDeviceId ? byDevice.get(bus.telemetryDeviceId) : undefined,
+  }));
+  const statusCounts = all.reduce(
+    (counts, entry) => {
+      const status = gpsState(entry.bus, entry.vehicle, now);
+      counts[status] = (counts[status] ?? 0) + 1;
+      if ((entry.vehicle?.speed ?? 0) > 0 && status === 'online') counts.moving += 1;
+      return counts;
+    },
+    { online: 0, offline: 0, unmapped: 0, moving: 0 } as Record<string, number>,
+  );
   const selected = matching.find(({ bus }) => bus.id === selectedId) ?? matching[0];
   const vehicle = selected?.vehicle;
   const inBounds =
     vehicle && withinTamilNaduView(vehicle.location.latitude, vehicle.location.longitude);
   return (
-    <div className="fleet-ops-tracking">
-      <div className="fleet-ops-panel fleet-ops-picker">
+    <div className="fleet-ops-tracking neotrack-live-tracking">
+      <div className="tracking-mode-strip" role="tablist" aria-label="Tracking mode">
+        <button type="button" role="tab" aria-selected>Live</button>
+        <Link role="tab" href={selected ? busHref(selected.bus) + '&tab=journey' : '/buses'}>Journey history</Link>
+      </div>
+      <div className="fleet-ops-panel fleet-ops-picker tracking-roster">
+        <div className="tracking-status-tabs" role="group" aria-label="Vehicle status filter">
+          {[
+            ['all', `All ${buses.length}`],
+            ['online', `GPS online ${statusCounts.online}`],
+            ['moving', `Moving ${statusCounts.moving}`],
+            ['offline', `GPS offline ${statusCounts.offline}`],
+          ].map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              className={filter === value ? 'selected' : ''}
+              aria-pressed={filter === value}
+              onClick={() => setFilter(value)}
+            >{label}</button>
+          ))}
+        </div>
         <div className="fleet-ops-controls">
           <SearchInput value={query} onChange={setQuery} placeholder="Search buses or routes" />
           <select
@@ -110,35 +143,42 @@ function Tracking({
           </select>
         </div>
         <div className="fleet-ops-bus-list" data-lenis-prevent>
-          {matching.map(({ bus, status }) => (
+          {matching.map(({ bus, vehicle, status }) => (
             <button
               type="button"
               key={bus.id}
               aria-pressed={selected?.bus.id === bus.id}
               onClick={() => setSelectedId(bus.id)}
             >
-              <BusFront size={18} aria-hidden="true" />
-              <span>
+              <BusFront size={19} aria-hidden="true" />
+              <span className="tracking-roster-copy">
                 <strong>{bus.busNumber}</strong>
-                <small>{bus.registration}</small>
+                <small>{bus.registration} · {vehicle ? `Observed ${timeLabel(vehicle.gpsTime)} IST` : 'No GPS observation'}</small>
+                <span className="tracking-roster-metrics">
+                  <Route size={12} aria-hidden="true" /> {bus.routeName || 'Route not set'}
+                  <Gauge size={12} aria-hidden="true" /> {vehicle ? `${vehicle.speed.toFixed(0)} km/h` : '—'}
+                </span>
               </span>
-              <Badge tone={status === 'online' ? 'green' : 'neutral'}>{status}</Badge>
+              <Badge tone={status === 'online' ? 'green' : status === 'offline' ? 'red' : 'neutral'}>{status}</Badge>
             </button>
           ))}
           {!matching.length && <p role="status">No matching buses.</p>}
         </div>
       </div>
-      <div className="fleet-ops-panel fleet-ops-position">
+      <div className="fleet-ops-panel fleet-ops-position tracking-map-panel">
         {selected ? (
           <>
             <div className="fleet-ops-position-title">
-              <h2>Bus {selected.bus.busNumber}</h2>
+              <div>
+                <span className="tracking-map-kicker">Live vehicle position</span>
+                <h2>{selected.bus.busNumber}</h2>
+              </div>
               <Link href={busHref(selected.bus) + '&tab=journey'}>
                 Journey history <ArrowUpRight size={15} />
               </Link>
             </div>
             {vehicle && (
-              <div className="fleet-ops-reading">
+              <div className="fleet-ops-reading tracking-reading">
                 <span>Observed {timeLabel(vehicle.gpsTime)} IST</span>
                 <span>{vehicle.speed.toFixed(1)} km/h</span>
                 <span>

@@ -253,11 +253,11 @@ export function Settings() {
     }
   }
   return (
-    <div className="workspace-settings">
+    <div className="workspace-settings neotrack-settings-workspace">
       <PageHeading
-        eyebrow="WORKSPACE SETTINGS"
-        title="Your workspace, your way."
-        description="Manage provider access and your saved viewing preferences."
+        eyebrow="WORKSPACE"
+        title="Settings"
+        description="Configure access, recording policy, telemetry and workspace preferences."
       >
         <span className="settings-workspace-tag">
           <SettingsIcon size={15} /> Workspace controls

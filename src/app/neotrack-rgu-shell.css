@@ -400,6 +400,68 @@
 .activity-table-footer .btn { min-height: 32px; border-radius: 5px; font-size: 10px; }
 .activity-empty { margin: 28px; }
 
+/* NeoTrack management settings shell; all settings controls remain the RGU implementations. */
+.neotrack-settings-workspace { display: grid; gap: 14px; }
+.neotrack-settings-workspace .page-heading { min-height: 58px; padding: 2px 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.neotrack-settings-workspace .page-heading .eyebrow { display: none; }
+.neotrack-settings-workspace .page-heading h1 { color: var(--nt-ink); font-size: 24px; letter-spacing: -.03em; }
+.neotrack-settings-workspace .page-heading .page-description { margin-top: 4px; color: #64748b; font-size: 12px; }
+.neotrack-settings-workspace .settings-workspace-tag { display: none; }
+.neotrack-settings-workspace .settings-layout { grid-template-columns: minmax(214px, 250px) minmax(0, 1fr); gap: 14px; align-items: start; margin: 0; }
+.neotrack-settings-workspace .settings-tabs { position: sticky; top: 84px; display: grid; gap: 3px; padding: 7px; border: 1px solid var(--nt-border); border-radius: 8px; background: #fff; box-shadow: 0 3px 8px rgba(20,30,50,.06); }
+.neotrack-settings-workspace .settings-tabs button { display: grid; grid-template-columns: 30px 1fr 14px; gap: 8px; min-height: 55px; padding: 8px; border: 0; border-radius: 6px; color: #526177; background: transparent; text-align: left; box-shadow: none; }
+.neotrack-settings-workspace .settings-tabs button:hover { color: #202938; background: #f7f9fb; transform: none; }
+.neotrack-settings-workspace .settings-tabs button.active { color: #1d212b; background: #fff2bd; box-shadow: inset 0 0 0 1px #f1ce60; }
+.neotrack-settings-workspace .settings-tabs button.active::before { display: none; }
+.neotrack-settings-workspace .settings-tab-icon { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; color: #6c2d7c; border: 1px solid #e7d0eb; border-radius: 6px; background: #fbf5fc; }
+.neotrack-settings-workspace .settings-tabs button.active .settings-tab-icon { color: #4c1b57; border-color: #e3bd55; background: #fff8dc; }
+.neotrack-settings-workspace .settings-tab-copy { display: grid; gap: 2px; min-width: 0; align-content: center; }
+.neotrack-settings-workspace .settings-tab-copy strong { color: inherit; font-size: 11px; }
+.neotrack-settings-workspace .settings-tab-copy small { overflow: hidden; color: #78859a; text-overflow: ellipsis; font-size: 9px; white-space: nowrap; }
+.neotrack-settings-workspace .settings-tab-arrow { align-self: center; color: #9aa6b7; }
+.neotrack-settings-workspace .settings-content { min-width: 0; }
+.neotrack-settings-workspace .settings-panel { padding: 0; overflow: hidden; border: 1px solid var(--nt-border); border-radius: 8px; background: #fff; box-shadow: 0 3px 8px rgba(20,30,50,.06); }
+.neotrack-settings-workspace .settings-section-header { min-height: 84px; padding: 19px 20px; border-bottom: 1px solid #e8edf3; background: #fff; }
+.neotrack-settings-workspace .settings-section-icon { width: 37px; height: 37px; color: #642875; border: 1px solid #e5cae9; border-radius: 7px; background: #fbf4fc; }
+.neotrack-settings-workspace .settings-section-header h2 { color: #202938; font-size: 20px; letter-spacing: -.025em; }
+.neotrack-settings-workspace .settings-section-header p { color: #69778c; font-size: 12px; }
+.neotrack-settings-workspace .settings-section-header .badge { margin-left: auto; }
+.neotrack-settings-workspace .settings-connection-summary { margin: 18px 20px 0; padding: 14px; border: 1px solid #e4e9f0; border-radius: 7px; background: #f8fafc; }
+.neotrack-settings-workspace .settings-connection-symbol { width: 36px; height: 36px; border: 1px solid #d8e2ee; border-radius: 7px; color: #5d296c; background: #fff; }
+.neotrack-settings-workspace .settings-connection-summary small { color: #69778c; font-size: 9px; letter-spacing: .06em; }
+.neotrack-settings-workspace .settings-connection-summary strong { color: #202938; font-size: 13px; }
+.neotrack-settings-workspace .settings-connection-summary p { color: #64748b; font-size: 11px; }
+.neotrack-settings-workspace .settings-groups { padding: 6px 20px 0; }
+.neotrack-settings-workspace .settings-group { padding: 17px 0; border-bottom-color: #e9edf2; }
+.neotrack-settings-workspace .settings-group-heading { gap: 10px; }
+.neotrack-settings-workspace .settings-group-heading > svg { color: #642875; }
+.neotrack-settings-workspace h3 { color: #26354a; font-size: 13px; }
+.neotrack-settings-workspace .settings-group-heading p, .neotrack-settings-workspace .settings-subsection-heading p { color: #69778c; font-size: 11px; }
+.neotrack-settings-workspace .settings-group-controls { gap: 8px; }
+.neotrack-settings-workspace .settings-group-controls .btn, .neotrack-settings-workspace .settings-source-actions .btn, .neotrack-settings-workspace .settings-refresh { min-height: 34px; border-radius: 6px; font-size: 11px; }
+.neotrack-settings-workspace .settings-choices { gap: 6px; }
+.neotrack-settings-workspace .settings-choice { min-height: 62px; border-color: #dfe5ed; border-radius: 7px; background: #fff; box-shadow: none; }
+.neotrack-settings-workspace .settings-choice:hover { border-color: #ccd5e1; background: #fbfcfe; transform: none; }
+.neotrack-settings-workspace .settings-choice.active { border-color: #e4bd57; background: #fff9e6; box-shadow: inset 0 0 0 1px #f0ce68; }
+.neotrack-settings-workspace .settings-choice-content strong { color: #29374b; font-size: 11px; }
+.neotrack-settings-workspace .settings-choice-content small { color: #718097; font-size: 10px; }
+.neotrack-settings-workspace .settings-choice-check { color: #4f2060; background: #f5dd83; }
+.neotrack-settings-workspace .settings-note { margin: 16px 20px 20px; padding: 11px 12px; border: 1px solid #e3e8ef; border-radius: 7px; color: #617087; background: #f8fafc; font-size: 11px; }
+.neotrack-settings-workspace .settings-note svg { color: #642875; }
+.neotrack-settings-workspace .settings-storage-stats { padding: 18px 20px; gap: 10px; }
+.neotrack-settings-workspace .settings-storage-stats > div, .neotrack-settings-workspace .settings-capacity { border-color: #e2e8ef; border-radius: 7px; background: #fff; box-shadow: none; }
+.neotrack-settings-workspace .settings-storage-stats span, .neotrack-settings-workspace .settings-storage-stats small { color: #69778c; font-size: 10px; }
+.neotrack-settings-workspace .settings-storage-stats strong { color: #202938; }
+.neotrack-settings-workspace .settings-subsection { margin: 18px 20px 0; padding: 16px; border: 1px solid #e2e8ef; border-radius: 8px; background: #fff; }
+.neotrack-settings-workspace .settings-subsection-heading > span { color: #642875; border-color: #e4c9e9; background: #fbf4fc; }
+.neotrack-settings-workspace .settings-telemetry-form { padding: 0; border: 0; background: transparent; }
+.neotrack-settings-workspace .settings-list-row { border-color: #e7ebf1; border-radius: 7px; background: #fbfcfe; }
+.neotrack-settings-workspace .settings-source-icon { color: #642875; border-color: #e3c9e8; background: #fbf3fc; }
+.neotrack-settings-workspace .settings-source-copy strong { color: #253349; }
+.neotrack-settings-workspace .settings-source-copy small { color: #6d7b90; }
+.neotrack-settings-workspace .settings-security-summary, .neotrack-settings-workspace .settings-signout { margin-inline: 20px; border-color: #e1e7ee; border-radius: 7px; background: #f8fafc; }
+.neotrack-settings-workspace .settings-password-form { padding: 18px 20px; }
+
 @media (max-width: 700px) {
   .recordings-library-toolbar { align-items: stretch; flex-direction: column; }
   .recordings-library-toolbar .search-input { width: 100%; }
@@ -411,6 +473,12 @@
   .activity-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .neotrack-activity-controls, .activity-table-footer { align-items: stretch; flex-direction: column; }
   .activity-table-footer > div { justify-content: space-between; }
+}
+
+@media (max-width: 900px) {
+  .neotrack-settings-workspace .settings-layout { grid-template-columns: 1fr; }
+  .neotrack-settings-workspace .settings-tabs { position: static; display: flex; overflow-x: auto; }
+  .neotrack-settings-workspace .settings-tabs button { flex: 0 0 190px; }
 }
 
 @media (max-width: 900px) {

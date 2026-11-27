@@ -29,7 +29,7 @@ export function SessionGate({ children }: { children: ReactNode }) {
 
   if (user.mustChangePassword)
     return (
-      <main className="fleet-no-data">
+      <main className="fleet-no-data neotrack-password-reset">
         <h1>Set your own password</h1>
         <p>
           Your administrator issued a temporary password. Change it before entering the workspace.

@@ -560,6 +560,38 @@
 .neotrack-password-reset form .btn { min-height: 40px; border-radius: 6px; }
 .neotrack-password-reset > .btn { margin-top: 12px; justify-self: start; }
 
+/* NeoTrack recorder inventory, driven by Hik-Connect and SDK readiness data. */
+.neotrack-recorder-library { display: grid; gap: 14px; }
+.neotrack-recorder-library .page-heading { min-height: 58px; padding: 2px 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.neotrack-recorder-library .page-heading .eyebrow { display: none; }
+.neotrack-recorder-library .page-heading h1 { color: var(--nt-ink); font-size: 24px; letter-spacing: -.03em; }
+.neotrack-recorder-library .page-heading .page-description { margin-top: 4px; color: #64748b; font-size: 12px; }
+.neotrack-recorder-library .page-heading .btn { min-height: 34px; border-radius: 6px; font-size: 11px; }
+.neotrack-recorder-library .stats-grid { gap: 10px; }
+.neotrack-recorder-library .stat-card { min-height: 88px; padding: 14px; border: 1px solid var(--nt-border); border-radius: 8px; background: #fff; box-shadow: 0 3px 8px rgba(20,30,50,.05); }
+.neotrack-recorder-library .stat-card::before { display: none; }
+.neotrack-recorder-library .stat-card:hover { transform: none; border-color: #d1dae5; }
+.neotrack-recorder-library .stat-top { color: #69778c; font-size: 10px; }
+.neotrack-recorder-library .stat-top svg { color: #642875; }
+.neotrack-recorder-library .stat-value { color: #202938; font-size: 24px; }
+.neotrack-recorder-library .library-tools { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px; border: 1px solid var(--nt-border); border-radius: 7px; background: #fff; box-shadow: 0 3px 8px rgba(20,30,50,.05); }
+.neotrack-recorder-library .segmented { gap: 4px; padding: 0; border: 0; background: transparent; }
+.neotrack-recorder-library .segmented button { min-height: 30px; padding: 0 10px; border: 0; border-radius: 5px; color: #5d6a7d; background: transparent; font-size: 10px; }
+.neotrack-recorder-library .segmented button.selected { color: #181b22; border: 0; background: #fff2bd; box-shadow: inset 0 0 0 1px #f2ce5f; }
+.neotrack-recorder-library .library-tools .text-link { color: #5d206b; font-size: 11px; font-weight: 700; }
+.neotrack-recorder-library .recorder-grid { gap: 12px; }
+.neotrack-recorder-library .recorder-card { border-color: var(--nt-border); border-radius: 8px; background: #fff; box-shadow: 0 3px 8px rgba(20,30,50,.06); }
+.neotrack-recorder-library .recorder-card:hover { transform: none; border-color: #ccd5e1; box-shadow: 0 6px 16px rgba(20,30,50,.07); }
+.neotrack-recorder-library .recorder-preview { min-height: 164px; background: #171920; }
+.neotrack-recorder-library .recorder-preview-meta { top: 10px; right: 10px; border-color: rgba(255,255,255,.22); border-radius: 5px; background: rgba(14,18,25,.75); font-size: 10px; }
+.neotrack-recorder-library .preview-arrow { width: 32px; height: 32px; right: 10px; bottom: 10px; border-radius: 6px; color: #25202a; background: #fff2bd; }
+.neotrack-recorder-library .recorder-card-body { padding: 14px; }
+.neotrack-recorder-library .recorder-title a { color: #202938; font-size: 14px; }
+.neotrack-recorder-library .recorder-location, .neotrack-recorder-library .small.muted { color: #69778c; font-size: 11px; }
+.neotrack-recorder-library .recorder-card-bottom { margin-top: 13px; padding-top: 11px; border-top: 1px solid #edf0f4; }
+.neotrack-recorder-library .recorder-card-bottom > .badge { border-radius: 5px; font-size: 10px; }
+.neotrack-recorder-library .recorder-card-bottom > span:last-child { color: #526177; font-size: 10px; }
+
 @media (max-width: 700px) {
   .recordings-library-toolbar { align-items: stretch; flex-direction: column; }
   .recordings-library-toolbar .search-input { width: 100%; }
@@ -591,6 +623,12 @@
 @media (max-width: 520px) {
   .neotrack-auth-screen .auth-capabilities { grid-template-columns: 1fr; }
   .neotrack-auth-screen .auth-heading-rule { min-height: 102px; }
+}
+
+@media (max-width: 700px) {
+  .neotrack-recorder-library .library-tools { align-items: stretch; flex-direction: column; }
+  .neotrack-recorder-library .segmented { overflow-x: auto; }
+  .neotrack-recorder-library .segmented button { flex: 0 0 auto; }
 }
 
 @media (max-width: 900px) {

@@ -19,11 +19,11 @@ export function RecorderLibrary() {
         (filter === 'favourites' && state.favorites.includes(r.id)),
     );
   return (
-    <div>
+    <div className="neotrack-recorder-library">
       <PageHeading
-        eyebrow="CAMERA HARDWARE"
-        title="Recorder library"
-        description="Real owned and shared Hik-Connect recorders. Import them before mapping buses."
+        eyebrow="CAMERA OPERATIONS"
+        title="Recorders"
+        description="Owned and shared Hik-Connect recorders available to this workspace."
       >
         <Button
           loading={busy}

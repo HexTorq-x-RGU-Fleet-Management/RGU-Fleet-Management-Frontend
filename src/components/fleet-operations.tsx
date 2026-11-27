@@ -348,6 +348,7 @@ function Reports({ buses }: { buses: Bus[] }) {
   }>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [page, setPage] = useState(1);
   const mapped = buses.filter((bus) => bus.telemetryDeviceId);
   const currentId = mapped.some((bus) => bus.id === busId) ? busId : (mapped[0]?.id ?? '');
   const result = report?.busId === currentId && report.date === date ? report : undefined;
@@ -359,6 +360,7 @@ function Reports({ buses }: { buses: Bus[] }) {
     setLoading(true);
     setError('');
     setReport(undefined);
+    setPage(1);
     try {
       const data = await fleetApi.history(currentId, from, to);
       setReport({ data, from, to, date, busId: currentId });
@@ -373,6 +375,11 @@ function Reports({ buses }: { buses: Bus[] }) {
         .filter(({ gpsTime }) => gpsTime >= result.from && gpsTime <= result.to)
         .sort((a, b) => a.gpsTime - b.gpsTime)
     : [];
+  const pageSize = 50;
+  const totalPages = Math.max(1, Math.ceil(samples.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const pageStart = (currentPage - 1) * pageSize;
+  const visibleSamples = samples.slice(pageStart, pageStart + pageSize);
   function downloadCsv() {
     if (!result) return;
     const quote = (value: string | number | null | undefined) =>
@@ -495,7 +502,7 @@ function Reports({ buses }: { buses: Bus[] }) {
                 </tr>
               </thead>
               <tbody>
-                {samples.map((sample) => (
+                {visibleSamples.map((sample) => (
                   <tr key={sample.gpsTime}>
                     <td>{timeLabel(sample.gpsTime)}</td>
                     <td>
@@ -517,6 +524,22 @@ function Reports({ buses }: { buses: Bus[] }) {
               </tbody>
             </table>
           </div>
+          {samples.length > 0 && (
+            <div className="report-pagination" aria-label="Report pages">
+              <span>
+                Showing {pageStart + 1}–{Math.min(pageStart + pageSize, samples.length)} of {samples.length}
+              </span>
+              <div>
+                <Button type="button" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}>
+                  Previous
+                </Button>
+                <strong>Page {currentPage} of {totalPages}</strong>
+                <Button type="button" disabled={currentPage === totalPages} onClick={() => setPage(currentPage + 1)}>
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>

@@ -737,6 +737,21 @@
   font-size: 11px;
 }
 
+.neotrack-report-workbench .report-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 20px;
+  border-top: 1px solid #e8edf3;
+  color: #69778c;
+  font-size: 11px;
+}
+
+.neotrack-report-workbench .report-pagination > div { display: inline-flex; align-items: center; gap: 8px; }
+.neotrack-report-workbench .report-pagination .btn { min-height: 30px; padding: 0 10px; border-radius: 5px; font-size: 10px; }
+.neotrack-report-workbench .report-pagination strong { color: #334155; font-size: 10px; }
+
 @keyframes rgu-route-progress {
   from { transform: translateX(-110%); }
   to { transform: translateX(365%); }
@@ -758,6 +773,7 @@
 
   .global-search { min-width: 38px; width: 38px; padding: 0; justify-content: center; }
   .global-search span, .global-search kbd { display: none; }
+  .neotrack-report-workbench .report-pagination { align-items: flex-start; flex-direction: column; }
 }
 
 @media (max-width: 900px) {

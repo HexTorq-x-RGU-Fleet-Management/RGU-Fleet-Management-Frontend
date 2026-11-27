@@ -205,10 +205,12 @@ export function SearchInput({
   value,
   onChange,
   placeholder = 'Search',
+  autoFocus = false,
 }: {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
+  autoFocus?: boolean;
 }) {
   return (
     <div className="search-input">
@@ -216,6 +218,7 @@ export function SearchInput({
       <input
         className="search-input-field"
         aria-label={placeholder}
+        autoFocus={autoFocus}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}

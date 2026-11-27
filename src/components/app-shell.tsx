@@ -480,7 +480,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </div>
       <Modal
         open={search}
-        onOpenChange={setSearch}
+        onOpenChange={(open) => {
+          setSearch(open);
+          if (!open) setQuery('');
+        }}
         title="Find your next view"
         description="Search your permitted buses and recorders."
       >
@@ -488,6 +491,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           value={query}
           onChange={setQuery}
           placeholder="Search cameras, pages or locations"
+          autoFocus
         />
         <div className="command-results">
           {commandMatches.map((entry) => (

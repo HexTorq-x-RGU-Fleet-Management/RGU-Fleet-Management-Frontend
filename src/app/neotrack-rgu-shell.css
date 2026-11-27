@@ -462,6 +462,51 @@
 .neotrack-settings-workspace .settings-security-summary, .neotrack-settings-workspace .settings-signout { margin-inline: 20px; border-color: #e1e7ee; border-radius: 7px; background: #f8fafc; }
 .neotrack-settings-workspace .settings-password-form { padding: 18px 20px; }
 
+/* NeoTrack platform administration and health workspaces. */
+.neotrack-platform-workspace, .neotrack-platform-health { gap: 14px; }
+.neotrack-platform-workspace .pure-site-hud, .neotrack-platform-health .pure-site-hud { display: none; }
+.neotrack-platform-workspace .page-heading, .neotrack-platform-health .page-heading { min-height: 58px; padding: 2px 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.neotrack-platform-workspace .page-heading .eyebrow, .neotrack-platform-health .page-heading .eyebrow { display: none; }
+.neotrack-platform-workspace .page-heading h1, .neotrack-platform-health .page-heading h1 { color: var(--nt-ink); font-size: 24px; letter-spacing: -.03em; }
+.neotrack-platform-workspace .page-heading .page-description, .neotrack-platform-health .page-heading .page-description { margin-top: 4px; color: #64748b; font-size: 12px; }
+.neotrack-platform-workspace .page-heading .btn, .neotrack-platform-workspace .page-heading .icon-button, .neotrack-platform-health .page-heading .btn, .neotrack-platform-health .page-heading .icon-button { min-height: 34px; border-radius: 6px; font-size: 11px; }
+.neotrack-platform-workspace .admin-bento-grid, .neotrack-platform-health .admin-bento-grid { gap: 10px; }
+.neotrack-platform-workspace .admin-metric-card, .neotrack-platform-health .admin-metric-card { min-height: 110px; padding: 15px; border-color: var(--nt-border); border-radius: 8px; background: #fff; box-shadow: 0 3px 8px rgba(20,30,50,.05); }
+.neotrack-platform-workspace .admin-metric-card::before, .neotrack-platform-health .admin-metric-card::before { display: none; }
+.neotrack-platform-workspace .admin-metric-card:hover, .neotrack-platform-health .admin-metric-card:hover { transform: none; border-color: #d1dae5; box-shadow: 0 5px 12px rgba(20,30,50,.07); }
+.neotrack-platform-workspace .admin-metric-top, .neotrack-platform-health .admin-metric-top { color: #69778c; font-size: 10px; }
+.neotrack-platform-workspace .admin-metric-icon, .neotrack-platform-health .admin-metric-icon { width: 30px; height: 30px; color: #642875; border: 1px solid #e4c9e9; border-radius: 6px; background: #fbf4fc; }
+.neotrack-platform-workspace .admin-metric-value, .neotrack-platform-health .admin-metric-value { color: #202938; font-size: 24px; }
+.neotrack-platform-workspace .admin-metric-subtext, .neotrack-platform-health .admin-metric-subtext { color: #6c7a8f; font-size: 10px; }
+.neotrack-platform-workspace .admin-toolbar-deck { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 8px; border: 1px solid var(--nt-border); border-radius: 7px; background: #fff; box-shadow: 0 3px 8px rgba(20,30,50,.05); }
+.neotrack-platform-workspace .admin-filter-pills { gap: 4px; padding: 0; background: transparent; }
+.neotrack-platform-workspace .admin-filter-pill { min-height: 30px; padding: 0 10px; border: 0; border-radius: 5px; color: #5d6a7d; background: transparent; font-size: 10px; }
+.neotrack-platform-workspace .admin-filter-pill.active { color: #181b22; background: #fff2bd; box-shadow: inset 0 0 0 1px #f2ce5f; }
+.neotrack-platform-workspace .admin-card-container, .neotrack-platform-health .admin-card-container { overflow: hidden; padding: 0 !important; border: 1px solid var(--nt-border); border-radius: 8px; background: #fff; box-shadow: 0 3px 8px rgba(20,30,50,.06); }
+.neotrack-platform-workspace .admin-workspace-card { display: grid; grid-template-columns: auto minmax(190px, 1fr) auto minmax(190px, auto); align-items: center; gap: 14px; min-height: 78px; padding: 12px 16px; border: 0; border-bottom: 1px solid #edf0f4; border-radius: 0; background: #fff; box-shadow: none; }
+.neotrack-platform-workspace .admin-workspace-card:last-child { border-bottom: 0; }
+.neotrack-platform-workspace .admin-workspace-card:hover { transform: none; background: #fbfcfe; box-shadow: none; }
+.neotrack-platform-workspace .activity-serial-badge { align-self: center; border-color: #dfe5ec; color: #69778c; background: #f7f9fb; }
+.neotrack-platform-workspace .admin-avatar-ring { width: 35px; height: 35px; color: #5d206b; border-color: #e2c8e7; background: #f9f2fb; box-shadow: none; font-size: 11px; }
+.neotrack-platform-workspace .admin-workspace-text strong { color: #202938; font-size: 12px; }
+.neotrack-platform-workspace .admin-workspace-text span { color: #6b7890; font-size: 11px; }
+.neotrack-platform-workspace .status-indicator-pill { min-height: 26px; padding: 0 8px; border-radius: 5px; font-size: 10px; text-transform: capitalize; }
+.neotrack-platform-workspace .admin-action-bar { justify-content: flex-end; gap: 6px; }
+.neotrack-platform-workspace .admin-action-bar .btn { min-height: 31px; padding-inline: 9px; border-radius: 5px; font-size: 10px; }
+.neotrack-platform-workspace .activity-pagination-deck { min-height: 58px; padding: 12px 16px; border-color: var(--nt-border); border-radius: 8px; background: #fff; box-shadow: 0 3px 8px rgba(20,30,50,.05); }
+.neotrack-platform-workspace .activity-pagination-controls .btn { min-height: 31px; border-radius: 5px; font-size: 10px; }
+.neotrack-platform-health .admin-card-container.p-6 { padding: 18px 20px !important; }
+.neotrack-platform-health .admin-panel-title { display: block; color: #202938; font-size: 18px; }
+.neotrack-platform-health .admin-panel-subtitle { display: block; margin-top: 4px; color: #69778c; font-size: 12px; }
+.neotrack-platform-health .admin-health-alert-item { padding: 13px; border-color: #e3e8ef; border-radius: 7px; background: #fbfcfe; }
+.neotrack-platform-health .admin-health-alert-item:hover { transform: none; }
+.neotrack-platform-health .rto-badge-icon { border-radius: 7px; box-shadow: none; }
+.neotrack-platform-health .admin-alert-title { color: #253349; font-size: 13px; }
+.neotrack-platform-health .admin-alert-meta, .neotrack-platform-health .admin-alert-timestamp { color: #6c7a8f; font-size: 11px; }
+.neotrack-platform-health .admin-health-nominal-card { padding: 34px 20px; border: 1px dashed #d7e1d9; border-radius: 8px; background: #f7fcf8; }
+.neotrack-platform-health .admin-health-nominal-card h3 { color: #277447; font-size: 17px; }
+.neotrack-platform-health .admin-health-nominal-card p { color: #58705f; font-size: 12px; }
+
 @media (max-width: 700px) {
   .recordings-library-toolbar { align-items: stretch; flex-direction: column; }
   .recordings-library-toolbar .search-input { width: 100%; }
@@ -479,6 +524,12 @@
   .neotrack-settings-workspace .settings-layout { grid-template-columns: 1fr; }
   .neotrack-settings-workspace .settings-tabs { position: static; display: flex; overflow-x: auto; }
   .neotrack-settings-workspace .settings-tabs button { flex: 0 0 190px; }
+}
+
+@media (max-width: 900px) {
+  .neotrack-platform-workspace .admin-workspace-card { grid-template-columns: auto minmax(0, 1fr); }
+  .neotrack-platform-workspace .admin-workspace-status, .neotrack-platform-workspace .admin-action-bar { grid-column: 2; justify-content: flex-start; }
+  .neotrack-platform-workspace .admin-toolbar-deck { align-items: stretch; flex-direction: column; }
 }
 
 @media (max-width: 900px) {

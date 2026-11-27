@@ -117,7 +117,7 @@ export function Platform() {
   // If viewer is a workspace admin (not superadmin), present the Executive Workspace & RTO Command Center
   if (user?.role !== 'superadmin') {
     return (
-      <div className={`admin-command-deck ${pureSite ? 'pure-site-active' : ''}`}>
+      <div className={`admin-command-deck neotrack-platform-workspace ${pureSite ? 'pure-site-active' : ''}`}>
         {pureSite && (
           <div className="pure-site-hud">
             <div className="pure-site-hud-left">
@@ -262,7 +262,7 @@ export function Platform() {
 
   // Superadmin Multi-Tenant Platform View
   return (
-    <div className={`admin-command-deck ${pureSite ? 'pure-site-active' : ''}`}>
+    <div className={`admin-command-deck neotrack-platform-workspace ${pureSite ? 'pure-site-active' : ''}`}>
       {/* Pure Site HUD Banner */}
       {pureSite && (
         <div className="pure-site-hud">
@@ -692,7 +692,7 @@ export function Health() {
   const isStorageWarning = storageUsedPercent > 80;
 
   return (
-    <div className={`admin-command-deck ${pureSite ? 'pure-site-active' : ''}`}>
+    <div className={`admin-command-deck neotrack-platform-health ${pureSite ? 'pure-site-active' : ''}`}>
       {/* Pure Site HUD Banner */}
       {pureSite && (
         <div className="pure-site-hud">

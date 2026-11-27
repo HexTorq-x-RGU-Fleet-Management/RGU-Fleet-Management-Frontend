@@ -166,6 +166,26 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       } as Record<string, string>
     )[path] ||
     'Workspace';
+  const commandEntries = [
+    ...[...list, ...fleetNavigation].map((link) => ({
+      title: link.label,
+      subtitle: 'Workspace page',
+      href: link.href,
+    })),
+    ...state.buses.map((bus) => ({
+      title: bus.busNumber,
+      subtitle: bus.registration,
+      href: '/buses?bus=' + bus.id,
+    })),
+    ...state.recorders.map((recorder) => ({
+      title: recorder.name,
+      subtitle: recorder.location,
+      href: '/cameras?recorder=' + encodeURIComponent(recorder.id),
+    })),
+  ];
+  const commandMatches = commandEntries.filter((entry) =>
+    (entry.title + entry.subtitle).toLowerCase().includes(query.toLowerCase()),
+  );
   function toggle() {
     setCollapsed(!collapsed);
     try {
@@ -405,7 +425,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 {currentTime}
               </span>
             )}
-            <button className="global-search" onClick={() => setSearch(true)}>
+            <button
+              className="global-search"
+              type="button"
+              aria-haspopup="dialog"
+              onClick={() => setSearch(true)}
+            >
               <Search size={15} />
               <span>Search anything...</span>
               <kbd>
@@ -465,41 +490,26 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           placeholder="Search cameras, pages or locations"
         />
         <div className="command-results">
-          {[
-            ...[...list, ...fleetNavigation].map((l) => ({
-              title: l.label,
-              subtitle: 'Workspace page',
-              href: l.href,
-            })),
-            ...state.buses.map((b) => ({
-              title: b.busNumber,
-              subtitle: b.registration,
-              href: '/buses?bus=' + b.id,
-            })),
-            ...state.recorders.map((r) => ({
-              title: r.name,
-              subtitle: r.location,
-              href: '/cameras?recorder=' + encodeURIComponent(r.id),
-            })),
-          ]
-            .filter((l) => (l.title + l.subtitle).toLowerCase().includes(query.toLowerCase()))
-            .map((l) => (
-              <button
-                key={l.href}
-                onClick={() => {
-                  setSearch(false);
-                  setQuery('');
-                  nav(l.href);
-                }}
-              >
-                <Search size={16} />
-                <span>
-                  <strong>{l.title}</strong>
-                  <small>{l.subtitle}</small>
-                </span>
-                <ArrowUpRight size={15} />
-              </button>
-            ))}
+          {commandMatches.map((entry) => (
+            <button
+              key={entry.href}
+              onClick={() => {
+                setSearch(false);
+                setQuery('');
+                nav(entry.href);
+              }}
+            >
+              <Search size={16} />
+              <span>
+                <strong>{entry.title}</strong>
+                <small>{entry.subtitle}</small>
+              </span>
+              <ArrowUpRight size={15} />
+            </button>
+          ))}
+          {commandMatches.length === 0 && (
+            <p className="command-empty">No permitted page, bus or recorder matches “{query}”.</p>
+          )}
         </div>
       </Modal>
       <Modal
@@ -508,8 +518,33 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         title="Notifications"
         description="Speed-limit alerts from the last 24 hours."
       >
-        {speedAlerts.length > 0 ? (
+        {(cameraAttention || speedAlerts.length > 0) ? (
           <div className="notification-list" role="list">
+            {cameraAttention && (
+              <button
+                className="notification-card notification-connection-card"
+                role="listitem"
+                onClick={() => {
+                  setNotifications(false);
+                  nav('/settings');
+                }}
+              >
+                <Cctv size={18} />
+                <span>
+                  <strong>
+                    {provider?.needsReconnect
+                      ? 'Hik-Connect reconnection required'
+                      : 'Camera playback authorization required'}
+                  </strong>
+                  <p>
+                    {provider?.needsReconnect
+                      ? 'Reconnect the saved provider account before opening cameras.'
+                      : 'Import or renew iVMS playback authorization before opening cameras.'}
+                  </p>
+                  <small>Open account settings</small>
+                </span>
+              </button>
+            )}
             {speedAlerts.map((alert) => (
               <button
                 key={alert.id}

@@ -687,6 +687,22 @@
 
 .camera-hub-tabs a svg { color: #642875; }
 
+/* Shared operational controls: real search and attention items are available
+   from every workspace view, rather than being hidden behind page navigation. */
+.global-search {
+  display: inline-flex;
+  align-items: center;
+  min-width: 230px;
+  color: #5d6a7d;
+  background: #f7f8fa;
+  border-color: #dce3ec;
+}
+
+.global-search:hover { color: #202938; background: #fff; border-color: #cbd5e1; }
+.command-empty { margin: 0; padding: 16px 10px; color: #69778c; font-size: 12px; text-align: center; }
+.notification-connection-card > svg { color: #b7791f; }
+.notification-connection-card { background: #fffaf0; }
+
 @media (max-width: 700px) {
   .camera-hub-tabs {
     display: flex;
@@ -696,6 +712,9 @@
   }
 
   .camera-hub-tabs a { flex: 0 0 auto; }
+
+  .global-search { min-width: 38px; width: 38px; padding: 0; justify-content: center; }
+  .global-search span, .global-search kbd { display: none; }
 }
 
 @media (max-width: 900px) {

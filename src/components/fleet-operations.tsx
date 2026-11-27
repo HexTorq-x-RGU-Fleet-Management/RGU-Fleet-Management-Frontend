@@ -286,8 +286,9 @@ function Directory({ buses, view }: { buses: Bus[]; view: 'drivers' | 'routes' }
               {drivers && <th scope="col">Phone</th>}
               <th scope="col">{drivers ? 'Assigned bus' : 'Assigned buses'}</th>
               <th scope="col">{drivers ? 'Registration' : 'Drivers'}</th>
-              <th scope="col">{drivers ? 'Actions' : 'Recorders'}</th>
-              <th scope="col">{drivers ? 'Route' : 'Actions'}</th>
+              <th scope="col">{drivers ? 'Actions' : 'GPS mapped'}</th>
+              <th scope="col">{drivers ? 'Route' : 'Recorders'}</th>
+              {!drivers && <th scope="col">Actions</th>}
             </tr>
           </thead>
           <tbody>
@@ -318,13 +319,14 @@ function Directory({ buses, view }: { buses: Bus[]; view: 'drivers' | 'routes' }
                 <td>{route}</td>
                 <td>{assigned.map((bus) => bus.busNumber).join(', ')}</td>
                 <td>{assigned.map((bus) => bus.driverName || 'Unassigned').join(', ')}</td>
+                <td>{assigned.filter((bus) => bus.telemetryDeviceId).length} mapped</td>
                 <td>{assigned.filter((bus) => bus.recorderId).length} mapped</td>
                 <td><Link className="directory-open" href={busHref(assigned[0])}>Open bus <ArrowUpRight size={14} aria-hidden="true" /></Link></td>
               </tr>
             ))}
             {!(drivers ? driverGroups.length : routeGroups.length) && (
               <tr>
-                <td colSpan={drivers ? 6 : 5}>No matching {drivers ? 'driver' : 'route'} assignments.</td>
+                <td colSpan={6}>No matching {drivers ? 'driver' : 'route'} assignments.</td>
               </tr>
             )}
           </tbody>

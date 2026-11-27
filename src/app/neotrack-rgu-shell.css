@@ -221,7 +221,7 @@
 .neotrack-directory .search-input { width: min(390px, 100%); }
 .directory-result-count { color: #64748b; font-size: 12px; }
 .neotrack-directory .fleet-ops-table { border-top: 1px solid #e8edf3; }
-.neotrack-directory .fleet-ops-table table { min-width: 850px; }
+.neotrack-directory .fleet-ops-table table { min-width: 940px; }
 .neotrack-directory .fleet-ops-table thead th { position: static; padding: 15px 14px; color: #58677d; font-size: 11px; font-weight: 750; letter-spacing: .02em; text-transform: none; background: #f7f8fa; white-space: nowrap; }
 .neotrack-directory .fleet-ops-table td { padding: 15px 14px; color: #26354a; font-size: 12px; white-space: nowrap; }
 .neotrack-directory .fleet-ops-table tbody tr:hover { background: #fbfcfe; }

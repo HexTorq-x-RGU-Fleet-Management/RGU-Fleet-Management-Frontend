@@ -703,6 +703,37 @@
 .notification-connection-card > svg { color: #b7791f; }
 .notification-connection-card { background: #fffaf0; }
 
+/* Immediate feedback for all internal RGU navigation, including cards and table links. */
+.navigation-progress {
+  position: fixed;
+  z-index: 120;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 3px;
+  overflow: hidden;
+  pointer-events: none;
+  background: rgba(113, 48, 126, .12);
+}
+
+.navigation-progress span {
+  display: block;
+  width: 38%;
+  height: 100%;
+  border-radius: 0 3px 3px 0;
+  background: linear-gradient(90deg, #71307e, #b74ac9, #ffc226);
+  animation: rgu-route-progress 1s ease-in-out infinite;
+}
+
+@keyframes rgu-route-progress {
+  from { transform: translateX(-110%); }
+  to { transform: translateX(365%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .navigation-progress span { width: 100%; animation: none; }
+}
+
 @media (max-width: 700px) {
   .camera-hub-tabs {
     display: flex;

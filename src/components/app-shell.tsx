@@ -1,7 +1,8 @@
 'use client';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
+import type { MouseEvent } from 'react';
 import * as Dropdown from '@radix-ui/react-dropdown-menu';
 import {
   LayoutDashboard,
@@ -54,18 +55,21 @@ const fleetLinks = [
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { state, user, provider, signOut, patch } = useWorkspace(),
     path = usePathname(),
+    searchParams = useSearchParams(),
     router = useRouter();
   const [mobile, setMobile] = useState(false),
     [collapsed, setCollapsed] = useState(false),
     [search, setSearch] = useState(false),
     [query, setQuery] = useState(''),
     [notifications, setNotifications] = useState(false),
+    [navigating, setNavigating] = useState(false),
     [speedAlerts, setSpeedAlerts] = useState<
       Awaited<ReturnType<typeof fleetApi.notifications>>['notifications']
     >([]),
     [currentTime, setCurrentTime] = useState('');
   const shellRef = useRef<HTMLDivElement>(null),
     wasMobile = useRef(false);
+  const routeKey = `${path}?${searchParams.toString()}`;
   useEffect(() => {
     if (mobile) {
       shellRef.current?.querySelector<HTMLElement>('.mobile-sidebar-close')?.focus();
@@ -74,6 +78,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
     wasMobile.current = mobile;
   }, [mobile]);
+  useEffect(() => {
+    setNavigating(false);
+  }, [routeKey]);
   useEffect(() => {
     if (!mobile) return;
     const previousOverflow = document.body.style.overflow;
@@ -193,14 +200,37 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     } catch {}
   }
   function nav(href: string) {
+    setNavigating(true);
     setMobile(false);
     router.push(href);
   }
+  function trackInternalLink(event: MouseEvent<HTMLDivElement>) {
+    if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    const target = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>('a[href]') : null;
+    if (!target || target.target || target.hasAttribute('download')) return;
+    const destination = new URL(target.href, window.location.href);
+    if (
+      destination.origin !== window.location.origin ||
+      (destination.pathname === window.location.pathname && destination.search === window.location.search)
+    ) {
+      return;
+    }
+    setNavigating(true);
+  }
   return (
-    <div className={`app-shell ${collapsed ? 'sidebar-collapsed' : ''}`} ref={shellRef}>
+    <div
+      className={`app-shell ${collapsed ? 'sidebar-collapsed' : ''}`}
+      ref={shellRef}
+      onClickCapture={trackInternalLink}
+    >
       <a href="#main-content" className="skip-link">
         Skip to content
       </a>
+      {navigating && (
+        <div className="navigation-progress" role="status" aria-label="Opening workspace view">
+          <span />
+        </div>
+      )}
       {mobile && (
         <button
           className="sidebar-scrim"

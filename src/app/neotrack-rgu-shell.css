@@ -353,6 +353,53 @@
 .team-channel-list { display: flex; flex-wrap: wrap; gap: 8px 14px; padding-top: 11px; }
 .team-channel-list label { display: inline-flex; gap: 5px; color: #526177; font-size: 11px; }
 
+/* NeoTrack activity workspace, fed only by the persisted RGU audit ledger. */
+.neotrack-activity-workspace { display: grid; gap: 14px; }
+.neotrack-activity-workspace .page-heading { min-height: 58px; padding: 2px 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.neotrack-activity-workspace .page-heading .eyebrow { display: none; }
+.neotrack-activity-workspace .page-heading h1 { color: var(--nt-ink); font-size: 24px; letter-spacing: -.03em; }
+.neotrack-activity-workspace .page-heading .page-description { margin-top: 4px; color: #64748b; font-size: 12px; }
+.neotrack-activity-workspace .page-heading .btn { min-height: 34px; border-radius: 6px; font-size: 11px; }
+.activity-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.activity-summary > div { display: grid; grid-template-columns: 18px 1fr; gap: 3px 8px; align-items: center; min-height: 84px; padding: 14px; border: 1px solid var(--nt-border); border-radius: 8px; background: #fff; box-shadow: 0 3px 8px rgba(20,30,50,.05); }
+.activity-summary svg { grid-row: 1 / span 2; color: #6c2d7c; }
+.activity-summary span { color: #69778c; font-size: 10px; }
+.activity-summary strong { color: #202938; font-size: 22px; line-height: 1; }
+.neotrack-activity-table { overflow: hidden; border: 1px solid var(--nt-border); border-radius: 8px; background: #fff; box-shadow: 0 3px 8px rgba(20,30,50,.06); }
+.neotrack-activity-table-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 19px 20px 8px; }
+.neotrack-activity-table-heading h2 { margin: 0; color: var(--nt-ink); font-size: 20px; letter-spacing: -.025em; }
+.neotrack-activity-table-heading p { margin: 5px 0 0; color: #64748b; font-size: 12px; }
+.neotrack-activity-table-heading > span { padding: 6px 9px; border: 1px solid #dfe5ec; border-radius: 999px; color: #58677d; background: #f7f9fb; font-size: 11px; white-space: nowrap; }
+.neotrack-activity-controls { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 20px 16px; }
+.neotrack-activity-controls .search-input { width: min(390px, 100%); }
+.activity-segments { display: flex; gap: 4px; padding: 4px; border: 1px solid #e0e5ed; border-radius: 7px; background: #f7f9fb; overflow-x: auto; }
+.activity-segments button { display: inline-flex; align-items: center; gap: 5px; min-height: 28px; padding: 0 9px; border: 0; border-radius: 5px; color: #5d6a7d; background: transparent; font: inherit; font-size: 10px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.activity-segments button[aria-selected='true'] { color: #181b22; background: #fff2bd; box-shadow: inset 0 0 0 1px #f2ce5f; }
+.activity-segments button span { display: inline-flex; min-width: 16px; height: 16px; align-items: center; justify-content: center; border-radius: 50%; background: rgba(61,75,95,.08); font-size: 9px; }
+.activity-error { margin: 0 20px 14px; color: #b42318; font-size: 12px; }
+.neotrack-activity-table-scroll { overflow: auto; border-top: 1px solid #e8edf3; }
+.neotrack-activity-table table { width: 100%; min-width: 920px; border-collapse: collapse; }
+.neotrack-activity-table thead th { padding: 14px 16px; color: #58677d; background: #f7f8fa; border-bottom: 1px solid #e8edf3; font-size: 11px; font-weight: 750; letter-spacing: .02em; text-align: left; white-space: nowrap; }
+.neotrack-activity-table tbody td { padding: 14px 16px; color: #435169; border-bottom: 1px solid #edf0f4; font-size: 12px; vertical-align: middle; white-space: nowrap; }
+.neotrack-activity-table tbody tr:last-child td { border-bottom: 0; }
+.neotrack-activity-table tbody tr:hover { background: #fbfcfe; }
+.activity-event-cell { display: flex; align-items: center; gap: 9px; min-width: 250px; }
+.activity-event-cell strong { color: #202938; font-size: 12px; }
+.activity-event-icon { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 6px; }
+.activity-event-icon.security { color: #a64242; background: #fff0f0; }
+.activity-event-icon.approval { color: #277447; background: #edfaf1; }
+.activity-event-icon.system { color: #4b5f87; background: #eef3fb; }
+.activity-category { display: inline-flex; padding: 5px 8px; border-radius: 5px; font-size: 10px; font-weight: 700; }
+.activity-category.security { color: #a64242; background: #fff0f0; }
+.activity-category.approval { color: #277447; background: #edfaf1; }
+.activity-category.system { color: #4b5f87; background: #eef3fb; }
+.activity-time { display: inline-flex; align-items: center; gap: 5px; color: #68778d; font-size: 11px; }
+.activity-table-footer { display: flex; align-items: center; justify-content: space-between; gap: 14px; min-height: 66px; padding: 13px 18px; border-top: 1px solid #e8edf3; color: #69778c; font-size: 11px; }
+.activity-table-footer strong { color: #344257; }
+.activity-table-footer > div { display: flex; align-items: center; gap: 8px; }
+.activity-table-footer .btn { min-height: 32px; border-radius: 5px; font-size: 10px; }
+.activity-empty { margin: 28px; }
+
 @media (max-width: 700px) {
   .recordings-library-toolbar { align-items: stretch; flex-direction: column; }
   .recordings-library-toolbar .search-input { width: 100%; }
@@ -361,6 +408,9 @@
 
 @media (max-width: 850px) {
   .team-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .activity-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .neotrack-activity-controls, .activity-table-footer { align-items: stretch; flex-direction: column; }
+  .activity-table-footer > div { justify-content: space-between; }
 }
 
 @media (max-width: 900px) {

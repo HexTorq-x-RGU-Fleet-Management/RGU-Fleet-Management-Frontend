@@ -1,31 +1,41 @@
 'use client';
-import { useState, useEffect } from 'react';
-import { History, RefreshCw, ShieldCheck, Activity, Search, Clock, ArrowDown, Filter } from 'lucide-react';
-import { PageHeading, Button, SearchInput, Badge } from './ui';
+
+import { useEffect, useMemo, useState } from 'react';
+import { Activity, ArrowDown, Clock, History, RefreshCw, ShieldCheck } from 'lucide-react';
+import { Button, PageHeading, SearchInput } from './ui';
 import { request } from '@/lib/api';
 import { useWorkspace } from './workspace-provider';
 
+type Category = 'all' | 'security' | 'approval' | 'system';
+const PAGE_SIZE = 10;
+
+function categoryFor(action: string): Exclude<Category, 'all'> {
+  const value = (action || '').toLowerCase();
+  if (['password', 'suspend', 'reject', 'auth', 'login', 'session'].some((term) => value.includes(term))) return 'security';
+  if (['approve', 'create', 'grant', 'workspace'].some((term) => value.includes(term))) return 'approval';
+  return 'system';
+}
+
+function labelFor(category: Exclude<Category, 'all'>) {
+  return category === 'security' ? 'Security' : category === 'approval' ? 'Approval' : 'System';
+}
+
 export function ActivityLog() {
-  const { user } = useWorkspace(),
-    [events, setEvents] = useState<any[]>([]),
-    [query, setQuery] = useState(''),
-    [error, setError] = useState(''),
-    [loading, setLoading] = useState(true),
-    [next, setNext] = useState<string | null>(null),
-    [categoryFilter, setCategoryFilter] = useState<'all' | 'security' | 'approval' | 'system'>('all'),
-    [page, setPage] = useState(1);
+  const { user } = useWorkspace();
+  const [events, setEvents] = useState<any[]>([]);
+  const [query, setQuery] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [next, setNext] = useState<string | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState<Category>('all');
+  const [page, setPage] = useState(1);
 
-  const PAGE_SIZE = 10;
-
-  async function load(before?: string, searchStr?: string) {
+  async function load(before?: string, search = query) {
     setLoading(true);
     try {
-      const qVal = searchStr !== undefined ? searchStr : query;
-      const d = await request(
-        '/api/audit?' + new URLSearchParams({ q: qVal, ...(before ? { before } : {}) }),
-      );
-      setEvents((e) => (before ? [...e, ...d.events] : d.events));
-      setNext(d.nextCursor);
+      const result = await request('/api/audit?' + new URLSearchParams({ q: search, ...(before ? { before } : {}) }));
+      setEvents((current) => before ? [...current, ...result.events] : result.events);
+      setNext(result.nextCursor);
       setError('');
     } catch (e) {
       setError((e as Error).message);
@@ -34,322 +44,83 @@ export function ActivityLog() {
     }
   }
 
-  // Live debounced search effect for audit search panel
   useEffect(() => {
     if (!user?.id) return;
-    const timer = setTimeout(() => {
-      void load(undefined, query);
-    }, 300);
+    const timer = setTimeout(() => void load(undefined, query), 300);
     return () => clearTimeout(timer);
   }, [query, user?.id]);
 
-  function getEventCategory(action: string): 'security' | 'approval' | 'system' {
-    const a = (action || '').toLowerCase();
-    if (
-      a.includes('password') ||
-      a.includes('suspend') ||
-      a.includes('reject') ||
-      a.includes('auth') ||
-      a.includes('login') ||
-      a.includes('session')
-    ) {
-      return 'security';
-    }
-    if (
-      a.includes('approve') ||
-      a.includes('create') ||
-      a.includes('grant') ||
-      a.includes('workspace')
-    ) {
-      return 'approval';
-    }
-    return 'system';
-  }
-
-  const counts = {
+  const counts = useMemo(() => ({
     all: events.length,
-    security: events.filter((e) => getEventCategory(e.action) === 'security').length,
-    approval: events.filter((e) => getEventCategory(e.action) === 'approval').length,
-    system: events.filter((e) => getEventCategory(e.action) === 'system').length,
-  };
+    security: events.filter((event) => categoryFor(event.action) === 'security').length,
+    approval: events.filter((event) => categoryFor(event.action) === 'approval').length,
+    system: events.filter((event) => categoryFor(event.action) === 'system').length,
+  }), [events]);
 
-  const filteredEvents = events.filter((e) => {
-    if (categoryFilter === 'all') return true;
-    return getEventCategory(e.action) === categoryFilter;
-  });
-
-  useEffect(() => {
-    setPage(1);
-  }, [categoryFilter, query]);
-
+  const filteredEvents = useMemo(() => events.filter((event) => categoryFilter === 'all' || categoryFor(event.action) === categoryFilter), [events, categoryFilter]);
+  useEffect(() => setPage(1), [categoryFilter, query]);
   const totalPages = Math.ceil(filteredEvents.length / PAGE_SIZE) || 1;
   const paginatedEvents = filteredEvents.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  if (user?.role === 'member')
-    return (
-      <div className="fleet-no-data" style={{ padding: 48 }}>
-        <ShieldCheck size={36} />
-        <h2>Administrator access required.</h2>
-        <p>Audit and compliance event histories are restricted to fleet administrators and platform owners.</p>
-      </div>
-    );
+  if (user?.role === 'member') {
+    return <div className="fleet-no-data" style={{ padding: 48 }}><ShieldCheck size={36} /><h2>Administrator access required.</h2><p>Audit and compliance event histories are restricted to fleet administrators and platform owners.</p></div>;
+  }
 
   return (
-    <div className="admin-command-deck">
-      <PageHeading
-        eyebrow="RTO COMPLIANCE AUDIT HISTORY"
-        title="Tamper-proof event journal"
-        description="Every administrator approval, channel permission grant, provider login, and camera alteration recorded with verified timestamps."
-      />
+    <div className="neotrack-activity-workspace">
+      <PageHeading eyebrow="WORKSPACE" title="Activity log" description="A searchable history of access, configuration and operational changes.">
+        <Button onClick={() => void load()} loading={loading} aria-label="Refresh activity log"><RefreshCw size={15} />Refresh</Button>
+      </PageHeading>
 
-      {/* Audit Stats Bento */}
-      <div className="admin-bento-grid">
-        <div className="admin-metric-card accent-purple">
-          <div className="admin-metric-top">
-            <span>Recorded Events</span>
-            <div className="admin-metric-icon">
-              <History size={18} />
-            </div>
-          </div>
-          <div className="admin-metric-value">{events.length}</div>
-          <div className="admin-metric-subtext">
-            <span>Audit trail entries loaded</span>
-          </div>
+      <section className="activity-summary" aria-label="Audit summary">
+        <div><History size={17} /><span>Loaded events</span><strong>{events.length}</strong></div>
+        <div><ShieldCheck size={17} /><span>Security events</span><strong>{counts.security}</strong></div>
+        <div><Activity size={17} /><span>Approvals</span><strong>{counts.approval}</strong></div>
+        <div><Clock size={17} /><span>System events</span><strong>{counts.system}</strong></div>
+      </section>
+
+      <section className="neotrack-activity-table" aria-label="Audit activity">
+        <div className="neotrack-activity-table-heading">
+          <div><h2>Workspace activity</h2><p>Events are written by the backend and presented in India Standard Time.</p></div>
+          <span>{filteredEvents.length} entries</span>
         </div>
+        <form className="neotrack-activity-controls" onSubmit={(event) => { event.preventDefault(); void load(); }}>
+          <SearchInput value={query} onChange={setQuery} placeholder="Search actions, actors or targets" />
+          <div className="activity-segments" role="tablist" aria-label="Activity category">
+            {([
+              ['all', 'All'],
+              ['security', 'Security'],
+              ['approval', 'Approvals'],
+              ['system', 'System'],
+            ] as const).map(([category, label]) => <button key={category} type="button" aria-selected={categoryFilter === category} onClick={() => setCategoryFilter(category)}>{label}<span>{counts[category]}</span></button>)}
+          </div>
+        </form>
 
-        <div className="admin-metric-card accent-blue">
-          <div className="admin-metric-top">
-            <span>Audit Integrity</span>
-            <div className="admin-metric-icon">
-              <ShieldCheck size={18} />
-            </div>
-          </div>
-          <div className="admin-metric-value" style={{ color: '#38bdf8' }}>
-            Verified
-          </div>
-          <div className="admin-metric-subtext">
-            <span>PostgreSQL append-only log</span>
-          </div>
+        {error && <p className="activity-error" role="alert">{error}</p>}
+        <div className="neotrack-activity-table-scroll">
+          <table>
+            <thead><tr><th>Event</th><th>Actor</th><th>Target</th><th>Category</th><th>Time</th></tr></thead>
+            <tbody>{paginatedEvents.map((event) => {
+              const category = categoryFor(event.action);
+              return <tr key={event.id}>
+                <td><div className="activity-event-cell"><span className={`activity-event-icon ${category}`}><Activity size={14} /></span><strong>{event.action}</strong></div></td>
+                <td>{event.actor?.name || 'Automated'}</td>
+                <td>{event.target?.name || event.target?.id || '—'}</td>
+                <td><span className={`activity-category ${category}`}>{labelFor(category)}</span></td>
+                <td><span className="activity-time"><Clock size={12} />{new Date(event.createdAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}</span></td>
+              </tr>;
+            })}</tbody>
+          </table>
+          {!filteredEvents.length && !loading && <div className="fleet-no-data activity-empty"><History size={32} /><h3>No audit events found</h3><p>{query || categoryFilter !== 'all' ? 'No events match the active search or category.' : 'Administrator actions and security events will appear here.'}</p></div>}
         </div>
-
-        <div className="admin-metric-card accent-green">
-          <div className="admin-metric-top">
-            <span>Compliance Standard</span>
-            <div className="admin-metric-icon">
-              <Activity size={18} />
-            </div>
+        <footer className="activity-table-footer">
+          <span>Showing <strong>{filteredEvents.length ? (page - 1) * PAGE_SIZE + 1 : 0}</strong>–<strong>{Math.min(page * PAGE_SIZE, filteredEvents.length)}</strong> of <strong>{filteredEvents.length}</strong> loaded entries{next ? ' · Older entries available' : ''}</span>
+          <div>
+            {totalPages > 1 && <><Button variant="secondary" disabled={page <= 1} onClick={() => setPage((current) => Math.max(1, current - 1))}>Previous</Button><span>Page {page} of {totalPages}</span><Button variant="secondary" disabled={page >= totalPages} onClick={() => setPage((current) => Math.min(totalPages, current + 1))}>Next</Button></>}
+            {next && <Button onClick={() => void load(next)} loading={loading} variant="primary"><ArrowDown size={14} />Load older</Button>}
           </div>
-          <div className="admin-metric-value" style={{ fontSize: 20 }}>
-            RTO AIS-140
-          </div>
-          <div className="admin-metric-subtext">
-            <span>Automated incident retention</span>
-          </div>
-        </div>
-
-        <div className="admin-metric-card accent-amber">
-          <div className="admin-metric-top">
-            <span>Search Filter</span>
-            <div className="admin-metric-icon">
-              <Search size={18} />
-            </div>
-          </div>
-          <div className="admin-metric-value" style={{ fontSize: 20 }}>
-            {query ? 'Active' : 'All Events'}
-          </div>
-          <div className="admin-metric-subtext">
-            <span>{query ? `Filtered by "${query}"` : 'Real-time timeline'}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Search Toolbar */}
-      <form
-        className="admin-toolbar-deck"
-        onSubmit={(e) => {
-          e.preventDefault();
-          void load();
-        }}
-      >
-        <div style={{ flex: '1 1 320px', maxWidth: 460 }}>
-          <SearchInput value={query} onChange={setQuery} placeholder="Search activity by action, actor, or target…" />
-        </div>
-        <div className="admin-toolbar-actions">
-          <Button type="submit" loading={loading} variant="primary">
-            <RefreshCw size={15} />
-            Search events
-          </Button>
-          {query && (
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => {
-                setQuery('');
-              }}
-            >
-              Clear search
-            </Button>
-          )}
-        </div>
-      </form>
-
-      {/* Quick Category Filter Pills */}
-      <div className="activity-filter-deck">
-        <div className="activity-filter-pills" role="tablist" aria-label="Event category filter">
-          {[
-            { id: 'all', label: 'All Records', count: counts.all },
-            { id: 'security', label: 'Security & Auth', count: counts.security },
-            { id: 'approval', label: 'Approvals & Grants', count: counts.approval },
-            { id: 'system', label: 'System & Operations', count: counts.system },
-          ].map((f) => (
-            <button
-              key={f.id}
-              type="button"
-              className={`activity-filter-pill ${categoryFilter === f.id ? 'active' : ''}`}
-              onClick={() => setCategoryFilter(f.id as any)}
-            >
-              <span>{f.label}</span>
-              <span className="activity-filter-count">{f.count}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {error && <p role="alert">{error}</p>}
-
-      {/* Glass Data Cards for Audit Log */}
-      <>
-      <div className="admin-card-container">
-        {paginatedEvents.map((e, index) => {
-          const serialNumber = (page - 1) * PAGE_SIZE + index + 1;
-          const actionLower = e.action?.toLowerCase() || '';
-          const isSecurity =
-            actionLower.includes('password') ||
-            actionLower.includes('suspend') ||
-            actionLower.includes('reject');
-          const isApproval = actionLower.includes('approve') || actionLower.includes('create');
-
-          const pillTone = isSecurity ? 'suspended' : isApproval ? 'active' : 'pending';
-
-          return (
-            <div className="admin-workspace-card activity-log-card" key={e.id}>
-              <div className="activity-card-left">
-                {/* High visibility serial number badge */}
-                <div className="activity-serial-badge" title={`Serial No. #${serialNumber}`}>
-                  #{String(serialNumber).padStart(2, '0')}
-                </div>
-
-                <div
-                  className="rto-badge-icon"
-                  style={{
-                    width: 38,
-                    height: 38,
-                    borderRadius: 10,
-                    background:
-                      pillTone === 'active'
-                        ? 'rgba(165, 203, 58, 0.15)'
-                        : pillTone === 'suspended'
-                          ? 'rgba(239, 68, 68, 0.15)'
-                          : 'rgba(32, 150, 219, 0.15)',
-                    borderColor:
-                      pillTone === 'active'
-                        ? 'rgba(165, 203, 58, 0.35)'
-                        : pillTone === 'suspended'
-                          ? 'rgba(239, 68, 68, 0.35)'
-                          : 'rgba(32, 150, 219, 0.35)',
-                    color:
-                      pillTone === 'active'
-                        ? '#a5cb3a'
-                        : pillTone === 'suspended'
-                          ? '#f87171'
-                          : '#38bdf8',
-                  }}
-                >
-                  <Activity size={18} />
-                </div>
-
-                <div className="activity-event-body">
-                  <div className="activity-event-header">
-                    <strong className="activity-action-title">{e.action}</strong>
-                    <span className={`status-indicator-pill ${pillTone}`}>
-                      {e.workspace || 'System'}
-                    </span>
-                  </div>
-                  <div className="activity-event-meta">
-                    <span className="activity-meta-item">
-                      <span className="activity-meta-label">Actor:</span>{' '}
-                      <strong className="activity-meta-value">{e.actor?.name || 'Automated'}</strong>
-                    </span>
-                    {e.target && (
-                      <span className="activity-meta-item">
-                        <span className="activity-meta-label">Target:</span>{' '}
-                        <strong className="activity-meta-value">{e.target.name || e.target.id || '—'}</strong>
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="activity-card-right">
-                <span className="activity-timestamp">
-                  <Clock size={12} />
-                  {new Date(e.createdAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}
-                </span>
-              </div>
-            </div>
-          );
-        })}
-
-        {!filteredEvents.length && !loading && (
-          <div className="fleet-no-data" style={{ padding: 48 }}>
-            <History size={32} />
-            <h3>No audit events found</h3>
-            <p>
-              {query || categoryFilter !== 'all'
-                ? `No events match the active filters. Try clearing your search or category.`
-                : 'All administrator actions and security events will be preserved here.'}
-            </p>
-          </div>
-        )}
-      </div>
-      </>
-
-      {/* Page Navigation & Pagination Deck */}
-      <div className="activity-pagination-deck">
-        <div className="activity-pagination-status">
-          Showing <strong>{filteredEvents.length ? (page - 1) * PAGE_SIZE + 1 : 0}</strong>–<strong>{Math.min(page * PAGE_SIZE, filteredEvents.length)}</strong> of <strong>{filteredEvents.length}</strong> records loaded
-          {next ? ' · Older records available' : ' · End of recorded ledger'}
-        </div>
-        <div className="activity-pagination-controls" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          {totalPages > 1 && (
-            <>
-              <Button
-                variant="secondary"
-                disabled={page <= 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-              >
-                Previous
-              </Button>
-              <span style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 600 }}>
-                Page {page} of {totalPages}
-              </span>
-              <Button
-                variant="secondary"
-                disabled={page >= totalPages}
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              >
-                Next
-              </Button>
-            </>
-          )}
-          {next && (
-            <Button onClick={() => void load(next)} loading={loading} variant="primary">
-              <ArrowDown size={14} />
-              Load older events
-            </Button>
-          )}
-        </div>
-      </div>
+        </footer>
+      </section>
     </div>
   );
 }

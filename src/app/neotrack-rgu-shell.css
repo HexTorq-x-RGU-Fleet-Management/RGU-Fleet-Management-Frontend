@@ -302,10 +302,65 @@
 .neotrack-recordings-library .clip-body .badge { border-color: #dae2ec; background: #f7f9fb; color: #526177; }
 .neotrack-recordings-library .clip-body .btn { min-height: 34px; border-radius: 6px; font-size: 11px; }
 
+/* NeoTrack users directory, connected to RGU member and recorder-grant APIs. */
+.neotrack-team-directory { display: grid; gap: 14px; }
+.neotrack-team-directory .page-heading { min-height: 58px; padding: 2px 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.neotrack-team-directory .page-heading .eyebrow { display: none; }
+.neotrack-team-directory .page-heading h1 { color: var(--nt-ink); font-size: 24px; letter-spacing: -.03em; }
+.neotrack-team-directory .page-heading .page-description { margin-top: 4px; color: #64748b; font-size: 12px; }
+.neotrack-team-directory .page-heading .btn { min-height: 34px; border-radius: 6px; font-size: 11px; }
+.team-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.team-summary > div { position: relative; display: grid; grid-template-columns: 18px 1fr; gap: 3px 8px; align-items: center; min-height: 84px; padding: 14px; border: 1px solid var(--nt-border); border-radius: 8px; background: #fff; box-shadow: 0 3px 8px rgba(20,30,50,.05); }
+.team-summary svg { grid-row: 1 / span 2; color: #6c2d7c; }
+.team-summary span { color: #69778c; font-size: 10px; }
+.team-summary strong { color: #202938; font-size: 22px; line-height: 1; }
+.neotrack-team-table { overflow: hidden; border: 1px solid var(--nt-border); border-radius: 8px; background: #fff; box-shadow: 0 3px 8px rgba(20,30,50,.06); }
+.neotrack-team-table-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 19px 20px 8px; }
+.neotrack-team-table-heading h2 { margin: 0; color: var(--nt-ink); font-size: 20px; letter-spacing: -.025em; }
+.neotrack-team-table-heading p { margin: 5px 0 0; color: #64748b; font-size: 12px; }
+.neotrack-team-table-heading > span { padding: 6px 9px; border: 1px solid #dfe5ec; border-radius: 999px; color: #58677d; background: #f7f9fb; font-size: 11px; white-space: nowrap; }
+.neotrack-team-controls { padding: 10px 20px 16px; }
+.neotrack-team-controls .search-input { width: min(390px, 100%); }
+.neotrack-team-table-scroll { overflow: auto; border-top: 1px solid #e8edf3; }
+.neotrack-team-table table { width: 100%; min-width: 850px; border-collapse: collapse; }
+.neotrack-team-table thead th { padding: 14px 16px; color: #58677d; background: #f7f8fa; border-bottom: 1px solid #e8edf3; font-size: 11px; font-weight: 750; letter-spacing: .02em; text-align: left; white-space: nowrap; }
+.neotrack-team-table tbody td { padding: 14px 16px; color: #26354a; border-bottom: 1px solid #edf0f4; font-size: 12px; vertical-align: middle; white-space: nowrap; }
+.neotrack-team-table tbody tr:last-child td { border-bottom: 0; }
+.neotrack-team-table tbody tr:hover { background: #fbfcfe; }
+.team-user-cell { display: flex; align-items: center; gap: 10px; min-width: 230px; }
+.team-user-cell > span { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; color: #5d206b; border: 1px solid #e2c8e7; border-radius: 50%; background: #f9f2fb; font-size: 11px; font-weight: 800; }
+.team-user-cell div { display: grid; gap: 2px; min-width: 0; }
+.team-user-cell strong { overflow: hidden; color: #202938; text-overflow: ellipsis; font-size: 12px; }
+.team-user-cell small { overflow: hidden; max-width: 280px; color: #6b7890; text-overflow: ellipsis; font-size: 11px; }
+.team-role { display: inline-flex; padding: 5px 8px; border: 1px solid #dde4ec; border-radius: 5px; color: #506078; background: #f7f9fb; font-size: 10px; font-weight: 700; }
+.team-recorder-access { display: inline-flex; align-items: center; gap: 6px; color: #526177; font-size: 11px; }
+.team-recorder-access svg { color: #6c2d7c; }
+.team-status { display: inline-flex; align-items: center; gap: 6px; color: #506078; font-size: 11px; font-weight: 700; text-transform: capitalize; }
+.team-status i { display: block; width: 7px; height: 7px; border-radius: 50%; background: #ef6262; }
+.team-status.active { color: #277447; }
+.team-status.active i { background: #34a765; box-shadow: 0 0 0 3px #e6f7ec; }
+.team-actions { display: flex; justify-content: flex-end; gap: 6px; }
+.team-actions .btn { min-height: 31px; padding-inline: 9px; border-radius: 5px; font-size: 10px; }
+.team-empty { margin: 28px; }
+.team-grant-editor { margin-top: 18px; }
+.team-grant-editor > strong { display: block; color: #202938; font-size: 14px; }
+.team-grant-editor > p { margin: 4px 0 12px; color: #69778c; font-size: 12px; }
+.team-grant-editor fieldset { display: grid; gap: 0; margin: 0 0 10px; padding: 12px 14px 14px; border: 1px solid #e0e6ee; border-radius: 7px; }
+.team-grant-editor legend { padding: 0 5px; color: #4c1f59; font-size: 12px; font-weight: 750; }
+.team-grant-editor fieldset > label { display: flex; align-items: center; justify-content: space-between; min-height: 37px; color: #4c5a70; border-bottom: 1px solid #eef1f5; font-size: 12px; }
+.team-grant-editor .field { margin-top: 12px; }
+.team-grant-editor select { min-height: 36px; border-color: #dce3ec; border-radius: 6px; }
+.team-channel-list { display: flex; flex-wrap: wrap; gap: 8px 14px; padding-top: 11px; }
+.team-channel-list label { display: inline-flex; gap: 5px; color: #526177; font-size: 11px; }
+
 @media (max-width: 700px) {
   .recordings-library-toolbar { align-items: stretch; flex-direction: column; }
   .recordings-library-toolbar .search-input { width: 100%; }
   .recordings-storage-summary { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 850px) {
+  .team-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 900px) {

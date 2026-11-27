@@ -239,7 +239,23 @@ function Directory({ buses, view }: { buses: Bus[]; view: 'drivers' | 'routes' }
         }, new Map<string, Bus[]>()),
       ).map(([route, assigned]) => ({ route, assigned }))
     : [];
-  const directoryCount = drivers ? records.length : routeGroups.length;
+  const driverGroups = drivers
+    ? Array.from(
+        records.reduce((groups, bus) => {
+          const name = bus.driverName.trim();
+          if (!name) return groups;
+          const phone = bus.driverPhone.trim();
+          const key = `${name.toLocaleLowerCase()}|${phone}`;
+          const current = groups.get(key) ?? { name, phone, assigned: [] as Bus[] };
+          current.assigned.push(bus);
+          groups.set(key, current);
+          return groups;
+        }, new Map<string, { name: string; phone: string; assigned: Bus[] }>()),
+      )
+        .map(([, driver]) => driver)
+        .sort((left, right) => left.name.localeCompare(right.name))
+    : [];
+  const directoryCount = drivers ? driverGroups.length : routeGroups.length;
   return (
     <div className={`fleet-ops-panel neotrack-directory ${drivers ? 'driver-directory' : 'route-directory'}`}>
       <div className="neotrack-directory-heading">
@@ -275,20 +291,28 @@ function Directory({ buses, view }: { buses: Bus[]; view: 'drivers' | 'routes' }
             </tr>
           </thead>
           <tbody>
-            {drivers && records.map((bus) => (
-              <tr key={bus.id}>
-                <td>{(drivers ? bus.driverName : bus.routeName) || 'Unassigned'}</td>
+            {drivers && driverGroups.map((driver) => {
+              const bus = driver.assigned[0];
+              return (
+              <tr key={`${driver.name}-${driver.phone}`}>
+                <td>{driver.name}</td>
                 {drivers && <td>{bus.driverPhone || '—'}</td>}
                 <td>
-                  <Link href={busHref(bus)}>
-                    {bus.busNumber} <ArrowUpRight size={13} />
-                  </Link>
+                  {driver.assigned.map((assigned, index) => (
+                    <span key={assigned.id}>
+                      {index > 0 && ', '}
+                      <Link href={busHref(assigned)}>
+                        {assigned.busNumber} <ArrowUpRight size={13} />
+                      </Link>
+                    </span>
+                  ))}
                 </td>
-                <td>{bus.registration}</td>
+                <td>{driver.assigned.map((assigned) => assigned.registration).join(', ')}</td>
                 <td><Link className="directory-open" href={busHref(bus)}>Open <ArrowUpRight size={14} aria-hidden="true" /></Link></td>
                 <td>{(drivers ? bus.routeName : bus.driverName) || '—'}</td>
               </tr>
-            ))}
+              );
+            })}
             {!drivers && routeGroups.map(({ route, assigned }) => (
               <tr key={route}>
                 <td>{route}</td>
@@ -298,7 +322,7 @@ function Directory({ buses, view }: { buses: Bus[]; view: 'drivers' | 'routes' }
                 <td><Link className="directory-open" href={busHref(assigned[0])}>Open bus <ArrowUpRight size={14} aria-hidden="true" /></Link></td>
               </tr>
             ))}
-            {!(drivers ? records.length : routeGroups.length) && (
+            {!(drivers ? driverGroups.length : routeGroups.length) && (
               <tr>
                 <td colSpan={drivers ? 6 : 5}>No matching {drivers ? 'driver' : 'route'} assignments.</td>
               </tr>

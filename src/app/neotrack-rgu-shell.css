@@ -725,6 +725,18 @@
   animation: rgu-route-progress 1s ease-in-out infinite;
 }
 
+.neotrack-report-workbench .report-export-row {
+  display: flex;
+  justify-content: flex-end;
+  margin: 12px 0;
+}
+
+.neotrack-report-workbench .report-export-row .btn {
+  min-height: 34px;
+  border-radius: 6px;
+  font-size: 11px;
+}
+
 @keyframes rgu-route-progress {
   from { transform: translateX(-110%); }
   to { transform: translateX(365%); }

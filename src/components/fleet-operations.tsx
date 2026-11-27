@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowUpRight, BusFront, Gauge, MapPin, Route } from 'lucide-react';
+import { ArrowUpRight, BusFront, Download, Gauge, MapPin, Route } from 'lucide-react';
 import { useEffect, useState, type FormEvent } from 'react';
 import { fleetApi } from '@/lib/api';
 import { gpsState, timeLabel, type Bus, type Vehicle } from '@/lib/fleet';
@@ -371,6 +371,45 @@ function Reports({ buses }: { buses: Bus[] }) {
         .filter(({ gpsTime }) => gpsTime >= result.from && gpsTime <= result.to)
         .sort((a, b) => a.gpsTime - b.gpsTime)
     : [];
+  function downloadCsv() {
+    if (!result) return;
+    const quote = (value: string | number | null | undefined) =>
+      `"${String(value ?? '').replaceAll('"', '""')}"`;
+    const rows = [
+      ['Record type', 'Date (IST)', 'Time (IST)', 'Latitude', 'Longitude', 'Address', 'Speed (km/h)', 'Fuel (L)', 'Speed limit (km/h)'],
+      ...samples.map((sample) => [
+        'GPS observation',
+        result.date,
+        timeLabel(sample.gpsTime),
+        sample.location.latitude,
+        sample.location.longitude,
+        sample.location.address,
+        sample.speed.toFixed(1),
+        sample.fuelData?.currentLiters,
+        '',
+      ]),
+      ...result.data.violations.map((violation) => [
+        'Speed-limit crossing',
+        result.date,
+        timeLabel(violation.gps_time),
+        violation.latitude,
+        violation.longitude,
+        violation.address,
+        Number(violation.speed_kph).toFixed(1),
+        '',
+        Number(violation.speed_limit_kph).toFixed(1),
+      ]),
+    ];
+    const blob = new Blob([rows.map((row) => row.map(quote).join(',')).join('\r\n')], {
+      type: 'text/csv;charset=utf-8',
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `rgu-telemetry-${result.date}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
   return (
     <div className="fleet-ops-panel neotrack-report-workbench">
       <div className="report-workbench-heading">
@@ -431,6 +470,11 @@ function Reports({ buses }: { buses: Bus[] }) {
             <Link href={'/buses?' + new URLSearchParams({ bus: result.busId, tab: 'journey' })}>
               Open journey <ArrowUpRight size={15} />
             </Link>
+          </div>
+          <div className="report-export-row">
+            <Button type="button" onClick={downloadCsv}>
+              <Download size={15} /> Download CSV
+            </Button>
           </div>
           <div
             className="fleet-ops-table"

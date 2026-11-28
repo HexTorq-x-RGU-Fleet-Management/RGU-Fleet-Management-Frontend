@@ -217,11 +217,17 @@
 .driver-directory-heading { justify-content: space-between; gap: 14px; }
 .driver-directory-heading h2 { display: flex; align-items: center; gap: 8px; }
 .driver-directory-heading h2 svg { color: var(--nt-primary); }
+.route-directory-heading { justify-content: space-between; gap: 14px; }
+.route-directory-heading h2 { display: flex; align-items: center; gap: 8px; }
+.route-directory-heading h2 svg { color: #16825d; }
+.route-directory .fleet-ops-table table { min-width: 980px; }
+.route-directory .route-description { max-width: 280px; overflow: hidden; text-overflow: ellipsis; }
 .driver-directory .fleet-ops-table table { min-width: 880px; }
 .directory-row-actions { display: flex; align-items: center; gap: 6px; }
 .directory-row-actions .btn { min-height: 30px; padding: 0 9px; font-size: 11px; }
 .driver-form { display: grid; gap: 14px; margin-top: 18px; }
-.driver-form input, .driver-form select { width: 100%; min-height: 40px; border: 1px solid #dce3ec; border-radius: 6px; padding: 0 10px; background: #fff; color: #202938; font: inherit; }
+.driver-form input, .driver-form select, .driver-form textarea { width: 100%; min-height: 40px; border: 1px solid #dce3ec; border-radius: 6px; padding: 0 10px; background: #fff; color: #202938; font: inherit; }
+.driver-form textarea { min-height: 90px; padding: 10px; resize: vertical; }
 .neotrack-directory-heading h2 { margin: 0; color: var(--nt-ink); font-size: 19px; letter-spacing: -.025em; }
 .neotrack-directory-heading span { display: inline-block; margin-top: 5px; color: #64748b; font-size: 12px; }
 .neotrack-directory-heading strong { color: var(--nt-ink); }

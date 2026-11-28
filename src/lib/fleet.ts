@@ -7,6 +7,7 @@ export type Bus = {
   driverPhone: string;
   driverId?: string | null;
   routeName: string;
+  routeId?: string | null;
   recorderId: string | null;
   telemetryDeviceId: string | null;
   speedLimitKph?: number;
@@ -16,6 +17,15 @@ export type Driver = {
   id: string;
   fullName: string;
   phone: string;
+  status: 'active' | 'inactive';
+  createdAt: string;
+  updatedAt: string;
+  assignments: { id: string; busNumber: string; registration: string }[];
+};
+export type FleetRoute = {
+  id: string;
+  name: string;
+  description: string;
   status: 'active' | 'inactive';
   createdAt: string;
   updatedAt: string;

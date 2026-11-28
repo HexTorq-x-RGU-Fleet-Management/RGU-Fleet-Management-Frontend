@@ -125,6 +125,12 @@ export const fleetApi = {
   assignDriver: (busId: string, driverId: string) =>
     request<{ bus: import('./fleet').Bus }>('/api/fleet/drivers/assign', { busId, driverId }),
   removeDriver: (id: string) => request('/api/fleet/drivers/remove', { id }),
+  routes: () => request<{ routes: import('./fleet').FleetRoute[] }>('/api/fleet/routes'),
+  saveRoute: (route: Partial<import('./fleet').FleetRoute> & { name: string; description: string }) =>
+    request<{ route: import('./fleet').FleetRoute }>('/api/fleet/routes', route),
+  assignRoute: (busId: string, routeId: string) =>
+    request<{ bus: import('./fleet').Bus }>('/api/fleet/routes/assign', { busId, routeId }),
+  removeRoute: (id: string) => request('/api/fleet/routes/remove', { id }),
   notifications: () =>
     request<{
       notifications: {

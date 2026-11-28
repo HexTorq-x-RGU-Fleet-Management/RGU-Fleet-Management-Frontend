@@ -5,7 +5,7 @@ import { ArrowUpRight, BusFront, Download, Gauge, MapPin, Pencil, Plus, Route, U
 import { useEffect, useState, type FormEvent } from 'react';
 import { toast } from 'sonner';
 import { fleetApi } from '@/lib/api';
-import { gpsState, timeLabel, type Bus, type Driver, type Vehicle } from '@/lib/fleet';
+import { gpsState, timeLabel, type Bus, type Driver, type FleetRoute, type Vehicle } from '@/lib/fleet';
 import { withinTamilNaduView } from '@/lib/map-config';
 import { JourneyMap } from './journey-map';
 import { Badge, Button, Confirm, Field, Modal, SearchInput } from './ui';
@@ -58,7 +58,7 @@ export function FleetOperations({ view }: { view: keyof typeof pages }) {
         />
       )}
       {view === 'drivers' && <DriversDirectory buses={state.buses} canManage={user?.role === 'admin'} />}
-      {view === 'routes' && <Directory buses={state.buses} view="routes" />}
+      {view === 'routes' && <RoutesDirectory buses={state.buses} canManage={user?.role === 'admin'} />}
       {view === 'reports' && <Reports key={user?.id} buses={state.buses} />}
     </section>
   );
@@ -340,6 +340,134 @@ function DriversDirectory({ buses, canManage }: { buses: Bus[]; canManage: boole
         <div className="driver-form"><Field label="Bus"><select value={selectedBusId} onChange={(event) => setSelectedBusId(event.target.value)}><option value="">Choose a bus</option>{assignable.map((bus) => <option key={bus.id} value={bus.id}>{bus.busNumber} · {bus.registration}</option>)}</select></Field><div className="modal-footer"><Button type="button" onClick={() => setAssigning(null)}>Cancel</Button><Button type="button" variant="primary" disabled={!selectedBusId} loading={busy} onClick={() => void assign()}>Assign driver</Button></div></div>
       </Modal>
       <Confirm open={removing !== null} onOpenChange={(open) => !open && setRemoving(null)} title="Remove driver" description={removing ? `Remove ${removing.fullName}? Assigned drivers cannot be removed.` : ''} action="Remove driver" onConfirm={remove} />
+    </div>
+  );
+}
+
+function RoutesDirectory({ buses, canManage }: { buses: Bus[]; canManage: boolean }) {
+  const [routes, setRoutes] = useState<FleetRoute[]>([]);
+  const [query, setQuery] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState<FleetRoute | null | undefined>(undefined);
+  const [removing, setRemoving] = useState<FleetRoute | null>(null);
+  const [assigning, setAssigning] = useState<FleetRoute | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [selectedBusId, setSelectedBusId] = useState('');
+  const load = async () => {
+    setLoading(true);
+    try {
+      setRoutes((await fleetApi.routes()).routes);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not load routes.');
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => { void load(); }, []);
+  const term = query.trim().toLowerCase();
+  const visible = routes.filter((route) =>
+    [route.name, route.description, route.status, ...route.assignments.flatMap((bus) => [bus.busNumber, bus.registration])]
+      .join(' ')
+      .toLowerCase()
+      .includes(term),
+  );
+  const assignedBusIds = new Set(routes.flatMap((route) => route.assignments.map((bus) => bus.id)));
+  const assignable = buses.filter((bus) => !assignedBusIds.has(bus.id) || assigning?.assignments.some((item) => item.id === bus.id));
+  async function save(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!editing || busy) return;
+    const form = new FormData(event.currentTarget);
+    setBusy(true);
+    try {
+      const result = await fleetApi.saveRoute({
+        ...(editing.id ? { id: editing.id } : {}),
+        name: String(form.get('name') || ''),
+        description: String(form.get('description') || ''),
+        status: String(form.get('status') || 'active') as FleetRoute['status'],
+      });
+      setRoutes((current) => {
+        const index = current.findIndex((route) => route.id === result.route.id);
+        return index < 0
+          ? [...current, result.route].sort((a, b) => a.name.localeCompare(b.name))
+          : current.map((route) => route.id === result.route.id ? { ...result.route, assignments: route.assignments } : route);
+      });
+      toast.success(editing.id ? 'Route updated.' : 'Route added.');
+      setEditing(undefined);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not save route.');
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function assign() {
+    if (!assigning || !selectedBusId || busy) return;
+    setBusy(true);
+    try {
+      await fleetApi.assignRoute(selectedBusId, assigning.id);
+      toast.success(`${assigning.name} assigned to the bus.`);
+      setAssigning(null);
+      setSelectedBusId('');
+      await load();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not assign route.');
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function remove() {
+    if (!removing) return;
+    try {
+      await fleetApi.removeRoute(removing.id);
+      setRoutes((current) => current.filter((route) => route.id !== removing.id));
+      toast.success('Route removed.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not remove route.');
+      throw error;
+    }
+  }
+  return (
+    <div className="fleet-ops-panel neotrack-directory route-directory">
+      <div className="neotrack-directory-heading route-directory-heading">
+        <div><h2><Route size={19} /> Manage routes</h2><span>Total routes <strong>{routes.length}</strong></span></div>
+        {canManage && <Button variant="primary" onClick={() => setEditing({ id: '', name: '', description: '', status: 'active', createdAt: '', updatedAt: '', assignments: [] })}><Plus size={15} /> Add route</Button>}
+      </div>
+      <div className="fleet-ops-controls neotrack-directory-controls">
+        <SearchInput value={query} onChange={setQuery} placeholder="Search route or bus" />
+        <span className="directory-result-count">{loading ? 'Loading routes…' : `${visible.length} ${visible.length === 1 ? 'record' : 'records'}`}</span>
+      </div>
+      <div className="fleet-ops-table" role="region" aria-label="Route directory" tabIndex={0} data-lenis-prevent>
+        <table>
+          <thead><tr><th scope="col">Route</th><th scope="col">Description</th><th scope="col">Status</th><th scope="col">Assigned buses</th><th scope="col">Actions</th></tr></thead>
+          <tbody>
+            {visible.map((route) => (
+              <tr key={route.id}>
+                <td><strong>{route.name}</strong></td>
+                <td className="route-description">{route.description || '—'}</td>
+                <td><Badge tone={route.status === 'active' ? 'green' : 'neutral'}>{route.status}</Badge></td>
+                <td>{route.assignments.length ? route.assignments.map((bus, index) => <span key={bus.id}>{index > 0 && ', '}<Link href={'/buses?' + new URLSearchParams({ bus: bus.id })}>{bus.busNumber} <ArrowUpRight size={13} /></Link></span>) : 'Not assigned'}</td>
+                <td><div className="directory-row-actions">
+                  {canManage && <Button type="button" onClick={() => { setAssigning(route); setSelectedBusId(route.assignments[0]?.id || ''); }} disabled={route.status !== 'active'}>Assign</Button>}
+                  {canManage && <Button type="button" onClick={() => setEditing(route)}><Pencil size={14} /> Edit</Button>}
+                  {canManage && <Button type="button" variant="danger" onClick={() => setRemoving(route)} disabled={route.assignments.length > 0}>Remove</Button>}
+                </div></td>
+              </tr>
+            ))}
+            {!loading && !visible.length && <tr><td colSpan={5}>No matching routes.</td></tr>}
+          </tbody>
+        </table>
+      </div>
+      <Modal open={editing !== undefined} onOpenChange={(open) => !open && setEditing(undefined)} title={editing?.id ? 'Edit route' : 'Add route'} description="Routes are workspace-specific. Stops and schedules will be added in the next route-planning phase.">
+        {editing && <form className="driver-form" onSubmit={save}>
+          <Field label="Route name"><input name="name" required maxLength={100} defaultValue={editing.name} /></Field>
+          <Field label="Description"><textarea name="description" maxLength={500} defaultValue={editing.description} /></Field>
+          <Field label="Status"><select name="status" defaultValue={editing.status}><option value="active">Active</option><option value="inactive">Inactive</option></select></Field>
+          <div className="modal-footer"><Button type="button" onClick={() => setEditing(undefined)}>Cancel</Button><Button type="submit" variant="primary" loading={busy}>Save route</Button></div>
+        </form>}
+      </Modal>
+      <Modal open={assigning !== null} onOpenChange={(open) => !open && setAssigning(null)} title="Assign route" description={assigning ? `Choose a bus for ${assigning.name}. Existing route information on that bus will be updated.` : ''}>
+        <div className="driver-form"><Field label="Bus"><select value={selectedBusId} onChange={(event) => setSelectedBusId(event.target.value)}><option value="">Choose a bus</option>{assignable.map((bus) => <option key={bus.id} value={bus.id}>{bus.busNumber} · {bus.registration}</option>)}</select></Field><div className="modal-footer"><Button type="button" onClick={() => setAssigning(null)}>Cancel</Button><Button type="button" variant="primary" disabled={!selectedBusId} loading={busy} onClick={() => void assign()}>Assign route</Button></div></div>
+      </Modal>
+      <Confirm open={removing !== null} onOpenChange={(open) => !open && setRemoving(null)} title="Remove route" description={removing ? `Remove ${removing.name}? Assigned routes cannot be removed.` : ''} action="Remove route" onConfirm={remove} />
     </div>
   );
 }

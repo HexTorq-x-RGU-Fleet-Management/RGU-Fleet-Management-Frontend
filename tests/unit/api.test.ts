@@ -66,6 +66,25 @@ describe('separate backend boundary', () => {
     ]);
     expect(JSON.parse(fetcher.mock.calls[2][1].body)).toEqual({ busId: 'bus-id', driverId: 'driver-id' });
   });
+  it('uses the dedicated route API routes without putting route records in browser storage', async () => {
+    vi.stubEnv('NEXT_PUBLIC_API_BASE_URL', 'https://api.example.test');
+    const fetcher = vi.fn().mockImplementation(() =>
+      Promise.resolve(new Response(JSON.stringify({ routes: [] }))),
+    );
+    vi.stubGlobal('fetch', fetcher);
+    const { fleetApi } = await import('../../src/lib/api');
+    await fleetApi.routes();
+    await fleetApi.saveRoute({ name: 'Campus loop', description: 'Main service', status: 'active' });
+    await fleetApi.assignRoute('bus-id', 'route-id');
+    await fleetApi.removeRoute('route-id');
+    expect(fetcher.mock.calls.map((call) => call[0])).toEqual([
+      'https://api.example.test/api/fleet/routes',
+      'https://api.example.test/api/fleet/routes',
+      'https://api.example.test/api/fleet/routes/assign',
+      'https://api.example.test/api/fleet/routes/remove',
+    ]);
+    expect(JSON.parse(fetcher.mock.calls[2][1].body)).toEqual({ busId: 'bus-id', routeId: 'route-id' });
+  });
   it('retains authorization error codes', async () => {
     vi.stubEnv('NEXT_PUBLIC_API_BASE_URL', 'https://api.example.test');
     vi.stubGlobal(

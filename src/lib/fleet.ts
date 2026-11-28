@@ -5,11 +5,21 @@ export type Bus = {
   registration: string;
   driverName: string;
   driverPhone: string;
+  driverId?: string | null;
   routeName: string;
   recorderId: string | null;
   telemetryDeviceId: string | null;
   speedLimitKph?: number;
   favoriteChannels: number[];
+};
+export type Driver = {
+  id: string;
+  fullName: string;
+  phone: string;
+  status: 'active' | 'inactive';
+  createdAt: string;
+  updatedAt: string;
+  assignments: { id: string; busNumber: string; registration: string }[];
 };
 export type Vehicle = {
   vehicleNumber: string;

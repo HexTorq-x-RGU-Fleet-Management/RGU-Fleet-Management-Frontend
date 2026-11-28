@@ -214,6 +214,14 @@
 /* NeoTrack management-directory table, populated from RGU assignments. */
 .neotrack-directory { overflow: hidden; border-color: var(--nt-border); border-radius: 8px; background: #fff; box-shadow: 0 3px 8px rgba(20,30,50,.06); }
 .neotrack-directory-heading { display: flex; align-items: center; min-height: 72px; padding: 14px 18px 6px; }
+.driver-directory-heading { justify-content: space-between; gap: 14px; }
+.driver-directory-heading h2 { display: flex; align-items: center; gap: 8px; }
+.driver-directory-heading h2 svg { color: var(--nt-primary); }
+.driver-directory .fleet-ops-table table { min-width: 880px; }
+.directory-row-actions { display: flex; align-items: center; gap: 6px; }
+.directory-row-actions .btn { min-height: 30px; padding: 0 9px; font-size: 11px; }
+.driver-form { display: grid; gap: 14px; margin-top: 18px; }
+.driver-form input, .driver-form select { width: 100%; min-height: 40px; border: 1px solid #dce3ec; border-radius: 6px; padding: 0 10px; background: #fff; color: #202938; font: inherit; }
 .neotrack-directory-heading h2 { margin: 0; color: var(--nt-ink); font-size: 19px; letter-spacing: -.025em; }
 .neotrack-directory-heading span { display: inline-block; margin-top: 5px; color: #64748b; font-size: 12px; }
 .neotrack-directory-heading strong { color: var(--nt-ink); }

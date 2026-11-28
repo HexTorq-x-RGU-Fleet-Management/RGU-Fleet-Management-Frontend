@@ -1,13 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowUpRight, BusFront, Download, Gauge, MapPin, Route } from 'lucide-react';
+import { ArrowUpRight, BusFront, Download, Gauge, MapPin, Pencil, Plus, Route, UserRound } from 'lucide-react';
 import { useEffect, useState, type FormEvent } from 'react';
+import { toast } from 'sonner';
 import { fleetApi } from '@/lib/api';
-import { gpsState, timeLabel, type Bus, type Vehicle } from '@/lib/fleet';
+import { gpsState, timeLabel, type Bus, type Driver, type Vehicle } from '@/lib/fleet';
 import { withinTamilNaduView } from '@/lib/map-config';
 import { JourneyMap } from './journey-map';
-import { Badge, Button, SearchInput } from './ui';
+import { Badge, Button, Confirm, Field, Modal, SearchInput } from './ui';
 import { useWorkspace } from './workspace-provider';
 
 const pages = {
@@ -56,7 +57,8 @@ export function FleetOperations({ view }: { view: keyof typeof pages }) {
           source={telemetry?.source}
         />
       )}
-      {(view === 'drivers' || view === 'routes') && <Directory buses={state.buses} view={view} />}
+      {view === 'drivers' && <DriversDirectory buses={state.buses} canManage={user?.role === 'admin'} />}
+      {view === 'routes' && <Directory buses={state.buses} view="routes" />}
       {view === 'reports' && <Reports key={user?.id} buses={state.buses} />}
     </section>
   );
@@ -210,6 +212,134 @@ function Tracking({
           <p className="fleet-ops-empty">Select a bus to see its position.</p>
         )}
       </div>
+    </div>
+  );
+}
+
+function DriversDirectory({ buses, canManage }: { buses: Bus[]; canManage: boolean }) {
+  const [drivers, setDrivers] = useState<Driver[]>([]);
+  const [query, setQuery] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState<Driver | null | undefined>(undefined);
+  const [removing, setRemoving] = useState<Driver | null>(null);
+  const [assigning, setAssigning] = useState<Driver | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [selectedBusId, setSelectedBusId] = useState('');
+  const load = async () => {
+    setLoading(true);
+    try {
+      setDrivers((await fleetApi.drivers()).drivers);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not load drivers.');
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => { void load(); }, []);
+  const term = query.trim().toLowerCase();
+  const visible = drivers.filter((driver) =>
+    [driver.fullName, driver.phone, driver.status, ...driver.assignments.flatMap((bus) => [bus.busNumber, bus.registration])]
+      .join(' ')
+      .toLowerCase()
+      .includes(term),
+  );
+  const assignedBusIds = new Set(drivers.flatMap((driver) => driver.assignments.map((bus) => bus.id)));
+  const assignable = buses.filter((bus) => !assignedBusIds.has(bus.id) || assigning?.assignments.some((item) => item.id === bus.id));
+  async function save(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!editing || busy) return;
+    const form = new FormData(event.currentTarget);
+    setBusy(true);
+    try {
+      const result = await fleetApi.saveDriver({
+        ...(editing.id ? { id: editing.id } : {}),
+        fullName: String(form.get('fullName') || ''),
+        phone: String(form.get('phone') || ''),
+        status: String(form.get('status') || 'active') as Driver['status'],
+      });
+      setDrivers((current) => {
+        const index = current.findIndex((driver) => driver.id === result.driver.id);
+        return index < 0
+          ? [...current, result.driver].sort((a, b) => a.fullName.localeCompare(b.fullName))
+          : current.map((driver) => driver.id === result.driver.id ? { ...result.driver, assignments: driver.assignments } : driver);
+      });
+      toast.success(editing.id ? 'Driver updated.' : 'Driver added.');
+      setEditing(undefined);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not save driver.');
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function assign() {
+    if (!assigning || !selectedBusId || busy) return;
+    setBusy(true);
+    try {
+      await fleetApi.assignDriver(selectedBusId, assigning.id);
+      toast.success(`${assigning.fullName} assigned to the bus.`);
+      setAssigning(null);
+      setSelectedBusId('');
+      await load();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not assign driver.');
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function remove() {
+    if (!removing) return;
+    try {
+      await fleetApi.removeDriver(removing.id);
+      setDrivers((current) => current.filter((driver) => driver.id !== removing.id));
+      toast.success('Driver removed.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not remove driver.');
+      throw error;
+    }
+  }
+  return (
+    <div className="fleet-ops-panel neotrack-directory driver-directory">
+      <div className="neotrack-directory-heading driver-directory-heading">
+        <div><h2><UserRound size={19} /> Manage drivers</h2><span>Total drivers <strong>{drivers.length}</strong></span></div>
+        {canManage && <Button variant="primary" onClick={() => setEditing({ id: '', fullName: '', phone: '', status: 'active', createdAt: '', updatedAt: '', assignments: [] })}><Plus size={15} /> Add driver</Button>}
+      </div>
+      <div className="fleet-ops-controls neotrack-directory-controls">
+        <SearchInput value={query} onChange={setQuery} placeholder="Search driver or bus" />
+        <span className="directory-result-count">{loading ? 'Loading drivers…' : `${visible.length} ${visible.length === 1 ? 'record' : 'records'}`}</span>
+      </div>
+      <div className="fleet-ops-table" role="region" aria-label="Driver directory" tabIndex={0} data-lenis-prevent>
+        <table>
+          <thead><tr><th scope="col">Driver</th><th scope="col">Phone</th><th scope="col">Status</th><th scope="col">Assigned buses</th><th scope="col">Actions</th></tr></thead>
+          <tbody>
+            {visible.map((driver) => (
+              <tr key={driver.id}>
+                <td><strong>{driver.fullName}</strong></td>
+                <td>{driver.phone || '—'}</td>
+                <td><Badge tone={driver.status === 'active' ? 'green' : 'neutral'}>{driver.status}</Badge></td>
+                <td>{driver.assignments.length ? driver.assignments.map((bus, index) => <span key={bus.id}>{index > 0 && ', '}<Link href={'/buses?' + new URLSearchParams({ bus: bus.id })}>{bus.busNumber} <ArrowUpRight size={13} /></Link></span>) : 'Not assigned'}</td>
+                <td><div className="directory-row-actions">
+                  {canManage && <Button type="button" onClick={() => { setAssigning(driver); setSelectedBusId(driver.assignments[0]?.id || ''); }} disabled={driver.status !== 'active'}>Assign</Button>}
+                  {canManage && <Button type="button" onClick={() => setEditing(driver)}><Pencil size={14} /> Edit</Button>}
+                  {canManage && <Button type="button" variant="danger" onClick={() => setRemoving(driver)} disabled={driver.assignments.length > 0}>Remove</Button>}
+                </div></td>
+              </tr>
+            ))}
+            {!loading && !visible.length && <tr><td colSpan={5}>No matching drivers.</td></tr>}
+          </tbody>
+        </table>
+      </div>
+      <Modal open={editing !== undefined} onOpenChange={(open) => !open && setEditing(undefined)} title={editing?.id ? 'Edit driver' : 'Add driver'} description="Driver contacts are saved within this workspace and can be assigned to buses.">
+        {editing && <form className="driver-form" onSubmit={save}>
+          <Field label="Driver name"><input name="fullName" required maxLength={160} defaultValue={editing.fullName} /></Field>
+          <Field label="Phone"><input name="phone" maxLength={40} defaultValue={editing.phone} /></Field>
+          <Field label="Status"><select name="status" defaultValue={editing.status}><option value="active">Active</option><option value="inactive">Inactive</option></select></Field>
+          <div className="modal-footer"><Button type="button" onClick={() => setEditing(undefined)}>Cancel</Button><Button type="submit" variant="primary" loading={busy}>Save driver</Button></div>
+        </form>}
+      </Modal>
+      <Modal open={assigning !== null} onOpenChange={(open) => !open && setAssigning(null)} title="Assign driver" description={assigning ? `Choose a bus for ${assigning.fullName}. Existing driver information on that bus will be updated.` : ''}>
+        <div className="driver-form"><Field label="Bus"><select value={selectedBusId} onChange={(event) => setSelectedBusId(event.target.value)}><option value="">Choose a bus</option>{assignable.map((bus) => <option key={bus.id} value={bus.id}>{bus.busNumber} · {bus.registration}</option>)}</select></Field><div className="modal-footer"><Button type="button" onClick={() => setAssigning(null)}>Cancel</Button><Button type="button" variant="primary" disabled={!selectedBusId} loading={busy} onClick={() => void assign()}>Assign driver</Button></div></div>
+      </Modal>
+      <Confirm open={removing !== null} onOpenChange={(open) => !open && setRemoving(null)} title="Remove driver" description={removing ? `Remove ${removing.fullName}? Assigned drivers cannot be removed.` : ''} action="Remove driver" onConfirm={remove} />
     </div>
   );
 }

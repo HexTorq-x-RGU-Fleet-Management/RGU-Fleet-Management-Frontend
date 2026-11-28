@@ -47,6 +47,25 @@ describe('separate backend boundary', () => {
     });
     expect(input).not.toHaveProperty('autoReconnect');
   });
+  it('uses the dedicated driver API routes without moving driver data into browser storage', async () => {
+    vi.stubEnv('NEXT_PUBLIC_API_BASE_URL', 'https://api.example.test');
+    const fetcher = vi.fn().mockImplementation(() =>
+      Promise.resolve(new Response(JSON.stringify({ drivers: [] }))),
+    );
+    vi.stubGlobal('fetch', fetcher);
+    const { fleetApi } = await import('../../src/lib/api');
+    await fleetApi.drivers();
+    await fleetApi.saveDriver({ fullName: 'Test Driver', phone: '9000000000', status: 'active' });
+    await fleetApi.assignDriver('bus-id', 'driver-id');
+    await fleetApi.removeDriver('driver-id');
+    expect(fetcher.mock.calls.map((call) => call[0])).toEqual([
+      'https://api.example.test/api/fleet/drivers',
+      'https://api.example.test/api/fleet/drivers',
+      'https://api.example.test/api/fleet/drivers/assign',
+      'https://api.example.test/api/fleet/drivers/remove',
+    ]);
+    expect(JSON.parse(fetcher.mock.calls[2][1].body)).toEqual({ busId: 'bus-id', driverId: 'driver-id' });
+  });
   it('retains authorization error codes', async () => {
     vi.stubEnv('NEXT_PUBLIC_API_BASE_URL', 'https://api.example.test');
     vi.stubGlobal(

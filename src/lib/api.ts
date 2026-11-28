@@ -119,6 +119,12 @@ export const api = {
 };
 export const fleetApi = {
   buses: () => request('/api/fleet/buses'),
+  drivers: () => request<{ drivers: import('./fleet').Driver[] }>('/api/fleet/drivers'),
+  saveDriver: (driver: Partial<import('./fleet').Driver> & { fullName: string; phone: string }) =>
+    request<{ driver: import('./fleet').Driver }>('/api/fleet/drivers', driver),
+  assignDriver: (busId: string, driverId: string) =>
+    request<{ bus: import('./fleet').Bus }>('/api/fleet/drivers/assign', { busId, driverId }),
+  removeDriver: (id: string) => request('/api/fleet/drivers/remove', { id }),
   notifications: () =>
     request<{
       notifications: {
